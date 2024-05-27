@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: illc-service
+spec:
+  selector:
+    app: illc
+  ports:
+    - port: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: illc-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: illc
+  template:
+    metadata:
+      labels:
+        app: illc
+    spec:
+      containers:
+        - name: illc-container
+          image: registry.digitalocean.com/illustrious-dashboard/ill-dashboard:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000

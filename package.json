@@ -1,0 +1,53 @@
+{
+  "name": "api.illustrious.cloud",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/app.ts",
+    "docker:dev": "docker compose up",
+    "docker:build": "docker build -t ill-dashboard:latest",
+    "docker:push": "docker push registry.digitalocean.com/illustrious-dashboard/ill-dashboard",
+    "start": "NODE_ENV=production bun src/app.ts",
+    "migrate": "bunx drizzle-kit push",
+    "lint": "bunx @biomejs/biome lint --apply ./src",
+    "format": "bunx @biomejs/biome format --write ./src",
+    "check": "bunx @biomejs/biome check ./src",
+    "check:apply": "bunx @biomejs/biome check --apply ./src"
+  },
+  "dependencies": {
+    "@elysiajs/bearer": "^1.0.2",
+    "@elysiajs/cors": "^1.0.2",
+    "@elysiajs/swagger": "^1.0.5",
+    "@sentry/bun": "^7.113.0",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.30.10",
+    "elysia": "latest",
+    "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.7.2",
+    "@prisma/client": "^5.13.0",
+    "@types/node": "^20.12.10",
+    "@types/pg": "^8.11.6",
+    "@types/qs": "^6.9.15",
+    "@types/uuid": "^9.0.8",
+    "axios": "^1.6.8",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.21.0",
+    "jwks-rsa": "^3.1.0",
+    "qs": "^6.12.1",
+    "semantic-release": "^23.0.8",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.9.3",
+    "typescript": "^5.4.5",
+    "uuid": "^9.0.1",
+    "yoctocolors": "^2.0.0"
+  },
+  "release": {
+    "branches": ["main"]
+  },
+  "module": "src/app.ts"
+}

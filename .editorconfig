@@ -1,0 +1,22 @@
+# EditorConfig helps developers define and maintain consistent coding styles between different editors and IDEs
+# For more information about the EditorConfig project, visit http://editorconfig.org
+
+# Top-most EditorConfig file
+root = true
+
+[*]
+# Change these settings according to your preferences
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# React-specific configurations
+[*.ts]
+indent_size = 2
+
+# Ignore node_modules directory
+[**/node_modules/**]
+indent_style = ignore

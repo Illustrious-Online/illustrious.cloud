@@ -12,6 +12,7 @@ export default {
     port:
       (isTestEnvironment ? Bun.env.TEST_APP_PORT : Bun.env.APP_PORT) || "8000",
     dashboardUrl: Bun.env.DASHBOARD_URL,
+    sentryUrl: Bun.env.SENTRY_URL,
   },
   auth: {
     url: Bun.env.AUTH0_URL || "localhost",

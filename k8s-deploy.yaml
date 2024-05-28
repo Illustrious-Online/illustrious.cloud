@@ -1,30 +1,48 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: illc-service
-spec:
-  selector:
-    app: illc
-  ports:
-    - port: 8000
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: illc-deployment
+  name: ill-dash
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: illc
+      app: ill-dash
   template:
     metadata:
       labels:
-        app: illc
+        app: ill-dash
     spec:
       containers:
-        - name: illc-container
-          image: registry.digitalocean.com/illustrious-dashboard/ill-dashboard:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8000
+      - name: ill-dash
+        image: registry.digitalocean.com/illustrious-dashboard/ill-dashboard:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: https-with-cert
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
+    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "3d33249b-f439-41c3-ae30-dc0ea987b2f7"
+    service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app: ill-dash
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 8000
+

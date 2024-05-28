@@ -21,7 +21,6 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 8000
-          protocol: TCP
 ---
 kind: Service
 apiVersion: v1
@@ -44,5 +43,5 @@ spec:
     - name: https
       protocol: TCP
       port: 443
-      targetPort: 80
+      targetPort: 8000
 

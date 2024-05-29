@@ -4,13 +4,13 @@ import { v4 as uuidv4 } from "uuid";
 
 import ConflictError from "../domain/exceptions/ConflictError";
 import ServerError from "../domain/exceptions/ServerError";
-import { db } from "../drizzle/db";
+import { db } from "../../drizzle/db";
 import {
   Invoice,
   UserInvoice,
   invoices,
   userInvoices,
-} from "../drizzle/schema";
+} from "../../drizzle/schema";
 
 /**
  * Creates a new user.

@@ -3,8 +3,8 @@ import { NotFoundError } from "elysia";
 import { eq } from "drizzle-orm";
 import ConflictError from "../domain/exceptions/ConflictError";
 import ServerError from "../domain/exceptions/ServerError";
-import { db } from "../drizzle/db";
-import { Org, orgs } from "../drizzle/schema";
+import { db } from "../../drizzle/db";
+import { Org, orgs } from "../../drizzle/schema";
 
 /**
  * Creates a new user.

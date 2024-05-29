@@ -16,9 +16,7 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
-export const app = new Elysia();
-
-app
+export const app = new Elysia()
   .use(cors())
   .use(swagger())
   .use(bearer())
@@ -44,6 +42,6 @@ app
   .listen(config.app.port, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(
-      `Illustrious Cloud API is running at ${app.server?.hostname}:${app.server?.port}`,
+      `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,
     );
   });

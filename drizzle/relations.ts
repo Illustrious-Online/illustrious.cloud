@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm/relations";
 import {
+  authentications,
   invoices,
   orgUsers,
   orgs,
@@ -42,6 +43,13 @@ export const UserAuthentications = relations(
       fields: [userAuthentications.userId],
       references: [users.id],
     }),
+  }),
+);
+
+export const AuthenticationRelations = relations(
+  authentications,
+  ({ many }) => ({
+    UserAuthentications: many(userAuthentications),
   }),
 );
 

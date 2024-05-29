@@ -12,6 +12,14 @@ import {
 
 export const Role = pgEnum("Role", ["CLIENT", "ADMIN", "OWNER"]);
 
+export const authentications = pgTable("Authentication", {
+  id: text("id").primaryKey().notNull(),
+  paid: text("sub").notNull(),
+});
+
+export type Authentication = typeof authentications.$inferSelect;
+export type InsertAuthentication = typeof authentications.$inferInsert;
+
 export const invoices = pgTable("Invoice", {
   id: text("id").primaryKey().notNull(),
   paid: boolean("paid").notNull(),
@@ -76,10 +84,15 @@ export type InsertUser = typeof users.$inferInsert;
 export const userAuthentications = pgTable(
   "UserAuthentications",
   {
-    id: text("id").primaryKey().notNull(),
     userId: text("userId")
       .notNull()
       .references(() => users.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    authId: text("authId")
+      .notNull()
+      .references(() => authentications.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -87,7 +100,7 @@ export const userAuthentications = pgTable(
   (table) => {
     return {
       UserAuthentication_pkey: primaryKey({
-        columns: [table.id, table.userId],
+        columns: [table.authId, table.userId],
         name: "UserAuthentication_pkey",
       }),
     };

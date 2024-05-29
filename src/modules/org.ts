@@ -2,7 +2,7 @@ import { Context } from "elysia";
 
 import { ContextWithJWT } from "../domain/types/extends/ContextWithJWT";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import { Org } from "../drizzle/schema";
+import { Org } from "../../drizzle/schema";
 import * as orgService from "../services/org";
 
 export const create = async (

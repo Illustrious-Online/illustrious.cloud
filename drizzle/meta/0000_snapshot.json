@@ -1,62 +1,24 @@
 {
-  "id": "00000000-0000-0000-0000-000000000000",
-  "prevId": "",
+  "id": "022506e5-f299-4aea-b102-dcf11af9547b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
-    "public._prisma_migrations": {
-      "name": "_prisma_migrations",
+    "public.Authentication": {
+      "name": "Authentication",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(36)",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
-        "checksum": {
-          "name": "checksum",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "finished_at": {
-          "name": "finished_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "migration_name": {
-          "name": "migration_name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "logs": {
-          "name": "logs",
+        "sub": {
+          "name": "sub",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
-        },
-        "rolled_back_at": {
-          "name": "rolled_back_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "applied_steps_count": {
-          "name": "applied_steps_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": true
         }
       },
       "indexes": {},
@@ -110,62 +72,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.Org": {
-      "name": "Org",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contact": {
-          "name": "contact",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "orgUserId": {
-          "name": "orgUserId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "Org_name_key": {
-          "name": "Org_name_key",
-          "columns": ["name"],
-          "isUnique": true
-        },
-        "Org_orgUserId_key": {
-          "name": "Org_orgUserId_key",
-          "columns": ["orgUserId"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "Org_orgUserId_fkey": {
-          "name": "Org_orgUserId_fkey",
-          "tableFrom": "Org",
-          "tableTo": "OrgUser",
-          "schemaTo": "public",
-          "columnsFrom": ["orgUserId"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
     "public.OrgUser": {
       "name": "OrgUser",
       "schema": "",
@@ -189,21 +95,63 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "orgId": {
+          "name": "orgId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "OrgUser_userId_fkey": {
-          "name": "OrgUser_userId_fkey",
+        "OrgUser_userId_User_id_fk": {
+          "name": "OrgUser_userId_User_id_fk",
           "tableFrom": "OrgUser",
           "tableTo": "User",
-          "schemaTo": "public",
           "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "OrgUser_orgId_Org_id_fk": {
+          "name": "OrgUser_orgId_Org_id_fk",
+          "tableFrom": "OrgUser",
+          "tableTo": "Org",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Org": {
+      "name": "Org",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact": {
+          "name": "contact",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -233,6 +181,144 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.UserAuthentications": {
+      "name": "UserAuthentications",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authId": {
+          "name": "authId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "UserAuthentications_userId_User_id_fk": {
+          "name": "UserAuthentications_userId_User_id_fk",
+          "tableFrom": "UserAuthentications",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "UserAuthentications_authId_Authentication_id_fk": {
+          "name": "UserAuthentications_authId_Authentication_id_fk",
+          "tableFrom": "UserAuthentications",
+          "tableTo": "Authentication",
+          "columnsFrom": ["authId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "UserAuthentication_pkey": {
+          "name": "UserAuthentication_pkey",
+          "columns": ["authId", "userId"]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.UserInvoice": {
+      "name": "UserInvoice",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoiceId": {
+          "name": "invoiceId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "UserInvoice_userId_User_id_fk": {
+          "name": "UserInvoice_userId_User_id_fk",
+          "tableFrom": "UserInvoice",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "UserInvoice_invoiceId_Invoice_id_fk": {
+          "name": "UserInvoice_invoiceId_Invoice_id_fk",
+          "tableFrom": "UserInvoice",
+          "tableTo": "Invoice",
+          "columnsFrom": ["invoiceId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "UserInvoice_pkey": {
+          "name": "UserInvoice_pkey",
+          "columns": ["userId", "invoiceId"]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.UserReport": {
+      "name": "UserReport",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reportId": {
+          "name": "reportId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "UserReport_userId_User_id_fk": {
+          "name": "UserReport_userId_User_id_fk",
+          "tableFrom": "UserReport",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "UserReport_reportId_Report_id_fk": {
+          "name": "UserReport_reportId_Report_id_fk",
+          "tableFrom": "UserReport",
+          "tableTo": "Report",
+          "columnsFrom": ["reportId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "UserReport_pkey": {
+          "name": "UserReport_pkey",
+          "columns": ["userId", "reportId"]
+        }
+      },
       "uniqueConstraints": {}
     },
     "public.User": {
@@ -268,150 +354,19 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
-    },
-    "public.UserInvoice": {
-      "name": "UserInvoice",
-      "schema": "",
-      "columns": {
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "invoiceId": {
-          "name": "invoiceId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "orgUserId": {
-          "name": "orgUserId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "UserInvoice_userId_fkey": {
-          "name": "UserInvoice_userId_fkey",
-          "tableFrom": "UserInvoice",
-          "tableTo": "User",
-          "schemaTo": "public",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        },
-        "UserInvoice_invoiceId_fkey": {
-          "name": "UserInvoice_invoiceId_fkey",
-          "tableFrom": "UserInvoice",
-          "tableTo": "Invoice",
-          "schemaTo": "public",
-          "columnsFrom": ["invoiceId"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        },
-        "UserInvoice_orgUserId_fkey": {
-          "name": "UserInvoice_orgUserId_fkey",
-          "tableFrom": "UserInvoice",
-          "tableTo": "OrgUser",
-          "schemaTo": "public",
-          "columnsFrom": ["orgUserId"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "UserInvoice_pkey": {
-          "name": "UserInvoice_pkey",
-          "columns": ["userId", "invoiceId"]
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "public.UserReport": {
-      "name": "UserReport",
-      "schema": "",
-      "columns": {
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reportId": {
-          "name": "reportId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "orgUserId": {
-          "name": "orgUserId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "UserReport_userId_fkey": {
-          "name": "UserReport_userId_fkey",
-          "tableFrom": "UserReport",
-          "tableTo": "User",
-          "schemaTo": "public",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        },
-        "UserReport_reportId_fkey": {
-          "name": "UserReport_reportId_fkey",
-          "tableFrom": "UserReport",
-          "tableTo": "Report",
-          "schemaTo": "public",
-          "columnsFrom": ["reportId"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        },
-        "UserReport_orgUserId_fkey": {
-          "name": "UserReport_orgUserId_fkey",
-          "tableFrom": "UserReport",
-          "tableTo": "OrgUser",
-          "schemaTo": "public",
-          "columnsFrom": ["orgUserId"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "UserReport_pkey": {
-          "name": "UserReport_pkey",
-          "columns": ["userId", "reportId"]
-        }
-      },
-      "uniqueConstraints": {}
     }
   },
   "enums": {
     "public.Role": {
       "name": "Role",
-      "values": ["CLIENT", "ADMIN", "OWNER"],
-      "schema": "public"
+      "schema": "public",
+      "values": ["CLIENT", "ADMIN", "OWNER"]
     }
   },
   "schemas": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
     "tables": {}
   }
 }

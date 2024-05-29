@@ -16,7 +16,6 @@ export default (app: Elysia) =>
     await fetch(`${config.auth.url}/pem`).then((response) => {
       if (response.body) {
         let writer = fs.createWriteStream("public.pem");
-        // @ts-expect-error: Readable expects any instead of Uint8Array...
         Readable.fromWeb(response.body).pipe(writer);
       }
     });

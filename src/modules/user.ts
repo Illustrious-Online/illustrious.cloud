@@ -4,7 +4,7 @@ import config from "../config";
 import ConflictError from "../domain/exceptions/ConflictError";
 import LoggedInUser from "../domain/types/LoggedInUser";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import { User } from "../drizzle/schema";
+import { User } from "../../drizzle/schema";
 import * as userService from "../services/user";
 
 export const me = async (

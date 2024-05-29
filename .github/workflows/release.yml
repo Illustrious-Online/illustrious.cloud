@@ -1,0 +1,50 @@
+name: Perform release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_TOKEN }}
+      - name: Install spaces-cli
+        run: bun install -g spaces-cli
+      - name: Download .env file
+        run: |
+          spaces-cli down /api/development.env -o ./.env \
+            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
+            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
+      - name: Authenticate with DO registry
+        run: doctl registry login --expiry-seconds 1200
+      - name: Push Docker Container
+        run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f $GITHUB_WORKSPACE/.ci/k8s-deploy.yml
+      - name: Verify deployment
+        run: kubectl rollout status deployment/ill-dashboard
+      - name: Execute Semantic Release
+        run: bunx semantic-release

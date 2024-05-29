@@ -14,7 +14,7 @@ import { User, users } from "../../drizzle/schema";
  * @throws {ConflictError} If a user with the same data already exists.
  * @throws {Error} If an error occurs while creating the user.
  */
-export async function create(payload: User) {
+export async function create(payload: User): Promise<User> {
   try {
     const user = await db.select().from(users).where(eq(users.id, payload.id));
 
@@ -41,9 +41,16 @@ export async function create(payload: User) {
  *
  * @returns {Promise<User[]>} A promise that resolves to an array of User objects.
  */
-export function fetchAll(): Promise<User[]> {
-  const x = db
-    .select({ id: users.id, email: users.email, name: users.name })
+export async function fetchAll(): Promise<User[]> {
+  const x = await db
+    .select({ 
+      id: users.id, 
+      email: users.email, 
+      firstName: users.firstName,
+      lastName: users.lastName,
+      picture: users.picture,
+      phone: users.phone
+    })
     .from(users);
   return x;
 }
@@ -56,6 +63,22 @@ export function fetchAll(): Promise<User[]> {
  */
 export async function fetchById(id: string): Promise<User> {
   const result = await db.select().from(users).where(eq(users.id, id));
+
+  if (result.length > 0) {
+    return result[0];
+  }
+
+  throw new NotFoundError();
+}
+
+/**
+ * Fetches a user by email.
+ *
+ * @param {string} email The id of the user to fetch.
+ * @returns {Promise<User>} A promise that resolves array User objects.
+ */
+export async function fetchByEmail(email: string): Promise<User> {
+  const result = await db.select().from(users).where(eq(users.email, email));
 
   if (result.length > 0) {
     return result[0];

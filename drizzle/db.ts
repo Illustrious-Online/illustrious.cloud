@@ -4,7 +4,7 @@ import { Client } from "pg";
 import * as schema from "./schema";
 
 export const client = new Client({
-  host: process.env.DB_HOST!,
+  host: '0.0.0.0',
   port: Number(process.env.DB_PORT!),
   user: process.env.DB_USERNAME!,
   password: process.env.DB_PASSWORD!,

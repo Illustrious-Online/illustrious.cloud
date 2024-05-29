@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'jest';
 
 import { app } from '../app';
 import config from '../config';

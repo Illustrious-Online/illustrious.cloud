@@ -5,13 +5,15 @@ import ConflictError from "../domain/exceptions/ConflictError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import ErrorResponse from "../domain/types/generic/ErrorResponse";
 import ResponseError from "../domain/exceptions/ResponseError";
+import config from "../config";
 
 export default (app: Elysia) =>
   app
     .error({ ConflictError, UnauthorizedError })
     .onError((handler): ErrorResponse<number> => {
-      console.error(handler.error?.stack);
-      console.log('code', handler.code);
+      if (config.app.env !== 'test') {
+        console.error(handler.error?.stack);
+      }
 
       if (
         handler.error instanceof ConflictError ||
@@ -45,7 +47,7 @@ export default (app: Elysia) =>
       handler.set.status = StatusCodes.SERVICE_UNAVAILABLE;
 
       return {
-        message: "Server Error!",
+        message: handler.error.message,
         code: handler.set.status,
       };
     });

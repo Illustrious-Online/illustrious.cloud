@@ -2,77 +2,91 @@ import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
 
 import config from "../config";
-import ConflictError from "../domain/exceptions/ConflictError";
 import { db } from "../../drizzle/db";
-import { User, users } from "../../drizzle/schema";
+import { UserAuthentication, authentications, userAuthentications } from "../../drizzle/schema";
+
+import { AuthError, Tokens } from "../domain/models/auth.models";
 import ResponseError from "../domain/exceptions/ResponseError";
+import ConflictError from "../domain/exceptions/ConflictError";
+import ServerError from "../domain/exceptions/ServerError";
 
-interface ResErrorObj {
-  error: string,
-  error_description: string
-}
-
-export async function getTokens(code: string): Promise<{
-  accessToken: string;
-  idToken: string;
-  refreshToken: string;
-}> {
+export async function getTokens(code: string): Promise<Tokens> {
   const headers = new Headers();
   headers.append("Content-Type", "application/x-www-form-urlencoded");
   headers.append("Accept", "application/json");
 
-  const encoded = new URLSearchParams();
-  encoded.append("grant_type", "authorization_code");
-  encoded.append("client_id", config.auth.clientId);
-  encoded.append("client_secret", config.auth.clientSecret);
-  encoded.append("code", code);
-  encoded.append("redirect_uri", `${config.app.url}/auth/success`);
+  const body = new URLSearchParams();
+  body.append("grant_type", "authorization_code");
+  body.append("client_id", config.auth.clientId);
+  body.append("client_secret", config.auth.clientSecret);
+  body.append("code", code);
+  body.append("redirect_uri", `${config.app.url}/auth/success`);
 
   const requestOptions = {
     method: "POST",
-    headers: headers,
-    body: encoded,
+    headers,
+    body,
   };
 
-  const res = await fetch(`${config.auth.url}/oauth/token`, requestOptions);
-  const json = await res.json();
+  const response = await fetch(`${config.auth.url}/oauth/token`, requestOptions);
+  const resJson = await response.json();
+  const e = resJson as AuthError;
 
-  if (!res.ok) {
-    const err = (json as ResErrorObj).error;
-    const message = (json as ResErrorObj).error_description;
-    throw new ResponseError(res.status, `${err}: ${message}`);
+  if (!response.ok) {
+    throw new ResponseError(response.status, `${e.error}: ${e.error_description}`);
   }
 
-  console.log('res json', json);
-  const { access_token, id_token, refresh_token } = json;
-
-  return {
-    accessToken: access_token,
-    idToken: id_token,
-    refreshToken: refresh_token,
-  };
+  return resJson as Tokens;
 }
 
 /**
- * Fetches all users from the database.
+ * Creates a new authentication & relationship.
  *
- * @returns {Promise<User[]>} A promise that resolves to an array of User objects.
+ * @param payload - The user data to be created.
+ * @throws {ConflictError} If a user with the same data already exists.
+ * @throws {Error} If an error occurs while creating the user.
  */
-export function fetchAll(): Promise<User[]> {
-  const x = db
-    .select({ id: users.id, email: users.email, name: users.name })
-    .from(users);
-  return x;
+export async function create(payload: {
+  userId: string;
+  authId: string;
+  sub: string;
+}) {
+  try {
+    const { authId, userId, sub } = payload;
+    console.log('create auth');
+  
+    await db.insert(authentications).values({
+      id: authId,
+      sub
+    });
+  
+    console.log('create userAuth');
+    await db.insert(userAuthentications).values({
+      userId,
+      authId,
+    });
+  } catch (e) {
+    console.log('create auth e', e);
+    const error = e as ServerError;
+
+    if (error.name === "ServerError" && error.code === 11000) {
+      throw new ConflictError("Authentication exists.");
+    }
+
+    throw error;
+  }
 }
 
 /**
  * Fetches a user by id.
  *
- * @param {string} id The id of the user to fetch.
- * @returns {Promise<User>} A promise that resolves array User objects.
+ * @param {string} sub The id of the user to fetch.
+ * @returns {Promise<UserAuthentication>} A promise that resolves array User objects.
  */
-export async function fetchById(id: string): Promise<User> {
-  const result = await db.select().from(users).where(eq(users.id, id));
+export async function fetchUserAuthBySub(sub: string): Promise<UserAuthentication> {
+  const result = await db.select()
+    .from(userAuthentications)
+    .where(eq(userAuthentications.authId, sub));
 
   if (result.length > 0) {
     return result[0];

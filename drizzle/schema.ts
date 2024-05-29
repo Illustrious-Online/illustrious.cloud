@@ -14,7 +14,7 @@ export const Role = pgEnum("Role", ["CLIENT", "ADMIN", "OWNER"]);
 
 export const authentications = pgTable("Authentication", {
   id: text("id").primaryKey().notNull(),
-  paid: text("sub").notNull(),
+  sub: text("sub").notNull()
 });
 
 export type Authentication = typeof authentications.$inferSelect;
@@ -69,7 +69,10 @@ export const users = pgTable(
   {
     id: text("id").primaryKey().notNull(),
     email: text("email").notNull(),
-    name: text("name"),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    picture: text("picture"),
+    phone: text("phone")
   },
   (table) => {
     return {

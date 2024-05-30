@@ -9,13 +9,12 @@ export const client = new Client({
   user: process.env.DB_USERNAME!,
   password: process.env.DB_PASSWORD!,
   database: process.env.DB_NAME!,
-  ssl:
-    process.env.DB_SSL !== "false"
-      ? {
-          rejectUnauthorized: true,
-          ca: fs.readFileSync("cert.crt").toString(),
-        }
-      : false,
+  ssl: process.env.DB_SSL !== "false"
+    ? {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync("cert.crt").toString(),
+      }
+    : false,
 });
 
 await client.connect();

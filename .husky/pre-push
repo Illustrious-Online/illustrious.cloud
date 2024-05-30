@@ -1,5 +1,1 @@
-.ci/kill-docker.sh
-bun run docker:db &
-.ci/wait-for-it.sh locahost:5432 -- echo "DB is up"
-bun run db:migrate
-bun test
+bun run test

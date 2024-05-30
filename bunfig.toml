@@ -2,4 +2,5 @@
 coverage = true
 coverageSkipTestFiles = true
 # coverageThreshold = 0.25
+coverageIgnoreSourcemaps = true
 preload = ["./src/tests/setup.ts"]

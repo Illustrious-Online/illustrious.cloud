@@ -1,2 +1,2 @@
-bash ../.ci/kill-docker.sh
+.ci/kill-docker.sh
 bun run push:test

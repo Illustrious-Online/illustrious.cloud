@@ -1,2 +1,2 @@
-docker container kill $(docker ps | awk '/postgres/ {print $1}')
+bash ../.ci/kill-docker.sh
 bun run push:test

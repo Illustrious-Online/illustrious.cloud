@@ -1,2 +1,4 @@
 .ci/kill-docker.sh
-bun run push:test
+bun run docker:db
+sleep 30
+bun test

@@ -13,7 +13,7 @@
     "format": "bunx @biomejs/biome format --write ./src",
     "check": "bunx @biomejs/biome check ./src",
     "check:apply": "bunx @biomejs/biome check --apply ./src",
-    "push:test": "concurrently \"bun run docker:db &\" \"sleep 15\" \"bun run db:migrate\" \"bun test\"",
+    "push:test": "concurrently \"bun run docker:db &\" \"sleep 15\" \"bun run db:migrate && bun test\"",
     "prepare": "husky"
   },
   "dependencies": {

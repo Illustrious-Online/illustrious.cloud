@@ -2,8 +2,6 @@ import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
 import { v4 as uuidv4 } from "uuid";
 
-import ConflictError from "../domain/exceptions/ConflictError";
-import ServerError from "../domain/exceptions/ServerError";
 import { db } from "../../drizzle/db";
 import {
   Invoice,
@@ -11,6 +9,8 @@ import {
   invoices,
   userInvoices,
 } from "../../drizzle/schema";
+import ConflictError from "../domain/exceptions/ConflictError";
+import ServerError from "../domain/exceptions/ServerError";
 
 /**
  * Creates a new user.

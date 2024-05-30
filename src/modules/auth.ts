@@ -1,15 +1,17 @@
-import { v4 as uuidv4 } from "uuid";
 import { jwtDecode } from "jwt-decode";
+import { v4 as uuidv4 } from "uuid";
 
-import ConflictError from "../domain/exceptions/ConflictError";
-import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import { AuthUserInfo, Tokens } from "../domain/models/auth.models";
 import { UserAuthentication } from "../../drizzle/schema";
+import ConflictError from "../domain/exceptions/ConflictError";
+import { AuthUserInfo, Tokens } from "../domain/models/auth.models";
+import SuccessResponse from "../domain/types/generic/SuccessResponse";
 
 import * as authService from "../services/auth";
 import * as userService from "../services/user";
 
-export const create = async (code: string | undefined): Promise<SuccessResponse<Tokens>> => {
+export const create = async (
+  code: string | undefined,
+): Promise<SuccessResponse<Tokens>> => {
   if (!code) {
     throw new ConflictError("Authorization code is required.");
   }
@@ -18,11 +20,11 @@ export const create = async (code: string | undefined): Promise<SuccessResponse<
   const { access_token, id_token, refresh_token } = tokens as Tokens;
 
   if (!access_token || !id_token || !refresh_token) {
-    throw new ConflictError('Failed to obtain all required tokens');
+    throw new ConflictError("Failed to obtain all required tokens");
   }
 
   const userinfo: AuthUserInfo = jwtDecode(id_token);
-  let userAuth: UserAuthentication
+  let userAuth: UserAuthentication;
 
   try {
     userAuth = await authService.fetchUserAuthBySub(userinfo.sub);
@@ -42,19 +44,19 @@ export const create = async (code: string | undefined): Promise<SuccessResponse<
         firstName: userinfo.given_name ?? null,
         lastName: userinfo.family_name ?? null,
         picture: userinfo.picture ?? null,
-        phone: userinfo.phone_number ?? null
+        phone: userinfo.phone_number ?? null,
       });
     }
 
     await authService.create({
       authId,
       userId,
-      sub: userinfo.sub
+      sub: userinfo.sub,
     });
   }
 
   return {
     data: tokens,
-    message: "Obtained tokens successfully!"
+    message: "Obtained tokens successfully!",
   };
 };

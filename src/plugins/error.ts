@@ -1,17 +1,17 @@
 import { Elysia } from "elysia";
 import { StatusCodes } from "http-status-codes";
 
+import config from "../config";
 import ConflictError from "../domain/exceptions/ConflictError";
+import ResponseError from "../domain/exceptions/ResponseError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import ErrorResponse from "../domain/types/generic/ErrorResponse";
-import ResponseError from "../domain/exceptions/ResponseError";
-import config from "../config";
 
 export default (app: Elysia) =>
   app
     .error({ ConflictError, UnauthorizedError })
     .onError((handler): ErrorResponse<number> => {
-      if (config.app.env !== 'test') {
+      if (config.app.env !== "test") {
         console.error(handler.error?.stack);
       }
 

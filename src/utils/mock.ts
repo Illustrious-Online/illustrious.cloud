@@ -1,7 +1,7 @@
 import { mock } from "bun:test";
 
 export type MockResult = {
-    clear: () => void;
+  clear: () => void;
 };
 
 /**
@@ -11,21 +11,21 @@ export type MockResult = {
  * @returns an object
  */
 export const mockModule = async (
-    modulePath: string,
-    renderMocks: () => Record<string, any>,
+  modulePath: string,
+  renderMocks: () => Record<string, any>,
 ): Promise<MockResult> => {
-    let original = {
-        ...(await import(modulePath)),
-    };
-    let mocks = renderMocks();
-    let result = {
-        ...original,
-        ...mocks,
-    };
-    mock.module(modulePath, () => result);
-    return {
-        clear: () => {
-            mock.module(modulePath, () => original);
-        },
-    };
+  let original = {
+    ...(await import(modulePath)),
+  };
+  let mocks = renderMocks();
+  let result = {
+    ...original,
+    ...mocks,
+  };
+  mock.module(modulePath, () => result);
+  return {
+    clear: () => {
+      mock.module(modulePath, () => original);
+    },
+  };
 };

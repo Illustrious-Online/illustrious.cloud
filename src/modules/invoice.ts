@@ -1,8 +1,8 @@
 import { Context } from "elysia";
 
+import { Invoice } from "../../drizzle/schema";
 import { ContextWithJWT } from "../domain/types/extends/ContextWithJWT";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import { Invoice } from "../../drizzle/schema";
 import * as invoiceService from "../services/invoice";
 
 export const create = async (

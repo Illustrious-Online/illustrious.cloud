@@ -1,14 +1,18 @@
 import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
 
-import config from "../config";
 import { db } from "../../drizzle/db";
-import { UserAuthentication, authentications, userAuthentications } from "../../drizzle/schema";
+import {
+  UserAuthentication,
+  authentications,
+  userAuthentications,
+} from "../../drizzle/schema";
+import config from "../config";
 
-import { AuthError, Tokens } from "../domain/models/auth.models";
-import ResponseError from "../domain/exceptions/ResponseError";
 import ConflictError from "../domain/exceptions/ConflictError";
+import ResponseError from "../domain/exceptions/ResponseError";
 import ServerError from "../domain/exceptions/ServerError";
+import { AuthError, Tokens } from "../domain/models/auth.models";
 
 export async function getTokens(code: string): Promise<Tokens> {
   const headers = new Headers();
@@ -28,12 +32,18 @@ export async function getTokens(code: string): Promise<Tokens> {
     body,
   };
 
-  const response = await fetch(`${config.auth.url}/oauth/token`, requestOptions);
+  const response = await fetch(
+    `${config.auth.url}/oauth/token`,
+    requestOptions,
+  );
   const resJson = await response.json();
   const e = resJson as AuthError;
 
   if (!response.ok) {
-    throw new ResponseError(response.status, `${e.error}: ${e.error_description}`);
+    throw new ResponseError(
+      response.status,
+      `${e.error}: ${e.error_description}`,
+    );
   }
 
   return resJson as Tokens;
@@ -55,9 +65,9 @@ export async function create(payload: {
     const { authId, userId, sub } = payload;
     const test = await db.insert(authentications).values({
       id: authId,
-      sub
+      sub,
     });
-    
+
     await db.insert(userAuthentications).values({
       userId,
       authId,
@@ -79,8 +89,11 @@ export async function create(payload: {
  * @param {string} sub The id of the user to fetch.
  * @returns {Promise<UserAuthentication>} A promise that resolves array User objects.
  */
-export async function fetchUserAuthBySub(sub: string): Promise<UserAuthentication> {
-  const result = await db.select()
+export async function fetchUserAuthBySub(
+  sub: string,
+): Promise<UserAuthentication> {
+  const result = await db
+    .select()
     .from(userAuthentications)
     .where(eq(userAuthentications.authId, sub));
 

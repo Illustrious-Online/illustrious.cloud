@@ -1,6 +1,6 @@
-import path from 'path';
+import path from "path";
 
-import config from '../config';
+import config from "../config";
 
 export const baseUrl = `http://${config.app.host}:${config.app.port}`;
 
@@ -23,14 +23,17 @@ export function getRequest(route: string): Request {
  * @param {Payload} payload The payload.
  * @returns
  */
-export function postRequest<Payload extends Record<string, unknown>>(route: string, payload: Payload) {
+export function postRequest<Payload extends Record<string, unknown>>(
+  route: string,
+  payload: Payload,
+) {
   const fullPath = path.join(baseUrl, route);
 
   return new Request(fullPath, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
 }

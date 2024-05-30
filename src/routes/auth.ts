@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 
-import * as authController from "../modules/auth";
 import config from "../config";
+import * as authController from "../modules/auth";
 
 export default (app: Elysia) =>
   app.get("/auth/success", async ({ query, redirect }) => {
@@ -9,7 +9,7 @@ export default (app: Elysia) =>
 
     if (tokens.data) {
       const { access_token, refresh_token } = tokens.data;
-    
+
       const url = `${config.app.url}?accessToken=${access_token}&refreshToken=${refresh_token}`;
       return redirect(url, 302);
     }

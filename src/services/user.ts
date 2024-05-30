@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
 
-import ConflictError from "../domain/exceptions/ConflictError";
-import ServerError from "../domain/exceptions/ServerError";
 import { db } from "../../drizzle/db";
 import { User, users } from "../../drizzle/schema";
+import ConflictError from "../domain/exceptions/ConflictError";
+import ServerError from "../domain/exceptions/ServerError";
 
 /**
  * Creates a new user.
@@ -16,7 +16,10 @@ import { User, users } from "../../drizzle/schema";
  */
 export async function create(payload: User): Promise<User> {
   try {
-    const user: User[] = await db.select().from(users).where(eq(users.id, payload.id));
+    const user: User[] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, payload.id));
 
     if (user.length > 0) {
       throw new ConflictError("User already exists!");
@@ -43,13 +46,13 @@ export async function create(payload: User): Promise<User> {
  */
 export async function fetchAll(): Promise<User[]> {
   const x = await db
-    .select({ 
-      id: users.id, 
-      email: users.email, 
+    .select({
+      id: users.id,
+      email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
       picture: users.picture,
-      phone: users.phone
+      phone: users.phone,
     })
     .from(users);
   return x;

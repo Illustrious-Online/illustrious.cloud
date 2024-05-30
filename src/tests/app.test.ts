@@ -1,17 +1,17 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from "bun:test";
 
-import { app } from '../app';
-import config from '../config';
-import { getRequest } from '.';
+import { getRequest } from ".";
+import { app } from "../app";
+import config from "../config";
 
-describe('Elysia', () => {
+describe("Elysia", () => {
   it('"/" returns config details ', async () => {
-    const response = await app.handle(getRequest('/'))
+    const response = await app.handle(getRequest("/"));
     const json = await response.json();
 
     expect(json).toMatchObject({
       name: config.app.name,
-      version: config.app.version
+      version: config.app.version,
     });
   });
 });

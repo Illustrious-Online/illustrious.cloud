@@ -8,8 +8,42 @@ import { User } from '../../drizzle/schema';
 import { mockModule } from '../utils/mock';
 import { mocks } from './setup';
 
-describe('Elysia', () => {
-  it('Auth Module: "/auth/success" throws exception for missing code', async () => {
+let testUser = {
+  sub: faker.string.uuid(),
+  email: faker.internet.email(),
+  given_name: faker.person.firstName(),
+  family_name: faker.person.lastName(),
+  phone_number: faker.phone.number(),
+  picture: faker.internet.url()
+}
+
+const fakeTokens = {
+  access_token: 'access_token',
+  refresh_token: 'refresh_token',
+  id_token: 'id_token',
+};
+
+const pushTestMocks = async () => {
+  mocks.push(
+    await mockModule("../services/auth.ts", () => {
+      return {
+        getTokens: () => {
+          return fakeTokens
+        }
+      };
+    }),
+    await mockModule("jwt-decode", () => {
+      return {
+        jwtDecode: () => {
+          return testUser
+        }
+      }
+    })
+  );
+}
+
+describe('Auth Module', () => {
+  it('/auth/success throws exception for missing code', async () => {
     const response = await app.handle(getRequest('/auth/success'));
     const json = await response.json();
 
@@ -19,10 +53,10 @@ describe('Elysia', () => {
     });
   });
 
-  it('Auth Module: "/auth/success" throws exception with invalid code', async () => {
+  it('/auth/success throws exception for invalid code', async () => {
     const response = await app.handle(getRequest('/auth/success?code=123'));
     expect(response.ok).toBeFalse;
-    
+
     const json = await response.json();
     expect(json).toMatchObject({
       message: "invalid_grant: Invalid authorization code",
@@ -30,11 +64,11 @@ describe('Elysia', () => {
     });
   });
 
-  it('Auth Module: "/auth/success" throws exception with invalid token', async () => {
+  it('/auth/success throws exception for missing token', async () => {
     mocks.push(
       await mockModule("../services/auth.ts", () => {
         return {
-          getTokens: () => { 
+          getTokens: () => {
             return {
               access_token: 'access_token',
               refresh_token: 'refresh_token',
@@ -44,7 +78,7 @@ describe('Elysia', () => {
         };
       })
     );
-    
+
     const response = await app.handle(getRequest('/auth/success?code=123'));
     const json = await response.json();
 
@@ -54,21 +88,17 @@ describe('Elysia', () => {
     });
   });
 
-  it('Auth Module: "/auth/success" successfully redirect brand new user', async () => {
+  it('/auth/success throws jwt decode error', async () => {
     mocks.push(
       await mockModule("../services/auth.ts", () => {
         return {
           getTokens: () => {
-            return {
-              access_token: 'access_token',
-              refresh_token: 'refresh_token',
-              id_token: 'id_token',
-            };
+            return fakeTokens
           }
         }
       })
     );
-    
+
     const response = await app.handle(getRequest('/auth/success?code=123'));
     const json = await response.json();
 
@@ -79,35 +109,9 @@ describe('Elysia', () => {
     });
   });
 
-  it('Auth Module: "/auth/success" successfully redirect brand new user', async () => {
-    mocks.push(
-      await mockModule("../services/auth.ts", () => {
-        return {
-          getTokens: () => {
-            return {
-              access_token: 'access_token',
-              refresh_token: 'refresh_token',
-              id_token: 'id_token',
-            };
-          }
-        };
-      }),
-      await mockModule("jwt-decode", () => {
-        return {
-          jwtDecode: () => {
-            return {
-              sub: faker.string.uuid(),
-              email: faker.internet.email(),
-              given_name: faker.person.firstName(),
-              family_name: faker.person.lastName(),
-              phone_number: faker.phone.number(),
-              picture: faker.internet.url()
-            }
-          }
-        }
-      })
-    );
-    
+  it('/auth/success successfully redirect brand new user', async () => {
+    await pushTestMocks();
+
     const response = await app.handle(getRequest('/auth/success?code=123'));
     const location = response.headers.get('location');
 
@@ -116,35 +120,9 @@ describe('Elysia', () => {
     expect(response.status).toBe(302);
   });
 
-  it('Auth Module: "/auth/success" successfully redirect brand new user', async () => {
-    mocks.push(
-      await mockModule("../services/auth.ts", () => {
-        return {
-          getTokens: () => {
-            return {
-              access_token: 'access_token',
-              refresh_token: 'refresh_token',
-              id_token: 'id_token',
-            };
-          }
-        };
-      }),
-      await mockModule("jwt-decode", () => {
-        return {
-          jwtDecode: () => {
-            return {
-              sub: faker.string.uuid(),
-              email: faker.internet.email(),
-              given_name: faker.person.firstName(),
-              family_name: faker.person.lastName(),
-              phone_number: faker.phone.number(),
-              picture: faker.internet.url()
-            }
-          }
-        }
-      })
-    );
-    
+  it('Auth Module: "/auth/success" successfully redirect with existing sub', async () => {
+    await pushTestMocks();
+
     const response = await app.handle(getRequest('/auth/success?code=123'));
     const location = response.headers.get('location');
 
@@ -153,35 +131,10 @@ describe('Elysia', () => {
     expect(response.status).toBe(302);
   });
 
-  it('Auth Module: "/auth/success" successfully redirect brand new user', async () => {
-    mocks.push(
-      await mockModule("../services/auth.ts", () => {
-        return {
-          getTokens: () => { 
-            return {
-              access_token: 'access_token',
-              refresh_token: 'refresh_token',
-              id_token: 'id_token',
-            };
-          }
-        };
-      }),
-      await mockModule("jwt-decode", () => {
-        return {
-          jwtDecode: () => {
-            return {
-              sub: faker.string.uuid(),
-              email: faker.internet.email(),
-              given_name: faker.person.firstName(),
-              family_name: faker.person.lastName(),
-              phone_number: faker.phone.number(),
-              picture: faker.internet.url()
-            }
-          }
-        }
-      })
-    );
-    
+  it('Auth Module: "/auth/success" successfully redirect brand with new sub', async () => {
+    testUser.sub = faker.string.uuid();
+    await pushTestMocks();
+
     const response = await app.handle(getRequest('/auth/success?code=123'));
     const location = response.headers.get('location');
 

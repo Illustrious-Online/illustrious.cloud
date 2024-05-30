@@ -57,19 +57,13 @@ export async function create(payload: {
       id: authId,
       sub
     });
-    
+
     await db.insert(userAuthentications).values({
       userId,
       authId,
     });
   } catch (e) {
-    const error = e as ServerError;
-
-    if (error.name === "ServerError" && error.code === 11000) {
-      throw new ConflictError("Authentication exists.");
-    }
-
-    throw error;
+    throw new ConflictError("Authentication exists.");
   }
 }
 

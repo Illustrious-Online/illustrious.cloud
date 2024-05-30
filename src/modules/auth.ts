@@ -44,6 +44,7 @@ export const create = async (code: string | undefined): Promise<SuccessResponse<
         picture: userinfo.picture ?? null,
         phone: userinfo.phone_number ?? null
       });
+      console.log(">>>>>> CREATED USER");
     }
 
     await authService.create({

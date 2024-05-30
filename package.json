@@ -2,7 +2,6 @@
   "name": "api.illustrious.cloud",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "bun run --watch src/app.ts",
     "docker:db": "docker compose -f docker-compose.db.yml up",
@@ -13,8 +12,7 @@
     "lint": "bunx @biomejs/biome lint --apply ./src",
     "format": "bunx @biomejs/biome format --write ./src",
     "check": "bunx @biomejs/biome check ./src",
-    "check:apply": "bunx @biomejs/biome check --apply ./src",
-    "test": "jest"
+    "check:apply": "bunx @biomejs/biome check --apply ./src"
   },
   "dependencies": {
     "@elysiajs/bearer": "^1.0.2",
@@ -40,12 +38,10 @@
     "axios": "^1.6.8",
     "bun-types": "latest",
     "drizzle-kit": "^0.21.0",
-    "jest": "^29.7.0",
     "jwks-rsa": "^3.1.0",
     "postgres": "^3.4.4",
     "qs": "^6.12.1",
     "semantic-release": "^23.0.8",
-    "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.9.3",
     "typescript": "^5.4.5",

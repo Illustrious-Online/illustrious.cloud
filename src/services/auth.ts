@@ -11,7 +11,6 @@ import config from "../config";
 
 import ConflictError from "../domain/exceptions/ConflictError";
 import ResponseError from "../domain/exceptions/ResponseError";
-import ServerError from "../domain/exceptions/ServerError";
 import { AuthError, Tokens } from "../domain/models/auth.models";
 
 export async function getTokens(code: string): Promise<Tokens> {
@@ -73,13 +72,7 @@ export async function create(payload: {
       authId,
     });
   } catch (e) {
-    const error = e as ServerError;
-
-    if (error.name === "ServerError" && error.code === 11000) {
-      throw new ConflictError("Authentication exists.");
-    }
-
-    throw error;
+    throw new ConflictError("Authentication exists.");
   }
 }
 

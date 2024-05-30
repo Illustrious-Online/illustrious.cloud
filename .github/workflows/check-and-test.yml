@@ -15,13 +15,6 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-      - name: Install spaces-cli
-        run: bun install -g spaces-cli
-      - name: Download .env file
-        run: |
-          spaces-cli down /api/development.env -o ".env" \
-            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
-            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       - name: Run Biome Checks

@@ -5,6 +5,7 @@ services:
   postgres:
     image: "postgres:latest"
     environment:
+      POSTGRES_HOST: localhost
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: illustrious
       POSTGRES_DB: illustrious

@@ -53,20 +53,16 @@ export async function create(payload: {
 }) {
   try {
     const { authId, userId, sub } = payload;
-    console.log('create auth');
-  
-    await db.insert(authentications).values({
+    const test = await db.insert(authentications).values({
       id: authId,
       sub
     });
-  
-    console.log('create userAuth');
+    
     await db.insert(userAuthentications).values({
       userId,
       authId,
     });
   } catch (e) {
-    console.log('create auth e', e);
     const error = e as ServerError;
 
     if (error.name === "ServerError" && error.code === 11000) {

@@ -17,8 +17,9 @@ export const create = async (code: string | undefined): Promise<SuccessResponse<
   const tokens = await authService.getTokens(code);
   const { access_token, id_token, refresh_token } = tokens as Tokens;
 
-  if (!access_token || !id_token || !refresh_token)
+  if (!access_token || !id_token || !refresh_token) {
     throw new ConflictError('Failed to obtain all required tokens');
+  }
 
   const userinfo: AuthUserInfo = jwtDecode(id_token);
   let userAuth: UserAuthentication

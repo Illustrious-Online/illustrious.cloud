@@ -4,7 +4,7 @@ import { Client } from "pg";
 import * as schema from "./schema";
 
 export const client = new Client({
-  host: '0.0.0.0',
+  host: 'localhost',
   port: Number(process.env.DB_PORT!),
   user: process.env.DB_USERNAME!,
   password: process.env.DB_PASSWORD!,
@@ -15,8 +15,9 @@ export const client = new Client({
           rejectUnauthorized: true,
           ca: fs.readFileSync("cert.crt").toString(),
         }
-      : undefined,
+      : false,
 });
 
+await client.connect();
 // { schema } is used for relational queries
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, { schema, logger: true });

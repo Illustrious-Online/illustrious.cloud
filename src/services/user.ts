@@ -16,9 +16,9 @@ import { User, users } from "../../drizzle/schema";
  */
 export async function create(payload: User): Promise<User> {
   try {
-    const user = await db.select().from(users).where(eq(users.id, payload.id));
+    const user: User[] = await db.select().from(users).where(eq(users.id, payload.id));
 
-    if (user) {
+    if (user.length > 0) {
       throw new ConflictError("User already exists!");
     }
 

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: ill-dash
 spec:
+  restartPolicy: Never
   replicas: 2
   selector:
     matchLabels:

@@ -4,8 +4,28 @@ on:
     branches-ignore:
       - main
 jobs:
-  check-and-test:
-    runs-on: ubuntu-latest
+  # Label of the container job
+  container-job:
+    # Containers must run in Linux based operating systems
+    runs-on: uubuntu-latest
+    # Docker Hub image that `container-job` executes in
+    container: node:latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: illustrious
+          POSTGRES_DB: illustrious
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,7 +39,7 @@ jobs:
         run: bun install -g spaces-cli
       - name: Download .env file
         run: |
-          spaces-cli down /api/development.env -o ".env" \
+          spaces-cli down /api/production.env -o ./.env \
             -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
             -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies

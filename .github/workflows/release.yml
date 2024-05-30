@@ -31,9 +31,16 @@ jobs:
         run: bun install -g spaces-cli
       - name: Download .env file
         run: |
-          spaces-cli down /api/development.env -o ./.env \
+          spaces-cli down /api/production.env -o ./.env \
             -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
             -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Download cert for database updates
+        run: |
+          spaces-cli down /api/cert.crt -o ./cert.crt \
+            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
+            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Push database migrations
+        run: bunx drizzle-kit migrate
       - name: Build Docker image
         run: docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
       - name: Authenticate with DO registry
@@ -42,8 +49,13 @@ jobs:
         run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+      - name: Download cert for database updates
+        run: |
+          spaces-cli down /api/deployment.yaml -o ./deployment.yaml \
+            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
+            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl apply -f $GITHUB_WORKSPACE/.ci/k8s-deploy.yml
+        run: kubectl apply -f $GITHUB_WORKSPACE/.ci/deployment.yml
       - name: Verify deployment
         run: kubectl rollout status deployment/ill-dashboard
       - name: Execute Semantic Release

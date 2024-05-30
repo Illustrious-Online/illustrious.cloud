@@ -1,2 +1,3 @@
 bun run docker:db &
+bun run db:migrate
 bun test

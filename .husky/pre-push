@@ -1,3 +1,2 @@
-bun run docker:db &
-bun run db:migrate
-bun test
+docker container kill $(docker ps | awk '/postgres/ {print $1}')
+bun run push:test

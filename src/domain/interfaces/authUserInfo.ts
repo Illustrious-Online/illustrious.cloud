@@ -1,15 +1,4 @@
-export interface Tokens {
-  access_token: string;
-  id_token: string;
-  refresh_token: string;
-}
-
-export interface AuthError {
-  error: string;
-  error_description: string;
-}
-
-export interface AuthUserInfo {
+export default interface AuthUserInfo {
   sub: string;
   name?: string;
   given_name?: string;

@@ -1,9 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 
-import { NotFoundError } from "elysia";
 import { getRequest } from ".";
-import { User } from "../../drizzle/schema";
 import { app } from "../app";
 import { mockModule } from "../utils/mock";
 import { mocks } from "./setup";

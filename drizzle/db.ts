@@ -14,7 +14,7 @@ export const client = new Client({
         rejectUnauthorized: true,
         ca: fs.readFileSync("cert.crt").toString(),
       }
-    : false,
+    : undefined,
 });
 
 await client.connect();

@@ -1,18 +1,21 @@
-import { eq } from "drizzle-orm";
-import { NotFoundError } from "elysia";
-
-import { db } from "../../drizzle/db";
-import {
-  UserAuthentication,
-  authentications,
-  userAuthentications,
-} from "../../drizzle/schema";
+import { eq } from "drizzle-orm/sql";
 import config from "../config";
 
+import { db } from "../../drizzle/db";
+import { authentications, userAuthentications } from "../../drizzle/schema";
 import ConflictError from "../domain/exceptions/ConflictError";
 import ResponseError from "../domain/exceptions/ResponseError";
-import { AuthError, Tokens } from "../domain/models/auth.models";
+import AuthError from "../domain/interfaces/authError";
+import Tokens from "../domain/interfaces/tokens";
 
+/**
+ * Gets authorization tokens for authentication
+ *
+ * @param code - The authentication code from the provider.
+ * @throws {ResponseError} If there is a failure from the authorization request.
+ * @throws {Error} If an error occurs while gathering the tokens.
+ * @returns {Tokens} A promise that resolves the authorization tokens.
+ */
 export async function getTokens(code: string): Promise<Tokens> {
   const headers = new Headers();
   headers.append("Content-Type", "application/x-www-form-urlencoded");
@@ -36,9 +39,9 @@ export async function getTokens(code: string): Promise<Tokens> {
     requestOptions,
   );
   const resJson = await response.json();
-  const e = resJson as AuthError;
 
   if (!response.ok) {
+    const e = resJson as AuthError;
     throw new ResponseError(
       response.status,
       `${e.error}: ${e.error_description}`,
@@ -51,9 +54,9 @@ export async function getTokens(code: string): Promise<Tokens> {
 /**
  * Creates a new authentication & relationship.
  *
- * @param payload - The user data to be created.
- * @throws {ConflictError} If a user with the same data already exists.
- * @throws {Error} If an error occurs while creating the user.
+ * @param payload - The authentication & user identifiers.
+ * @throws {ConflictError} If an authentication with the same data already exists.
+ * @throws {Error} If an error occurs while creating the authentication.
  */
 export async function create(payload: {
   userId: string;
@@ -62,10 +65,6 @@ export async function create(payload: {
 }) {
   try {
     const { authId, userId, sub } = payload;
-    const test = await db.insert(authentications).values({
-      id: authId,
-      sub,
-    });
 
     await db.insert(userAuthentications).values({
       userId,
@@ -77,22 +76,36 @@ export async function create(payload: {
 }
 
 /**
- * Fetches a user by id.
+ * Logs out the current user from the oauth provider.
  *
- * @param {string} sub The id of the user to fetch.
- * @returns {Promise<UserAuthentication>} A promise that resolves array User objects.
+ * @throws {Error} If an error occurs while logging out the user.
  */
-export async function fetchUserAuthBySub(
-  sub: string,
-): Promise<UserAuthentication> {
-  const result = await db
-    .select()
-    .from(userAuthentications)
-    .where(eq(userAuthentications.authId, sub));
+export async function logout(): Promise<void> {
+  const headers = new Headers();
+  headers.append("Content-Type", "application/x-www-form-urlencoded");
 
-  if (result.length > 0) {
-    return result[0];
-  }
+  const body = new URLSearchParams();
+  body.append("client_id", config.auth.clientId);
+  body.append("returnTo", `${config.app.dashboardUrl}`);
 
-  throw new NotFoundError();
+  const requestOptions = {
+    method: "GET",
+    headers,
+    body,
+  };
+
+  await fetch(`${config.auth.url}/v2/logout`, requestOptions);
+}
+
+/**
+ * Removes authentication based on provided ID.
+ *
+ * @param id - The identifier of the authentication to be deleted.
+ * @throws {Error} If an error occurs while removing the authentication.
+ */
+export async function deleteOne(id: string): Promise<void> {
+  await db
+    .delete(userAuthentications)
+    .where(eq(userAuthentications.authId, id));
+  await db.delete(authentications).where(eq(authentications.id, id));
 }

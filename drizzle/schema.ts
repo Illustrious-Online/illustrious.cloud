@@ -22,6 +22,7 @@ export type InsertAuthentication = typeof authentications.$inferInsert;
 
 export const invoices = pgTable("Invoice", {
   id: text("id").primaryKey().notNull(),
+  owner: text("owner").notNull(),
   paid: boolean("paid").notNull(),
   value: numeric("value", { precision: 65, scale: 30 }).notNull(),
   start: timestamp("start", { precision: 3, mode: "string" }).notNull(),
@@ -57,8 +58,9 @@ export type InsertOrgUser = typeof orgUsers.$inferInsert;
 
 export const reports = pgTable("Report", {
   id: text("id").primaryKey().notNull(),
+  owner: text("owner").notNull(),
   rating: integer("rating").notNull(),
-  notes: text("notes").notNull(),
+  notes: text("notes"),
 });
 
 export type Report = typeof reports.$inferSelect;
@@ -170,3 +172,61 @@ export const userReports = pgTable(
 
 export type UserReport = typeof userReports.$inferSelect;
 export type InsertUserReport = typeof userReports.$inferInsert;
+
+export const orgReports = pgTable(
+  "OrgReport",
+  {
+    orgId: text("orgId")
+      .notNull()
+      .references(() => orgs.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    reportId: text("reportId")
+      .notNull()
+      .references(() => reports.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => {
+    return {
+      OrgReport_pkey: primaryKey({
+        columns: [table.orgId, table.reportId],
+        name: "OrgReport_pkey",
+      }),
+    };
+  },
+);
+
+export type OrgReport = typeof orgReports.$inferSelect;
+export type InsertOrgReport = typeof orgReports.$inferInsert;
+
+export const orgInvoices = pgTable(
+  "OrgInvoice",
+  {
+    orgId: text("orgId")
+      .notNull()
+      .references(() => orgs.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    invoiceId: text("invoiceId")
+      .notNull()
+      .references(() => invoices.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => {
+    return {
+      OrgInvoice_pkey: primaryKey({
+        columns: [table.orgId, table.invoiceId],
+        name: "OrgInvoice_pkey",
+      }),
+    };
+  },
+);
+
+export type OrgInvoice = typeof orgInvoices.$inferSelect;
+export type InsertOrgInvoice = typeof orgInvoices.$inferInsert;

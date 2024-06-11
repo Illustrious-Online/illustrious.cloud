@@ -16,6 +16,7 @@ export default (app: Elysia) =>
     await fetch(`${config.auth.url}/pem`).then((response) => {
       if (response.body) {
         let writer = fs.createWriteStream("public.pem");
+        // @ts-expect-error
         Readable.fromWeb(response.body).pipe(writer);
       }
     });
@@ -25,10 +26,11 @@ export default (app: Elysia) =>
 
     try {
       jwt.verify(bearer, secret, { algorithms: ["RS256"] });
-      return true;
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
         throw new UnauthorizedError(error.message);
       }
     }
+
+    return true;
   });

@@ -1,16 +1,32 @@
 import { Context } from "elysia";
 
+import { jwtDecode } from "jwt-decode";
 import { Invoice } from "../../drizzle/schema";
-import { ContextWithJWT } from "../domain/types/extends/ContextWithJWT";
+import BadRequestError from "../domain/exceptions/BadRequestError";
+import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
+import { SubmitInvoice } from "../domain/interfaces/invoices";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
 import * as invoiceService from "../services/invoice";
+import * as userService from "../services/user";
+import { getSub } from "../utils/extract-sub";
 
 export const create = async (
-  context: ContextWithJWT,
+  context: Context,
 ): Promise<SuccessResponse<Invoice>> => {
-  const body = context.body as Invoice;
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
+  }
 
-  const data = await invoiceService.create(body);
+  const body = context.body as SubmitInvoice;
+  const sub = await getSub(context.headers.authorization);
+  const user = await userService.validatePermissions(sub, body.org);
+  const data = await invoiceService.create({
+    user: user.id,
+    org: body.org,
+    invoice: body.invoice,
+  });
 
   return {
     data,
@@ -18,21 +34,70 @@ export const create = async (
   };
 };
 
-export const fetchAll = async () => {
-  const users = await invoiceService.fetchAll();
+/**
+ * Fetches a report by id.
+ *
+ * @param {string} id The id of the user to fetch.
+ * @returns {Promise<Report>} A promise that resolves array User objects.
+ */
+export const fetchOne = async (context: Context) => {
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
+  }
+
+  const { id } = context.params;
+  const sub = await getSub(context.headers.authorization);
+  const user = await userService.fetchOne({ sub });
+  const data = await invoiceService.fetchById({
+    id,
+    userId: user.id,
+  });
 
   return {
     message: "Invoice fetched successfully.",
-    data: users,
+    data,
   };
 };
 
-export const fetchOne = async (context: Context) => {
-  const { id } = context.params;
-  const user = await invoiceService.fetchById(id);
+export const update = async (context: Context) => {
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
+  }
+
+  const body = context.body as SubmitInvoice;
+  const sub = await getSub(context.headers.authorization);
+
+  await userService.validatePermissions(sub, body.org);
+  const data = await invoiceService.update(body.invoice);
 
   return {
-    message: "Invoice fetched successfully.",
-    data: user,
+    data,
+    message: "Invoice updated successfully.",
+  };
+};
+
+export const deleteOne = async (context: Context) => {
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
+  }
+
+  const sub = await getSub(context.headers.authorization);
+  const { id, org } = context.params;
+
+  if (!id) {
+    throw new BadRequestError("Invoice to delete is required.");
+  }
+
+  await userService.validatePermissions(sub, org);
+  await invoiceService.deleteOne(id);
+
+  return {
+    message: "Invoice deleted successfully.",
   };
 };

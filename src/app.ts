@@ -18,10 +18,6 @@ Sentry.init({
 
 export const app = new Elysia()
   .use(cors())
-  .use(swagger())
-  .use(bearer())
-  .use(loggerPlugin)
-  .use(errorPlugin)
   .use(
     swagger({
       path: "/docs",
@@ -30,9 +26,26 @@ export const app = new Elysia()
           title: "Illustrious Cloud API Docs",
           version: config.app.version,
         },
+        security: [{ JwtAuth: [] }],
+        components: {
+          securitySchemes: {
+            JwtAuth: {
+              type: "http",
+              scheme: "bearer",
+              bearerFormat: "JWT",
+              description: "Enter JWT Bearer token **_only_**",
+            },
+          },
+        },
+      },
+      swaggerOptions: {
+        persistAuthorization: true,
       },
     }),
   )
+  .use(bearer())
+  .use(loggerPlugin)
+  .use(errorPlugin)
   .get("/", () => ({
     name: config.app.name,
     version: config.app.version,

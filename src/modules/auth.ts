@@ -1,11 +1,12 @@
 import { jwtDecode } from "jwt-decode";
 import { v4 as uuidv4 } from "uuid";
 
-import { UserAuthentication } from "../../drizzle/schema";
+import { User } from "../../drizzle/schema";
 import ConflictError from "../domain/exceptions/ConflictError";
-import { AuthUserInfo, Tokens } from "../domain/models/auth.models";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
 
+import AuthUserInfo from "../domain/interfaces/authUserInfo";
+import Tokens from "../domain/interfaces/tokens";
 import * as authService from "../services/auth";
 import * as userService from "../services/user";
 
@@ -24,17 +25,17 @@ export const create = async (
   }
 
   const userinfo: AuthUserInfo = jwtDecode(id_token);
-  let userAuth: UserAuthentication;
+  let user: User;
 
   try {
-    userAuth = await authService.fetchUserAuthBySub(userinfo.sub);
+    user = await userService.fetchOne({ sub: userinfo.sub });
   } catch {
     let authId = uuidv4();
     let userId;
 
     try {
-      const findByEmail = await userService.fetchByEmail(userinfo.email);
-      userId = findByEmail.id;
+      user = await userService.fetchOne({ email: userinfo.email });
+      userId = user.id;
     } catch {
       userId = uuidv4();
 
@@ -58,5 +59,19 @@ export const create = async (
   return {
     data: tokens,
     message: "Obtained tokens successfully!",
+  };
+};
+
+export const logout = async (): Promise<void> => {
+  await authService.logout();
+};
+
+export const deleteOne = async (
+  id: string,
+): Promise<SuccessResponse<String>> => {
+  await authService.deleteOne(id);
+
+  return {
+    message: "Successfully deleted requested authentaction",
   };
 };

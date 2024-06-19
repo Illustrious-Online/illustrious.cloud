@@ -46,4 +46,4 @@ jobs:
       - name: Run Biome Checks
         run: bun run check
       - name: Run unit tests
-        run: bun run test
+        run: bun run test:ci

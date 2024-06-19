@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { Readable } from "stream";
 import { Elysia } from "elysia";
-import jwt, { JsonWebTokenError } from "jsonwebtoken";
+import { JsonWebTokenError, verify } from "jsonwebtoken";
 
 import config from "../config";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
@@ -25,7 +25,7 @@ export default (app: Elysia) =>
     fs.unlinkSync("public.pem");
 
     try {
-      jwt.verify(bearer, secret, { algorithms: ["RS256"] });
+      verify(bearer, secret, { algorithms: ["RS256"] });
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
         throw new UnauthorizedError(error.message);

@@ -22,6 +22,20 @@
       "when": 1717442909639,
       "tag": "0002_omniscient_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1718731997291,
+      "tag": "0003_fair_guardsmen",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1718732714705,
+      "tag": "0004_dusty_king_bedlam",
+      "breakpoints": true
     }
   ]
 }

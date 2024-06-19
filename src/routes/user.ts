@@ -58,19 +58,23 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error Swagger plugin disagrees with context
     .get("/users", userController.fetchUser, {
-      body: t.Optional(
+      query: t.Optional(
         t.Object({
           include: t.Optional(t.String()),
         }),
       ),
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       response: {
         200: t.Object(
           {
             message: t.String(),
             data: t.Object({
               user: User,
-              invoices: t.Array(Invoice),
-              reports: t.Array(Report),
+              invoices: t.Optional(t.Array(Invoice)),
+              reports: t.Optional(t.Array(Report)),
+              orgs: t.Optional(t.Array(Org)),
             }),
           },
           {
@@ -97,11 +101,18 @@ export default (app: Elysia) =>
       params: t.Object({
         type: t.String(),
       }),
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       response: {
         200: t.Object(
           {
             message: t.String(),
-            data: t.Array(Invoice) || t.Array(Report) || t.Array(Org),
+            data: t.Object({
+              orgs: t.Optional(t.Array(Org)),
+              reports: t.Optional(t.Array(Report)),
+              invoices: t.Optional(t.Array(Invoice)),
+            }),
           },
           {
             description: "Found resources based on user ID",
@@ -125,6 +136,9 @@ export default (app: Elysia) =>
     // @ts-expect-error Swagger plugin disagrees with context
     .post("/users", userController.create, {
       body: User,
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       response: {
         200: t.Object(
           {
@@ -166,6 +180,9 @@ export default (app: Elysia) =>
     // @ts-expect-error Swagger plugin disagrees when adding 200 response
     .put("/users/:id", userController.update, {
       body: User,
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       response: {
         200: t.Object(
           {
@@ -208,6 +225,9 @@ export default (app: Elysia) =>
     .delete("/users/:id", userController.deleteOne, {
       params: t.Object({
         id: t.String(),
+      }),
+      headers: t.Object({
+        authorization: t.String(),
       }),
       response: {
         200: t.Object(

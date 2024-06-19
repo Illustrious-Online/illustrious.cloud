@@ -11,6 +11,11 @@ export interface SubmitInvoice {
   invoice: Invoice;
 }
 
+export interface FetchInvoice {
+  id: string;
+  userId?: string;
+}
+
 export interface FetchAllInvoices {
   type: string;
   id: string;

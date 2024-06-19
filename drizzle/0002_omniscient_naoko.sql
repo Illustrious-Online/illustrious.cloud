@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS "OrgReport" (
 --> statement-breakpoint
 ALTER TABLE "Report" ALTER COLUMN "notes" DROP NOT NULL;--> statement-breakpoint
 ALTER TABLE "Invoice" ADD COLUMN "owner" text NOT NULL;--> statement-breakpoint
-ALTER TABLE "Org" ADD COLUMN "owner" text NOT NULL;--> statement-breakpoint
 ALTER TABLE "Report" ADD COLUMN "owner" text NOT NULL;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "OrgInvoice" ADD CONSTRAINT "OrgInvoice_orgId_Org_id_fk" FOREIGN KEY ("orgId") REFERENCES "public"."Org"("id") ON DELETE restrict ON UPDATE cascade;

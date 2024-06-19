@@ -1,44 +1,55 @@
 import { Elysia, t } from "elysia";
 import config from "../config";
 import * as authController from "../modules/auth";
+import authPlugin from "../plugins/auth";
 
 export default (app: Elysia) =>
   app
     .get(
       "/auth/success",
-      async ({ query, redirect }) => {
+      async ({ redirect, query }) => {
         const tokens = await authController.create(query.code);
-
-        if (tokens.data) {
-          const { access_token, refresh_token } = tokens.data;
-
-          const url = `${config.app.url}?accessToken=${access_token}&refreshToken=${refresh_token}`;
-          return redirect(url, 302);
-        }
+        const { access_token, refresh_token } = tokens;
+        return redirect(
+          `${config.app.url}?accessToken=${access_token}&refreshToken=${refresh_token}`,
+          302,
+        );
       },
       {
         query: t.Object({
           code: t.String(),
         }),
         response: {
-          302: t.Any({
+          301: t.Any({
             description:
               "Redirects browser/request to redirect URL with tokens",
           }),
         },
       },
     )
-    .get("/auth/logout", authController.logout, {
-      response: {
-        302: t.Any({
-          description: "Redirects browser/request to redirect URL",
-        }),
+    .get(
+      "/auth/logout",
+      ({ redirect }) => {
+        const { clientId } = config.auth;
+        const { dashboardUrl } = config.app;
+
+        return redirect(
+          `${config.auth.url}/v2/logout?client_id=${clientId}&returnTo=${dashboardUrl}`,
+        );
       },
-    })
+      {
+        response: {
+          302: t.Any({
+            description: "Redirects browser/request to redirect URL",
+          }),
+        },
+      },
+    )
+    .use(authPlugin)
     // @ts-expect-error Swagger plugin disagrees when adding 200 response
     .delete("/auth/delete/:id", authController.deleteOne, {
       params: t.Object({
-        code: t.String(),
+        id: t.String(),
       }),
       response: {
         200: t.Object(

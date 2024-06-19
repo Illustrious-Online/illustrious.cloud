@@ -1,6 +1,5 @@
 [test]
 coverage = true
 coverageSkipTestFiles = true
-# coverageThreshold = 0.25
-coverageIgnoreSourcemaps = true
-preload = ["./src/tests/setup.ts"]
+# Coverage for functions at 0.3 temporarily for drizzle schema testing.
+coverageThreshold = { lines = 0.7, functions = 0.3 }

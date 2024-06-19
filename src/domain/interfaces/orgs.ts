@@ -1,9 +1,8 @@
-import { Report } from "../../../drizzle/schema";
+import { Org, Report } from "../../../drizzle/schema";
 
-export interface CreateReport {
+export interface CreateOrg {
   user: string;
-  org: string;
-  report: Report;
+  org: Org;
 }
 
 export interface SubmitReport {
@@ -13,7 +12,7 @@ export interface SubmitReport {
 
 export interface FetchReport {
   id: string;
-  userId: string;
+  userId?: string;
 }
 
 export interface FetchAllReports {

@@ -12,9 +12,9 @@ export default (app: Elysia) =>
       params: t.Object({
         id: t.String(),
       }),
-      body: t.Optional(
+      query: t.Optional(
         t.Object({
-          include: t.Optional(t.String()),
+          include: t.String(),
         }),
       ),
       response: {
@@ -23,9 +23,9 @@ export default (app: Elysia) =>
           data: t.Object(
             {
               org: Org,
-              invoices: t.Array(Invoice),
-              reports: t.Array(Report),
-              users: t.Array(User),
+              invoices: t.Optional(t.Array(Invoice)),
+              reports: t.Optional(t.Array(Report)),
+              users: t.Optional(t.Array(User)),
             },
             {
               description: "Successfully found the organization",
@@ -48,7 +48,7 @@ export default (app: Elysia) =>
       },
     })
     // @ts-expect-error Swagger plugin disagrees with context
-    .get("/orgs/resource/:type/:id", orgController.fetchResources, {
+    .get("/orgs/res/:type/:id", orgController.fetchResources, {
       params: t.Object({
         type: t.String(),
         id: t.String(),
@@ -57,7 +57,11 @@ export default (app: Elysia) =>
         200: t.Object(
           {
             message: t.String(),
-            data: t.Array(Invoice) || t.Array(Report) || t.Array(User),
+            data: t.Object({
+              orgs: t.Optional(t.Array(Org)),
+              reports: t.Optional(t.Array(Report)),
+              invoices: t.Optional(t.Array(Invoice)),
+            }),
           },
           {
             description: "Found resources based on organization ID",

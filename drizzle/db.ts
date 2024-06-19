@@ -19,4 +19,4 @@ export const client = new Client({
 
 await client.connect();
 // { schema } is used for relational queries
-export const db = drizzle(client, { schema, logger: true });
+export const db = drizzle(client, { schema, logger: false });

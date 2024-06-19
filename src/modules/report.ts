@@ -1,7 +1,6 @@
 import { Context } from "elysia";
 
 import { Report } from "../../drizzle/schema";
-import BadRequestError from "../domain/exceptions/BadRequestError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import { SubmitReport } from "../domain/interfaces/reports";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
@@ -12,14 +11,9 @@ import { getSub } from "../utils/extract-sub";
 export const create = async (
   context: Context,
 ): Promise<SuccessResponse<Report>> => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers as { authorization: string };
   const body = context.body as SubmitReport;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization);
   const user = await userService.validatePermissions(sub, body.org);
   const data = await reportService.create({
     user: user.id,
@@ -34,16 +28,11 @@ export const create = async (
 };
 
 export const fetchOne = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers as { authorization: string };
   const { id } = context.params;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization);
   const user = await userService.fetchOne({ sub });
-  const data = await reportService.fetchById({
+  const data = await reportService.fetchOne({
     id,
     userId: user.id,
   });
@@ -55,14 +44,9 @@ export const fetchOne = async (context: Context) => {
 };
 
 export const update = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers as { authorization: string };
   const body = context.body as SubmitReport;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization);
 
   await userService.validatePermissions(sub, body.org);
   const data = await reportService.update(body.report);
@@ -74,18 +58,9 @@ export const update = async (context: Context) => {
 };
 
 export const deleteOne = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
-  const sub = await getSub(context.headers.authorization);
+  const { authorization } = context.headers as { authorization: string };
+  const sub = await getSub(authorization);
   const { id, org } = context.params;
-
-  if (!id) {
-    throw new BadRequestError("Report to delete is required.");
-  }
 
   await userService.validatePermissions(sub, org);
   await reportService.deleteOne(id);

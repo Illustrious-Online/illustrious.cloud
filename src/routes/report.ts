@@ -34,7 +34,10 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error
     .post("/reports", reportController.create, {
-      body: Report,
+      body: t.Object({
+        org: t.String(),
+        report: Report,
+      }),
       response: {
         200: t.Object(
           {
@@ -75,7 +78,10 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error
     .put("/reports/:id", reportController.update, {
-      body: Report,
+      body: t.Object({
+        org: t.String(),
+        report: Report,
+      }),
       response: {
         200: t.Object(
           {

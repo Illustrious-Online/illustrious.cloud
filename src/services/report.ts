@@ -4,77 +4,61 @@ import { NotFoundError } from "elysia";
 import { db } from "../../drizzle/db";
 import {
   Report,
+  Role,
   orgReports,
   orgUsers,
+  orgs,
   reports,
   userReports,
 } from "../../drizzle/schema";
 import ConflictError from "../domain/exceptions/ConflictError";
 import ServerError from "../domain/exceptions/ServerError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { CreateReport } from "../domain/interfaces/reports";
-import { Roles } from "../domain/interfaces/roles";
+import { CreateReport, FetchReport } from "../domain/interfaces/reports";
+import { UserRole } from "../domain/types/UserRole";
 
 /**
- * Creates a new user.
+ * Creates a new Report.
  *
- * @param payload - The user data to be created.
- * @returns {Promise<Report>} A promise that resolves to the created user.
- * @throws {ConflictError} If a user with the same data already exists.
- * @throws {Error} If an error occurs while creating the user.
+ * @param payload - The Report data to be created.
+ * @returns {Promise<Report>} A promise that resolves to the created Report.
+ * @throws {ConflictError} If an Report with the same data already exists.
+ * @throws {Error} If an error occurs while creating the Report.
  */
 export async function create(payload: CreateReport): Promise<Report> {
-  try {
-    const { user, org, report } = payload;
-    const foundReport = await db
-      .select()
-      .from(reports)
-      .where(eq(reports.id, report.id));
+  const { user, org, report } = payload;
+  const foundReport = await db
+    .select()
+    .from(reports)
+    .where(eq(reports.id, report.id));
 
-    if (foundReport) {
-      throw new ConflictError("Report already exists!");
-    }
-
-    const result = await db.insert(reports).values(report).returning();
-
-    await db.insert(userReports).values({
-      userId: user,
-      reportId: report.id,
-    });
-
-    await db.insert(orgReports).values({
-      orgId: org,
-      reportId: report.id,
-    });
-
-    return result[0];
-  } catch (e) {
-    const error = e as ServerError;
-
-    if (error.name === "ServerError" && error.code === 11000) {
-      throw new ConflictError("Report exists.");
-    }
-
-    throw error;
+  if (foundReport.length > 0) {
+    throw new ConflictError("Report already exists!");
   }
+
+  const result = await db.insert(reports).values(report).returning();
+
+  await db.insert(userReports).values({
+    userId: user,
+    reportId: report.id,
+  });
+
+  await db.insert(orgReports).values({
+    orgId: org,
+    reportId: report.id,
+  });
+
+  return result[0];
 }
 
 /**
- * Fetches a report by id.
+ * Fetches an Report by id.
  *
- * @param {string} id The id of the user to fetch.
- * @returns {Promise<Report>} A promise that resolves array User objects.
+ * @param payload - The id of the Report to fetch; optional userId to validate relationship.
+ * @returns {Promise<Report>} A promise that resolves the Report object.
  */
-export async function fetchById(payload: {
-  id: string;
-  userId?: string;
-}): Promise<Report> {
+export async function fetchOne(payload: FetchReport): Promise<Report> {
   const { userId, id } = payload;
-
-  if (!userId || !id) {
-    throw new ConflictError("Unable to continue: Missing search criteria!");
-  }
-
   const usersReport = await db
     .select()
     .from(userReports)
@@ -87,10 +71,12 @@ export async function fetchById(payload: {
       .where(eq(orgReports.reportId, id));
 
     if (reportOrg.length === 0) {
-      throw new ConflictError("Unable to find org associated with the report");
+      throw new UnauthorizedError(
+        "User does not have direct association this Report.",
+      );
     }
 
-    const userOrg = await db
+    const users = await db
       .select()
       .from(orgUsers)
       .where(
@@ -98,17 +84,22 @@ export async function fetchById(payload: {
           eq(orgUsers.userId, userId),
           eq(orgUsers.orgId, reportOrg[0].orgId),
         ),
-      );
+      )
+      .innerJoin(orgs, eq(orgs.id, reportOrg[0].orgId));
 
-    if (userOrg.length === 0) {
-      throw new ConflictError("Unable to find org associated with the user");
+    if (users.length !== 1) {
+      throw new UnauthorizedError(
+        "User does not have and Org assocation this Report.",
+      );
     }
 
-    const roleIndex = Object.keys(Roles).indexOf(userOrg[0].role);
+    const orgUser = users[0].OrgUser;
+    const clientIndex = Object.keys(UserRole).indexOf("CLIENT");
+    const roleIndex = Object.keys(UserRole).indexOf(orgUser.role);
 
-    if (roleIndex !== Roles.ADMIN && roleIndex !== Roles.OWNER) {
+    if (roleIndex < clientIndex) {
       throw new UnauthorizedError(
-        "Unable to continue: User is not have sufficient permissions",
+        "User does not have permissions to access this Report.",
       );
     }
   }
@@ -122,6 +113,12 @@ export async function fetchById(payload: {
   return data[0];
 }
 
+/**
+ * Updates a Report.
+ *
+ * @param payload - The new Report object to update.
+ * @returns {Promise<Report>} A promise that resolves to an Report object.
+ */
 export async function update(payload: Report): Promise<Report> {
   const { id, owner, rating, notes } = payload;
   const foundReport = await db.select().from(reports).where(eq(reports.id, id));
@@ -147,9 +144,14 @@ export async function update(payload: Report): Promise<Report> {
   return result[0];
 }
 
+/**
+ * Removes a Report and relationships.
+ *
+ * @param invoiceId - The Report ID to be removed.
+ * @throws {ConflictError} If a user with the same data already exists.
+ */
 export async function deleteOne(reportId: string): Promise<void> {
   db.delete(reports).where(eq(reports.id, reportId));
   db.delete(userReports).where(eq(userReports.reportId, reportId));
-
-  throw new ConflictError("Failed to delete the reports");
+  db.delete(orgReports).where(eq(orgReports.reportId, reportId));
 }

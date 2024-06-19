@@ -17,6 +17,7 @@ export default (app: Elysia) =>
       }
 
       if (
+        handler.error instanceof BadRequestError ||
         handler.error instanceof ConflictError ||
         handler.error instanceof UnauthorizedError ||
         handler.error instanceof ResponseError

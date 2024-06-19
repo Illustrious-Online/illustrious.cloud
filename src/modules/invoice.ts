@@ -1,8 +1,6 @@
 import { Context } from "elysia";
 
-import { jwtDecode } from "jwt-decode";
 import { Invoice } from "../../drizzle/schema";
-import BadRequestError from "../domain/exceptions/BadRequestError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import { SubmitInvoice } from "../domain/interfaces/invoices";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
@@ -34,12 +32,6 @@ export const create = async (
   };
 };
 
-/**
- * Fetches a report by id.
- *
- * @param {string} id The id of the user to fetch.
- * @returns {Promise<Report>} A promise that resolves array User objects.
- */
 export const fetchOne = async (context: Context) => {
   if (!context.headers.authorization) {
     throw new UnauthorizedError(
@@ -89,10 +81,6 @@ export const deleteOne = async (context: Context) => {
 
   const sub = await getSub(context.headers.authorization);
   const { id, org } = context.params;
-
-  if (!id) {
-    throw new BadRequestError("Invoice to delete is required.");
-  }
 
   await userService.validatePermissions(sub, org);
   await invoiceService.deleteOne(id);

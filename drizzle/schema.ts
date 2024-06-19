@@ -24,10 +24,10 @@ export const invoices = pgTable("Invoice", {
   id: text("id").primaryKey().notNull(),
   owner: text("owner").notNull(),
   paid: boolean("paid").notNull(),
-  value: numeric("value", { precision: 65, scale: 30 }).notNull(),
-  start: timestamp("start", { precision: 3, mode: "string" }).notNull(),
-  end: timestamp("end", { precision: 3, mode: "string" }).notNull(),
-  due: timestamp("due", { precision: 3, mode: "string" }).notNull(),
+  value: numeric("value", { precision: 12, scale: 2 }).notNull(),
+  start: timestamp("start", { mode: "date" }).notNull(),
+  end: timestamp("end", { mode: "date" }).notNull(),
+  due: timestamp("due", { mode: "date" }).notNull(),
 });
 
 export type Invoice = typeof invoices.$inferSelect;

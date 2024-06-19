@@ -2,7 +2,6 @@ import { Context } from "elysia";
 
 import { jwtDecode } from "jwt-decode";
 import { Invoice, Org, Report, User } from "../../drizzle/schema";
-import BadRequestError from "../domain/exceptions/BadRequestError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
 import * as orgService from "../services/org";
@@ -12,8 +11,19 @@ import { getSub } from "../utils/extract-sub";
 export const create = async (
   context: Context,
 ): Promise<SuccessResponse<Org>> => {
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
+  }
+
   const body = context.body as Org;
-  const data = await orgService.create(body);
+  const sub = await getSub(context.headers.authorization);
+  const user = await userService.fetchOne({ sub });
+  const data = await orgService.create({
+    user: user.id,
+    org: body,
+  });
 
   return {
     data,
@@ -23,7 +33,7 @@ export const create = async (
 
 export const fetchOrg = async (context: Context) => {
   const { id } = context.params;
-  const { include } = context.body as { include?: string };
+  const { include } = context.query;
   const data = await orgService.fetchOne(id);
   const result: {
     org: Org;
@@ -32,24 +42,22 @@ export const fetchOrg = async (context: Context) => {
     users?: User[];
   } = { org: data };
 
-  if (include) {
-    if (include.includes("invoices")) {
-      const orgInvoices = (await orgService.fetchAll(
-        id,
-        "invoices",
-      )) as Invoice[];
-      result.invoices = orgInvoices;
-    }
+  if (include?.includes("invoices")) {
+    const orgInvoices = (await orgService.fetchAll(
+      id,
+      "invoices",
+    )) as Invoice[];
+    result.invoices = orgInvoices;
+  }
 
-    if (include.includes("reports")) {
-      const orgReports = (await orgService.fetchAll(id, "reports")) as Report[];
-      result.reports = orgReports;
-    }
+  if (include?.includes("reports")) {
+    const orgReports = (await orgService.fetchAll(id, "reports")) as Report[];
+    result.reports = orgReports;
+  }
 
-    if (include.includes("users")) {
-      const orgUsers = (await orgService.fetchAll(id, "users")) as User[];
-      result.users = orgUsers;
-    }
+  if (include?.includes("users")) {
+    const orgUsers = (await orgService.fetchAll(id, "users")) as User[];
+    result.users = orgUsers;
   }
 
   return {
@@ -59,18 +67,14 @@ export const fetchOrg = async (context: Context) => {
 };
 
 export const fetchResources = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
   const { id, type } = context.params;
   const data = await orgService.fetchAll(id, type);
 
   return {
-    data,
-    message: "Organizations fetched successfully.",
+    data: {
+      [type]: data,
+    },
+    message: "Organization resources fetched successfully.",
   };
 };
 
@@ -89,28 +93,24 @@ export const update = async (context: Context) => {
 
   return {
     data,
-    message: "Report updated successfully.",
+    message: "Organization updated successfully.",
   };
 };
 
 export const deleteOne = async (context: Context) => {
-  if (context.headers.authorization) {
-    const token = jwtDecode(context.headers.authorization);
-    const { id } = context.params;
-    const { sub } = token;
-
-    if (!sub) {
-      throw new BadRequestError("Authentication ID is missing.");
-    }
-
-    if (!id) {
-      throw new BadRequestError("Organization to delete is required.");
-    }
-
-    await orgService.deleteOne(sub, id);
-
-    return {
-      message: "Organization deleted successfully.",
-    };
+  if (!context.headers.authorization) {
+    throw new UnauthorizedError(
+      "Unable to continue: Cannot find token containing user sub",
+    );
   }
+
+  const { id } = context.params;
+  const sub = await getSub(context.headers.authorization);
+  const user = await userService.fetchOne({ sub });
+
+  await orgService.deleteOne(user.id, id);
+
+  return {
+    message: "Organization deleted successfully.",
+  };
 };

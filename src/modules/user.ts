@@ -1,20 +1,15 @@
 import { Context } from "elysia";
 
 import { Invoice, Org, Report, User } from "../../drizzle/schema";
-import BadRequestError from "../domain/exceptions/BadRequestError";
+import ConflictError from "../domain/exceptions/ConflictError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
 import SuccessResponse from "../domain/types/generic/SuccessResponse";
 import * as userService from "../services/user";
 import { getSub } from "../utils/extract-sub";
 
 export const me = async (context: Context): Promise<SuccessResponse<User>> => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
-  const sub = await getSub(context.headers.authorization);
+  const { authorization } = context.headers as { authorization: string };
+  const sub = await getSub(authorization);
 
   if (!sub) {
     throw new UnauthorizedError("Authorization missing user sub value");
@@ -41,14 +36,9 @@ export const create = async (
 };
 
 export const fetchUser = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
-  const { include } = context.body as { include?: string };
-  const sub = await getSub(context.headers.authorization);
+  const { authorization } = context.headers as { authorization: string };
+  const { include } = context.query;
+  const sub = await getSub(authorization);
   const user = await userService.fetchOne({ sub });
   const result: {
     user: User;
@@ -59,7 +49,7 @@ export const fetchUser = async (context: Context) => {
 
   if (include) {
     if (include.includes("invoices")) {
-      const userInvoices = (await userService.fetchAll(
+      const userInvoices = (await userService.fetchResources(
         user.id,
         "invoices",
       )) as Invoice[];
@@ -67,7 +57,7 @@ export const fetchUser = async (context: Context) => {
     }
 
     if (include.includes("reports")) {
-      const userReports = (await userService.fetchAll(
+      const userReports = (await userService.fetchResources(
         user.id,
         "reports",
       )) as Report[];
@@ -75,45 +65,40 @@ export const fetchUser = async (context: Context) => {
     }
 
     if (include.includes("orgs")) {
-      const userOrgs = (await userService.fetchAll(user.id, "orgs")) as Org[];
+      const userOrgs = (await userService.fetchResources(
+        user.id,
+        "orgs",
+      )) as Org[];
       result.orgs = userOrgs;
     }
   }
 
   return {
     data: result,
-    message: "Organization & details fetched successfully",
+    message: "User & details fetched successfully",
   };
 };
 
 export const fetchResources = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
   const { type } = context.params;
-  const sub = await getSub(context.headers.authorization);
+  const { authorization } = context.headers;
+  const sub = await getSub(authorization!);
   const user = await userService.fetchOne({ sub });
-  const data = await userService.fetchAll(user.id, type);
+  const data = await userService.fetchResources(user.id, type);
 
   return {
-    data,
-    message: "Organizations fetched successfully.",
+    data: {
+      [type]: data,
+    },
+    message: "User resources fetched successfully.",
   };
 };
 
 export const update = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers as { authorization: string };
   const body = context.body as User;
   const { id } = context.params;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization);
   const user = await userService.fetchOne({ sub });
 
   if (user.id !== id) {
@@ -124,29 +109,21 @@ export const update = async (context: Context) => {
 
   return {
     data,
-    message: "Report updated successfully.",
+    message: "User updated successfully.",
   };
 };
 
 export const deleteOne = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers as { authorization: string };
   const { id } = context.params;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization);
+  const user = await userService.fetchOne({ sub });
 
-  if (!sub) {
-    throw new BadRequestError("Authentication ID is missing.");
+  if (user.id !== id) {
+    throw new ConflictError("Provided user does not match authenticaiton ID.");
   }
 
-  if (!id) {
-    throw new BadRequestError("User to delete is required.");
-  }
-
-  await userService.deleteOne(sub, id);
+  await userService.deleteOne(id);
 
   return {
     message: "User deleted successfully.",

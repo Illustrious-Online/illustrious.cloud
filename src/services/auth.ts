@@ -1,10 +1,12 @@
-import { eq } from "drizzle-orm/sql";
+import { and, eq } from "drizzle-orm/sql";
 import config from "../config";
 
 import { db } from "../../drizzle/db";
 import { authentications, userAuthentications } from "../../drizzle/schema";
+import BadRequestError from "../domain/exceptions/BadRequestError";
 import ConflictError from "../domain/exceptions/ConflictError";
 import ResponseError from "../domain/exceptions/ResponseError";
+import { CreateAuth, FetchAuth } from "../domain/interfaces/auth";
 import AuthError from "../domain/interfaces/authError";
 import Tokens from "../domain/interfaces/tokens";
 
@@ -48,7 +50,7 @@ export async function getTokens(code: string): Promise<Tokens> {
     );
   }
 
-  return resJson as Tokens;
+  return resJson;
 }
 
 /**
@@ -58,13 +60,14 @@ export async function getTokens(code: string): Promise<Tokens> {
  * @throws {ConflictError} If an authentication with the same data already exists.
  * @throws {Error} If an error occurs while creating the authentication.
  */
-export async function create(payload: {
-  userId: string;
-  authId: string;
-  sub: string;
-}) {
+export async function create(payload: CreateAuth) {
   try {
     const { authId, userId, sub } = payload;
+
+    await db.insert(authentications).values({
+      id: authId,
+      sub,
+    });
 
     await db.insert(userAuthentications).values({
       userId,
@@ -76,25 +79,30 @@ export async function create(payload: {
 }
 
 /**
- * Logs out the current user from the oauth provider.
+ * Creates a new authentication & relationship.
  *
- * @throws {Error} If an error occurs while logging out the user.
+ * @param payload - The authentication ID or sub value.
+ * @throws {ConflictError} If an authentication with the same data already exists.
+ * @throws {Error} If an error occurs while creating the authentication.
  */
-export async function logout(): Promise<void> {
-  const headers = new Headers();
-  headers.append("Content-Type", "application/x-www-form-urlencoded");
+export async function fetchOne(payload: FetchAuth) {
+  const { id, sub } = payload;
+  const param = id ? id : sub ? sub : undefined;
 
-  const body = new URLSearchParams();
-  body.append("client_id", config.auth.clientId);
-  body.append("returnTo", `${config.app.dashboardUrl}`);
+  if (!param) {
+    throw new BadRequestError("An ID or sub value are required.");
+  }
 
-  const requestOptions = {
-    method: "GET",
-    headers,
-    body,
-  };
+  const result = await db
+    .select()
+    .from(authentications)
+    .where(eq(id ? authentications.id : authentications.sub, param));
 
-  await fetch(`${config.auth.url}/v2/logout`, requestOptions);
+  if (result.length === 0) {
+    throw new ConflictError("Unable to find Authentication");
+  }
+
+  return result[0];
 }
 
 /**

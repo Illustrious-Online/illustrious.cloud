@@ -4,6 +4,7 @@ import {
   Invoice,
   Org,
   Report,
+  Role,
   User,
   authentications,
   invoices,
@@ -17,9 +18,9 @@ import {
 } from "../../drizzle/schema";
 import BadRequestError from "../domain/exceptions/BadRequestError";
 import ConflictError from "../domain/exceptions/ConflictError";
-import ServerError from "../domain/exceptions/ServerError";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { Roles } from "../domain/interfaces/roles";
+import { CreateUser, FetchUser } from "../domain/interfaces/users";
+import { UserRole } from "../domain/types/UserRole";
 
 /**
  * Creates a new user.
@@ -30,41 +31,35 @@ import { Roles } from "../domain/interfaces/roles";
  * @throws {Error} If an error occurs while creating the user.
  */
 export async function create(payload: User): Promise<User> {
-  try {
-    const user: User[] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, payload.id));
+  let currentUser;
 
-    if (user.length > 0) {
-      throw new ConflictError("User already exists!");
-    }
+  currentUser = await db.select().from(users).where(eq(users.id, payload.id));
 
-    const result = await db.insert(users).values(payload).returning();
-
-    return result[0];
-  } catch (e) {
-    const error = e as ServerError;
-
-    if (error.name === "ServerError" && error.code === 11000) {
-      throw new ConflictError("User exists.");
-    }
-
-    throw error;
+  if (currentUser.length > 0) {
+    throw new ConflictError("User already exists!");
   }
+
+  currentUser = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, payload.email));
+
+  if (currentUser.length > 0) {
+    throw new ConflictError("User already exists!");
+  }
+
+  const result = await db.insert(users).values(payload).returning();
+
+  return result[0];
 }
 
 /**
- * Fetches a user by id.
+ * Fetches a User by email, id, sub.
  *
- * @param {string} id The id of the user to fetch.
- * @returns {Promise<User>} A promise that resolves array User objects.
+ * @param payload - The email, id, or sub of the User to fetch.
+ * @returns {Promise<User>} A promise that resolves the User object.
  */
-export async function fetchOne(payload: {
-  id?: string;
-  sub?: string;
-  email?: string;
-}): Promise<User> {
+export async function fetchOne(payload: FetchUser): Promise<User> {
   if (payload.id) {
     const result = await db
       .select()
@@ -82,28 +77,26 @@ export async function fetchOne(payload: {
   }
 
   if (payload.sub) {
-    const auth = await db
+    const response = await db
       .select()
       .from(authentications)
-      .where(eq(authentications.sub, payload.sub));
+      .leftJoin(
+        userAuthentications,
+        eq(userAuthentications.authId, authentications.id),
+      );
 
-    if (auth.length !== 1) {
+    const auth = response.find(
+      (res) => res.Authentication.sub === payload.sub,
+    )?.UserAuthentications;
+
+    if (!auth) {
       throw new ConflictError("Unable to find user with the provided sub");
-    }
-
-    const userAuth = await db
-      .select()
-      .from(userAuthentications)
-      .where(eq(userAuthentications.authId, auth[0].id));
-
-    if (userAuth.length !== 1) {
-      throw new ConflictError("Unable to find user authentication details");
     }
 
     const result = await db
       .select()
       .from(users)
-      .where(eq(users.id, userAuth[0].userId));
+      .where(eq(users.id, auth.userId));
 
     return result[0];
   }
@@ -112,11 +105,13 @@ export async function fetchOne(payload: {
 }
 
 /**
- * Fetches all users from the database.
+ * Fetches all resources for User from the database.
  *
- * @returns {Promise<User[]>} A promise that resolves to an array of User objects.
+ * @param id - User ID used to gather relationships.
+ * @param type - Type as string; either "reports", "invoices", or "orgs".
+ * @returns {Promise<Invoice[] | Report[] | Org[]>} A promise that resolves to an array of Resource objects.
  */
-export async function fetchAll(
+export async function fetchResources(
   id: string,
   type: string,
 ): Promise<Invoice[] | Report[] | Org[]> {
@@ -124,7 +119,7 @@ export async function fetchAll(
     const usersReports = await db
       .select()
       .from(reports)
-      .leftJoin(userReports, eq(userReports.userId, id));
+      .innerJoin(userReports, eq(userReports.userId, id));
 
     return usersReports.map((result) => result.Report);
   }
@@ -133,7 +128,7 @@ export async function fetchAll(
     const usersInvoices = await db
       .select()
       .from(invoices)
-      .leftJoin(userInvoices, eq(userInvoices.userId, id));
+      .innerJoin(userInvoices, eq(userInvoices.userId, id));
 
     return usersInvoices.map((result) => result.Invoice);
   }
@@ -142,7 +137,7 @@ export async function fetchAll(
     const usersOrgs = await db
       .select()
       .from(orgs)
-      .leftJoin(orgUsers, eq(orgUsers.userId, id));
+      .innerJoin(orgUsers, eq(orgUsers.userId, id));
 
     return usersOrgs.map((result) => result.Org);
   }
@@ -150,6 +145,12 @@ export async function fetchAll(
   throw new BadRequestError("Required details for look up are missing");
 }
 
+/**
+ * Updates a User.
+ *
+ * @param payload - The new User data to update.
+ * @returns {Promise<User>} A promise that resolves to an User object.
+ */
 export async function update(payload: User): Promise<User> {
   const { id, email, firstName, lastName, picture, phone } = payload;
   const result = await db
@@ -167,17 +168,18 @@ export async function update(payload: User): Promise<User> {
   return result[0];
 }
 
-export async function deleteOne(sub: string, userId: string): Promise<void> {
-  const user = await fetchOne({ sub });
-
-  if (user.id !== userId) {
-    throw new ConflictError("Provided user does not match authenticaiton ID.");
-  }
-
+/**
+ * Removes an Organization and all related resources.
+ *
+ * @param userId - The User ID for current user.
+ * @param id - The Organization ID to be removed.
+ * @throws {ConflictError} If an Organization is not allowed to be removed.
+ */
+export async function deleteOne(userId: string): Promise<void> {
   const userAuths = await db
     .select()
     .from(userAuthentications)
-    .where(eq(userAuthentications.userId, user.id));
+    .where(eq(userAuthentications.userId, userId));
 
   if (userAuths.length < 1) {
     throw new ConflictError("Unable to find user authentication.");
@@ -185,13 +187,24 @@ export async function deleteOne(sub: string, userId: string): Promise<void> {
 
   userAuths.forEach(async (userAuth) => {
     await db
+      .delete(userAuthentications)
+      .where(eq(userAuthentications.authId, userAuth.authId));
+    await db
       .delete(authentications)
       .where(eq(authentications.id, userAuth.authId));
   });
 
-  db.delete(users).where(eq(users.id, user.id));
+  db.delete(users).where(eq(users.id, userId));
 }
 
+/**
+ * Validates that the provided user has access/permissions to resource.
+ *
+ * @param sub - The sub item obtained from authorization token.
+ * @param org - The Organization ID to validate permissions.
+ * @throws {ConflictError} If an Organization has failed to be removed.
+ * @throws {UnauthorizedError} If the permissions are not allowed to remote Organization.
+ */
 export async function validatePermissions(
   sub: string,
   org: string,
@@ -208,9 +221,11 @@ export async function validatePermissions(
     );
   }
 
-  const roleIndex = Object.keys(Roles).indexOf(userFromOrg[0].role);
+  const orgUser = userFromOrg[0];
+  const clientIndex = Object.keys(UserRole).indexOf("CLIENT");
+  const roleIndex = Object.keys(UserRole).indexOf(orgUser.role);
 
-  if (roleIndex !== Roles.ADMIN && roleIndex !== Roles.OWNER) {
+  if (roleIndex < clientIndex) {
     throw new UnauthorizedError(
       "Unable to continue: User is not have sufficient permissions",
     );

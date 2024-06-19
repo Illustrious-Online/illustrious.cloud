@@ -7,10 +7,9 @@ jobs:
   # Label of the container job
   container-job:
     # Containers must run in Linux based operating systems
-    runs-on: uubuntu-latest
+    runs-on: ubuntu-latest
     # Docker Hub image that `container-job` executes in
     container: node:latest
-
     services:
       postgres:
         image: postgres

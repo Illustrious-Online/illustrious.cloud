@@ -50,5 +50,11 @@ jobs:
         run: bun run check
       - name: Perform DB migration
         run: bun run db:migrate
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_PASSWORD: illustrious
+          DB_NAME: illustrious
+          DB_SSL: "false"
       - name: Run unit tests
         run: bun test

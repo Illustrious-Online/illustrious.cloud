@@ -11,6 +11,7 @@ jobs:
     env:
       DB_HOST: localhost
       DB_PORT: 5432
+      DB_USER: admin
       DB_PASSWORD: illustrious
       DB_NAME: illustrious
       DB_SSL: "false"
@@ -33,5 +34,15 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run Biome Checks
         run: bun run check
+      - name: Start Docker and wait for reboot
+        run: |
+          bun run db:docker &
+          sleep 2
+          ./wait-for-it.sh localhost:5432 --strict --timeout=300
+          # Cheeky for pg reboot (?)
+          sleep 5
+          ./wait-for-it.sh localhost:5432 --strict --timeout=300
+      - name: Run db migrations for testing
+        run: bun run db:migrate
       - name: Run unit tests
-        run: bun run test
+        run: bun test

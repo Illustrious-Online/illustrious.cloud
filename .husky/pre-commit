@@ -1,1 +1,2 @@
 bun run check:apply
+echo "Don't forget to test your changes!"

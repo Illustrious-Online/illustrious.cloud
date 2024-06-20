@@ -5,22 +5,22 @@ import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import { deleteRequest, getRequest, postRequest, putRequest } from ".";
 import { app } from "../app";
+import AuthUserInfo from "../domain/interfaces/authUserInfo";
+import Tokens from "../domain/interfaces/tokens";
 import * as authService from "../services/auth";
 import * as orgService from "../services/org";
 import * as userService from "../services/user";
 import { MockResult, mockModule } from "./mock.util";
 import { generateData } from "./model.util";
-import AuthUserInfo from "../domain/interfaces/authUserInfo";
-import Tokens from "../domain/interfaces/tokens";
 
 let mocks: MockResult[] = [];
-const data = generateData([
-  "user", "invoice", "org"
-]);
+const data = generateData(["user", "invoice", "org"]);
 
 const suiteMocks = async () => {
   mocks.push(
-    await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+    await mockModule("../plugins/auth.ts", () =>
+      jest.fn(() => Promise.resolve(true)),
+    ),
     await mockModule("../services/auth.ts", () => ({
       getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
     })),
@@ -28,12 +28,14 @@ const suiteMocks = async () => {
       verify: jest.fn(() => Promise.resolve(true)),
     })),
     await mockModule("jwt-decode", () => ({
-      jwtDecode: jest.fn(() => { return data.userData as AuthUserInfo }),
+      jwtDecode: jest.fn(() => {
+        return data.userData as AuthUserInfo;
+      }),
     })),
     await mockModule("../utils/extract-sub.ts", () => ({
       getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-    }))
-  )
+    })),
+  );
 };
 
 describe("Invoice Module", () => {
@@ -93,12 +95,12 @@ describe("Invoice Module", () => {
   });
 
   it("GET /invoices/:id throws unauthorized", async () => {
-    const secondData = generateData([
-      "user", "org"
-    ]);
+    const secondData = generateData(["user", "org"]);
 
     mocks.push(
-      await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+      await mockModule("../plugins/auth.ts", () =>
+        jest.fn(() => Promise.resolve(true)),
+      ),
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(secondData.userData!.sub)),
       })),
@@ -106,9 +108,11 @@ describe("Invoice Module", () => {
         verify: jest.fn(() => Promise.resolve(true)),
       })),
       await mockModule("jwt-decode", () => ({
-        jwtDecode: jest.fn(() => { return secondData.userData as AuthUserInfo }),
+        jwtDecode: jest.fn(() => {
+          return secondData.userData as AuthUserInfo;
+        }),
       })),
-    )
+    );
 
     await userService.create(secondData.user!);
     await authService.create({

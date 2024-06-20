@@ -14,13 +14,13 @@ import { MockResult, mockModule } from "./mock.util";
 import { generateData } from "./model.util";
 
 let mocks: MockResult[] = [];
-const data = generateData([
-  "user", "tokens", "invoice", "report", "org"
-]);
+const data = generateData(["user", "tokens", "invoice", "report", "org"]);
 
 const suiteMocks = async () => {
   mocks.push(
-    await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+    await mockModule("../plugins/auth.ts", () =>
+      jest.fn(() => Promise.resolve(true)),
+    ),
     await mockModule("../services/auth.ts", () => ({
       getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
     })),
@@ -39,15 +39,15 @@ describe("User Module", async () => {
   });
 
   afterEach(() => {
-      mocks.forEach((mockResult) => mockResult.clear());
-      mocks = [];
+    mocks.forEach((mockResult) => mockResult.clear());
+    mocks = [];
   });
 
   it("POST /users creates a new User successfully", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     const response = await app.handle(postRequest("/users", data.user!));
@@ -63,7 +63,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(undefined)),
-      }))
+      })),
     );
 
     const response = await app.handle(getRequest(`/users`, true));
@@ -79,7 +79,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     await authService.create({
@@ -101,7 +101,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     await orgService.create({
@@ -125,7 +125,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     await reportService.create({
@@ -152,7 +152,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     await invoiceService.create({
@@ -185,7 +185,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     const response = await app.handle(getRequest(`/users/reports`, true));
@@ -204,7 +204,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     const response = await app.handle(getRequest(`/users/invoices`, true));
@@ -228,7 +228,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     const response = await app.handle(getRequest(`/users/orgs`, true));
@@ -247,7 +247,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     data.user!.firstName = faker.person.firstName();
@@ -268,7 +268,7 @@ describe("User Module", async () => {
     mocks.push(
       await mockModule("../utils/extract-sub.ts", () => ({
         getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
-      }))
+      })),
     );
 
     const response = await app.handle(

@@ -1,36 +1,36 @@
-import { faker } from "@faker-js/faker"
-import { Invoice, Org, User, Report } from "../../drizzle/schema"
-import AuthUserInfo from "../domain/interfaces/authUserInfo"
-import Tokens from "../domain/interfaces/tokens"
-import config from "../config"
+import { faker } from "@faker-js/faker";
+import { Invoice, Org, Report, User } from "../../drizzle/schema";
+import config from "../config";
+import AuthUserInfo from "../domain/interfaces/authUserInfo";
+import Tokens from "../domain/interfaces/tokens";
 
 export const generateData = (
   set: string[],
   user?: {
-    id: string,
-    email: string
-  }
+    id: string;
+    email: string;
+  },
 ): {
-  user?: User,
-  userData?: AuthUserInfo,
-  tokens?: Tokens,
-  invoice?: Invoice,
-  org?: Org,
-  report?: Report
+  user?: User;
+  userData?: AuthUserInfo;
+  tokens?: Tokens;
+  invoice?: Invoice;
+  org?: Org;
+  report?: Report;
 } => {
   let userId = user?.id;
-  let userEmail = user?.email
+  let userEmail = user?.email;
 
   const result: {
-    user?: User,
-    userData?: AuthUserInfo,
-    tokens?: Tokens,
-    invoice?: Invoice,
-    org?: Org,
-    report?: Report
+    user?: User;
+    userData?: AuthUserInfo;
+    tokens?: Tokens;
+    invoice?: Invoice;
+    org?: Org;
+    report?: Report;
   } = {};
 
-  if (set.includes('user')) {
+  if (set.includes("user")) {
     result.user = {
       id: faker.string.uuid(),
       email: faker.internet.email(),
@@ -38,7 +38,7 @@ export const generateData = (
       lastName: faker.person.lastName(),
       phone: faker.phone.number(),
       picture: faker.internet.url(),
-    }
+    };
 
     result.userData = {
       sub: faker.string.uuid(),
@@ -49,8 +49,8 @@ export const generateData = (
       picture: faker.internet.url(),
       aud: config.auth.audience,
       iss: config.auth.url,
-      sid: faker.string.uuid()
-    }
+      sid: faker.string.uuid(),
+    };
 
     userId = result.user.id;
     userEmail = result.user.email;
@@ -64,15 +64,15 @@ export const generateData = (
     userEmail = faker.internet.email();
   }
 
-  if (set.includes('tokens')) {
+  if (set.includes("tokens")) {
     result.tokens = {
       access_token: "access_token",
       refresh_token: "refresh_token",
-      id_token: "id_token"
-    }
+      id_token: "id_token",
+    };
   }
 
-  if (set.includes('invoice')) {
+  if (set.includes("invoice")) {
     result.invoice = {
       id: faker.string.uuid(),
       owner: userId,
@@ -81,25 +81,25 @@ export const generateData = (
       start: faker.date.recent({ days: 15 }),
       end: faker.date.soon({ days: 15 }),
       due: faker.date.soon({ days: 20 }),
-    }
+    };
   }
 
-  if (set.includes('report')) {
+  if (set.includes("report")) {
     result.report = {
       id: faker.string.uuid(),
       owner: userId,
       rating: faker.number.int({ min: 0, max: 10 }),
       notes: faker.lorem.lines(3),
-    }
+    };
   }
 
-  if (set.includes('org')) {
+  if (set.includes("org")) {
     result.org = {
       id: faker.string.uuid(),
       name: faker.company.name(),
-      contact: userEmail
-    }
+      contact: userEmail,
+    };
   }
 
   return result;
-}
+};

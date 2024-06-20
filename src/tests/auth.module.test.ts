@@ -1,4 +1,13 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, jest, mock } from "bun:test";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  mock,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import { deleteRequest, getRequest } from ".";
@@ -11,13 +20,13 @@ import { MockResult, mockModule } from "./mock.util";
 import { generateData } from "./model.util";
 
 let mocks: MockResult[] = [];
-const data = generateData([
-  "user", "tokens"
-]);
+const data = generateData(["user", "tokens"]);
 
 const suiteMocks = async () => {
   mocks.push(
-    await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+    await mockModule("../plugins/auth.ts", () =>
+      jest.fn(() => Promise.resolve(true)),
+    ),
     await mockModule("../services/auth.ts", () => ({
       getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
     })),
@@ -25,9 +34,11 @@ const suiteMocks = async () => {
       verify: jest.fn(() => Promise.resolve(true)),
     })),
     await mockModule("jwt-decode", () => ({
-      jwtDecode: jest.fn(() => { return data.userData as AuthUserInfo }),
+      jwtDecode: jest.fn(() => {
+        return data.userData as AuthUserInfo;
+      }),
     })),
-  )
+  );
 };
 
 describe("Auth Module", () => {
@@ -49,15 +60,19 @@ describe("Auth Module", () => {
 
   it("GET /auth/success throws exception for missing token", async () => {
     mocks.push(
-      await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+      await mockModule("../plugins/auth.ts", () =>
+        jest.fn(() => Promise.resolve(true)),
+      ),
       await mockModule("../services/auth.ts", () => ({
-        getTokens: jest.fn(() => Promise.resolve({
-          access_token: "access_token",
-          refresh_token: "refresh_token",
-          id_token: ""
-        } as Tokens)),
+        getTokens: jest.fn(() =>
+          Promise.resolve({
+            access_token: "access_token",
+            refresh_token: "refresh_token",
+            id_token: "",
+          } as Tokens),
+        ),
       })),
-    )
+    );
     const response = await app.handle(getRequest("/auth/success?code=123"));
     const json = await response.json();
 
@@ -69,7 +84,9 @@ describe("Auth Module", () => {
 
   it("GET /auth/success throws jwt decode error", async () => {
     mocks.push(
-      await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+      await mockModule("../plugins/auth.ts", () =>
+        jest.fn(() => Promise.resolve(true)),
+      ),
       await mockModule("../services/auth.ts", () => ({
         getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
       })),

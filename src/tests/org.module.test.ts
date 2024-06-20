@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, jest, mock } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  mock,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import moment from "moment";
@@ -6,24 +14,24 @@ import { deleteRequest, getRequest, postRequest, putRequest } from ".";
 import { app } from "../app";
 import AuthUserInfo from "../domain/interfaces/authUserInfo";
 import Tokens from "../domain/interfaces/tokens";
+import invoice from "../routes/invoice";
+import org from "../routes/org";
+import report from "../routes/report";
 import * as authService from "../services/auth";
 import * as invoiceService from "../services/invoice";
 import * as reportService from "../services/report";
 import * as userService from "../services/user";
-import { generateData } from "./model.util";
 import { MockResult, mockModule } from "./mock.util";
-import invoice from "../routes/invoice";
-import org from "../routes/org";
-import report from "../routes/report";
+import { generateData } from "./model.util";
 
 let mocks: MockResult[] = [];
-const data = generateData([
-  "user", "tokens", "invoice", "org", "report"
-]);
+const data = generateData(["user", "tokens", "invoice", "org", "report"]);
 
 const suiteMocks = async () => {
   mocks.push(
-    await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+    await mockModule("../plugins/auth.ts", () =>
+      jest.fn(() => Promise.resolve(true)),
+    ),
     await mockModule("../services/auth.ts", () => ({
       getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
     })),
@@ -42,8 +50,8 @@ describe("Org Module", async () => {
   });
 
   afterEach(() => {
-      mocks.forEach((mockResult) => mockResult.clear());
-      mocks = [];
+    mocks.forEach((mockResult) => mockResult.clear());
+    mocks = [];
   });
 
   it("POST /orgs creates a new Org successfully", async () => {
@@ -237,7 +245,9 @@ describe("Org Module", async () => {
     data.org!.contact = faker.internet.email();
     data.org!.name = faker.company.name();
 
-    const response = await app.handle(putRequest(`/orgs/${data.org!.id}`, data.org!));
+    const response = await app.handle(
+      putRequest(`/orgs/${data.org!.id}`, data.org!),
+    );
     const json = await response.json();
 
     expect(json).toMatchObject({
@@ -256,7 +266,9 @@ describe("Org Module", async () => {
       };
     });
 
-    const response = await app.handle(deleteRequest(`/orgs/${data.org!.id}`, true));
+    const response = await app.handle(
+      deleteRequest(`/orgs/${data.org!.id}`, true),
+    );
     const json = await response.json();
 
     expect(response.ok).toBeTrue;

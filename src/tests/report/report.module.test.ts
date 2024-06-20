@@ -2,12 +2,11 @@ import { describe, expect, it, mock } from "bun:test";
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 
-import { deleteRequest, getRequest, postRequest, putRequest } from ".";
-import { app } from "../app";
-import * as authService from "../services/auth";
-import * as orgService from "../services/org";
-import * as reportService from "../services/report";
-import * as userService from "../services/user";
+import { deleteRequest, getRequest, postRequest, putRequest } from "..";
+import { app } from "../../app";
+import * as authService from "../../services/auth";
+import * as orgService from "../../services/org";
+import * as userService from "../../services/user";
 
 const reportUser = {
   sub: faker.string.uuid(),
@@ -41,8 +40,8 @@ const tempReport = {
 };
 
 const suiteMocks = async () => {
-  await mock.module("../plugins/auth.ts", async () => true);
-  await mock.module("../utils/extract-sub.ts", async () => {
+  await mock.module("../../plugins/auth.ts", async () => true);
+  await mock.module("../../utils/extract-sub.ts", async () => {
     return {
       getSub: () => {
         return reportUser.sub;
@@ -146,8 +145,8 @@ describe("Report Module", () => {
       contact: tempReportUser.email,
     };
 
-    await mock.module("../plugins/auth.ts", async () => false);
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../plugins/auth.ts", async () => false);
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return secondUser.sub;

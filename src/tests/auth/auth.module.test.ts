@@ -1,13 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
 import { faker } from "@faker-js/faker";
 
-import { deleteRequest, getRequest } from ".";
-import { app } from "../app";
-import config from "../config";
-import ResponseError from "../domain/exceptions/ResponseError";
-import AuthUserInfo from "../domain/interfaces/authUserInfo";
-import Tokens from "../domain/interfaces/tokens";
-import * as authService from "../services/auth";
+import { deleteRequest, getRequest } from "..";
+import { app } from "../../app";
+import config from "../../config";
+import AuthUserInfo from "../../domain/interfaces/authUserInfo";
+import Tokens from "../../domain/interfaces/tokens";
+import * as authService from "../../services/auth";
 
 let userSub = faker.string.uuid();
 const testUser = {
@@ -25,7 +24,7 @@ const fakeTokens = {
 };
 
 const suiteMocks = async () => {
-  await mock.module("../plugins/auth.ts", async () => true);
+  await mock.module("../../plugins/auth.ts", async () => true);
   await mock.module("jsonwebtoken", () => {
     return {
       verify: () => {
@@ -33,7 +32,7 @@ const suiteMocks = async () => {
       },
     };
   });
-  await mock.module("../services/auth.ts", () => {
+  await mock.module("../../services/auth.ts", () => {
     return {
       getTokens: () => {
         return fakeTokens as Tokens;
@@ -62,7 +61,7 @@ describe("Auth Module", () => {
   });
 
   it("GET /auth/success throws exception for missing token", async () => {
-    await mock.module("../services/auth.ts", () => {
+    await mock.module("../../services/auth.ts", () => {
       return {
         getTokens: () => {
           return {
@@ -84,7 +83,7 @@ describe("Auth Module", () => {
   });
 
   it("GET /auth/success throws jwt decode error", async () => {
-    await mock.module("../services/auth.ts", () => {
+    await mock.module("../../services/auth.ts", () => {
       return {
         getTokens: () => {
           return fakeTokens as Tokens;
@@ -171,7 +170,7 @@ describe("Auth Module", () => {
   });
 
   it("DELETE /auth/delete throws error for failed sub extract", async () => {
-    await mock.module("../plugins/auth.ts", async () => true);
+    await mock.module("../../plugins/auth.ts", async () => true);
     await mock.module("jwt-decode", () => {
       return {
         jwtDecode: () => {
@@ -194,7 +193,7 @@ describe("Auth Module", () => {
   });
 
   it("DELETE /auth/delete successfully deletes User", async () => {
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return newSub;

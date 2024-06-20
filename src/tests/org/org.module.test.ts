@@ -3,15 +3,14 @@ import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 
 import moment from "moment";
-import { deleteRequest, getRequest, postRequest, putRequest } from ".";
-import { app } from "../app";
-import AuthUserInfo from "../domain/interfaces/authUserInfo";
-import Tokens from "../domain/interfaces/tokens";
-import * as authService from "../services/auth";
-import * as invoiceService from "../services/invoice";
-import * as orgService from "../services/org";
-import * as reportService from "../services/report";
-import * as userService from "../services/user";
+import { deleteRequest, getRequest, postRequest, putRequest } from "../";
+import { app } from "../../app";
+import AuthUserInfo from "../../domain/interfaces/authUserInfo";
+import Tokens from "../../domain/interfaces/tokens";
+import * as authService from "../../services/auth";
+import * as invoiceService from "../../services/invoice";
+import * as reportService from "../../services/report";
+import * as userService from "../../services/user";
 
 let userSub = faker.string.uuid();
 const testUser = {
@@ -63,7 +62,7 @@ const report = {
 };
 
 const suiteMocks = async () => {
-  await mock.module("../plugins/auth.ts", async () => true);
+  await mock.module("../../plugins/auth.ts", async () => true);
   await mock.module("jsonwebtoken", () => {
     return {
       verify: () => {
@@ -71,7 +70,7 @@ const suiteMocks = async () => {
       },
     };
   });
-  await mock.module("../services/auth.ts", () => {
+  await mock.module("../../services/auth.ts", () => {
     return {
       getTokens: () => {
         return fakeTokens as Tokens;
@@ -90,7 +89,7 @@ const suiteMocks = async () => {
 describe("Org Module", async () => {
   it("POST /orgs creates a new Org successfully", async () => {
     await suiteMocks();
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return userData.sub;
@@ -116,7 +115,7 @@ describe("Org Module", async () => {
 
   it("GET /orgs/res throws bad request error", async () => {
     await suiteMocks();
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return undefined;
@@ -135,7 +134,7 @@ describe("Org Module", async () => {
 
   it("GET /orgs/:id?include=users returns Org data including list of Users", async () => {
     await suiteMocks();
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return userData.sub;
@@ -159,7 +158,7 @@ describe("Org Module", async () => {
 
   it("GET /orgs/:id?include=reports returns Org data including list of reports", async () => {
     await suiteMocks();
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return userData.sub;
@@ -189,7 +188,7 @@ describe("Org Module", async () => {
 
   it("GET /orgs/:id?include=invoices returns Org data including list of invoices", async () => {
     await suiteMocks();
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return userData.sub;

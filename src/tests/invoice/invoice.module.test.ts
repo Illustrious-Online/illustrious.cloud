@@ -3,12 +3,12 @@ import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 
 import moment from "moment";
-import { deleteRequest, getRequest, postRequest, putRequest } from ".";
-import { Invoice } from "../../drizzle/schema";
-import { app } from "../app";
-import * as authService from "../services/auth";
-import * as orgService from "../services/org";
-import * as userService from "../services/user";
+import { deleteRequest, getRequest, postRequest, putRequest } from "../";
+import { Invoice } from "../../../drizzle/schema";
+import { app } from "../../app";
+import * as authService from "../../services/auth";
+import * as orgService from "../../services/org";
+import * as userService from "../../services/user";
 
 const invoiceUser = {
   sub: faker.string.uuid(),
@@ -45,8 +45,8 @@ const tempInvoice: Invoice = {
 };
 
 const suiteMocks = async () => {
-  await mock.module("../plugins/auth.ts", async () => true);
-  await mock.module("../utils/extract-sub.ts", async () => {
+  await mock.module("../../plugins/auth.ts", async () => true);
+  await mock.module("../../utils/extract-sub.ts", async () => {
     return {
       getSub: () => {
         return invoiceUser.sub;
@@ -155,8 +155,8 @@ describe("Invoice Module", () => {
       contact: tempInvoiceUser.email,
     };
 
-    await mock.module("../plugins/auth.ts", async () => false);
-    await mock.module("../utils/extract-sub.ts", async () => {
+    await mock.module("../../plugins/auth.ts", async () => false);
+    await mock.module("../../utils/extract-sub.ts", async () => {
       return {
         getSub: () => {
           return secondUser.sub;

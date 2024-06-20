@@ -31,14 +31,12 @@ jobs:
         run: bun install -g spaces-cli
       - name: Download .env file
         run: |
-          spaces-cli down /api/production.env -o ./.env \
-            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
-            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-      - name: Download cert for database updates
+          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
+          spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Download cert file
         run: |
-          spaces-cli down /api/cert.crt -o ./cert.crt \
-            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
-            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
+          spaces-cli down $SPACE_URL/api/cert.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Push database migrations
         run: bunx drizzle-kit migrate
       - name: Build Docker image

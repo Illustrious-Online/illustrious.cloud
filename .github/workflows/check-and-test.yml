@@ -5,26 +5,15 @@ on:
       - main
 jobs:
   # Label of the container job
-  container-job:
+  check-and-test:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
-    # Docker Hub image that `container-job` executes in
-    container: node:latest
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: illustrious
-          POSTGRES_DB: illustrious
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_PASSWORD: illustrious
+      DB_NAME: illustrious
+      DB_SSL: "false"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,11 +39,5 @@ jobs:
         run: bun run check
       - name: Perform DB migration
         run: bun run db:migrate
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_PASSWORD: illustrious
-          DB_NAME: illustrious
-          DB_SSL: "false"
       - name: Run unit tests
-        run: bun test
+        run: bun run test

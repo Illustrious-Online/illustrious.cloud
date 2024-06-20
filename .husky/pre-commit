@@ -1,2 +1,2 @@
 bun run check:apply
-echo -e "=======\n=====> Don't forget to test your changes!\n\n"
+echo "=======\n=====> Don't forget to test your changes!\n"

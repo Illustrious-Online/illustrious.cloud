@@ -53,6 +53,7 @@ describe("Auth Module", () => {
     const response = await app.handle(getRequest("/auth/success?code=123"));
     expect(response.ok).toBeFalse;
 
+    console.log("DEBUG: Invalid response?", response);
     const json = await response.json();
     expect(json).toMatchObject({
       message: "invalid_grant: Invalid authorization code",
@@ -129,7 +130,7 @@ describe("Auth Module", () => {
 
   const newSub = faker.string.uuid();
 
-  it("GET /auth/success successfully redirect with existing email", async () => {
+  it("GET /auth/success sucxcessfully redirect with existing email", async () => {
     testUser.sub = newSub;
 
     const response = await app.handle(getRequest("/auth/success?code=123"));

@@ -34,6 +34,9 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error
     .post("/invoices", invoiceController.create, {
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       body: t.Object({
         org: t.String(),
         invoice: Invoice,
@@ -78,6 +81,9 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error
     .put("/invoices/:id", invoiceController.update, {
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       body: t.Object({
         org: t.String(),
         invoice: Invoice,
@@ -122,6 +128,9 @@ export default (app: Elysia) =>
     })
     // @ts-expect-error Swagger plugin disagrees when adding 200 response
     .delete("/invoices/:org/:id", invoiceController.deleteOne, {
+      headers: t.Object({
+        authorization: t.String(),
+      }),
       params: t.Object({
         org: t.String(),
         id: t.String(),

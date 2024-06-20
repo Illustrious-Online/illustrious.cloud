@@ -1,113 +1,70 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, jest } from "bun:test";
 import { faker } from "@faker-js/faker";
-import { v4 as uuidv4 } from "uuid";
 
 import moment from "moment";
-import { deleteRequest, getRequest, postRequest, putRequest } from "../";
-import { app } from "../../app";
-import AuthUserInfo from "../../domain/interfaces/authUserInfo";
-import Tokens from "../../domain/interfaces/tokens";
-import * as authService from "../../services/auth";
-import * as invoiceService from "../../services/invoice";
-import * as orgService from "../../services/org";
-import * as reportService from "../../services/report";
+import { deleteRequest, getRequest, postRequest, putRequest } from ".";
+import { app } from "../app";
+import AuthUserInfo from "../domain/interfaces/authUserInfo";
+import Tokens from "../domain/interfaces/tokens";
+import * as authService from "../services/auth";
+import * as invoiceService from "../services/invoice";
+import * as orgService from "../services/org";
+import * as reportService from "../services/report";
+import { MockResult, mockModule } from "./mock.util";
+import { generateData } from "./model.util";
 
-let userSub = faker.string.uuid();
-const testUser = {
-  id: uuidv4(),
-  email: faker.internet.email(),
-  firstName: faker.person.firstName(),
-  lastName: faker.person.lastName(),
-  phone: faker.phone.number(),
-  picture: faker.internet.url(),
-};
-const userData = {
-  sub: userSub,
-  email: faker.internet.email(),
-  given_name: faker.person.firstName(),
-  family_name: faker.person.lastName(),
-  phone_number: faker.phone.number(),
-  picture: faker.internet.url(),
-};
-const fakeTokens = {
-  access_token: "access_token",
-  refresh_token: "refresh_token",
-  id_token: "id_token",
-};
-const uuids = {
-  auth: uuidv4(),
-  report: uuidv4(),
-  invoice: uuidv4(),
-  org: uuidv4(),
-};
-const invoice = {
-  id: uuids.invoice,
-  owner: testUser.id,
-  value: faker.finance.amount(),
-  paid: false,
-  start: faker.date.recent({ days: 15 }),
-  end: faker.date.soon({ days: 15 }),
-  due: faker.date.soon({ days: 20 }),
-};
-const org = {
-  id: uuids.org,
-  name: faker.company.name(),
-  contact: testUser.email,
-};
-const report = {
-  id: uuids.report,
-  owner: testUser.id,
-  rating: faker.number.int({ min: 0, max: 10 }),
-  notes: faker.lorem.lines(3),
-};
+let mocks: MockResult[] = [];
+const data = generateData([
+  "user", "tokens", "invoice", "report", "org"
+]);
 
 const suiteMocks = async () => {
-  await mock.module("../../plugins/auth.ts", async () => true);
-  await mock.module("jsonwebtoken", () => {
-    return {
-      verify: () => {
-        return true;
-      },
-    };
-  });
-  await mock.module("../../services/auth.ts", () => {
-    return {
-      getTokens: () => {
-        return fakeTokens as Tokens;
-      },
-    };
-  });
-  await mock.module("jwt-decode", () => {
-    return {
-      jwtDecode: () => {
-        return userData as AuthUserInfo;
-      },
-    };
-  });
+  mocks.push(
+    await mockModule("../plugins/auth.ts", () => jest.fn(() => Promise.resolve(true))),
+    await mockModule("../services/auth.ts", () => ({
+      getTokens: jest.fn(() => Promise.resolve(data.tokens as Tokens)),
+    })),
+    await mockModule("jsonwebtoken", () => ({
+      verify: jest.fn(() => Promise.resolve(true)),
+    })),
+    await mockModule("jwt-decode", () => ({
+      jwtDecode: jest.fn(() => Promise.resolve(data.userData as AuthUserInfo)),
+    })),
+  );
 };
 
 describe("User Module", async () => {
-  it("POST /users creates a new User successfully", async () => {
+  beforeEach(async () => {
     await suiteMocks();
+  });
 
-    const response = await app.handle(postRequest("/users", testUser));
+  afterEach(() => {
+      mocks.forEach((mockResult) => mockResult.clear());
+      mocks = [];
+  });
+
+  it("POST /users creates a new User successfully", async () => {
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
+
+    const response = await app.handle(postRequest("/users", data.user!));
     expect(response.ok).toBeTrue();
     const json = await response.json();
     expect(json).toMatchObject({
       message: "User created successfully.",
-      data: testUser,
+      data: data.user,
     });
   });
 
   it("GET /users throws bad request error", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return undefined;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(undefined)),
+      }))
+    );
 
     const response = await app.handle(getRequest(`/users`, true));
     expect(response.ok).toBeFalse();
@@ -119,19 +76,16 @@ describe("User Module", async () => {
   });
 
   it("GET /me fetches user information based on token", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return userData.sub;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
     await authService.create({
-      userId: testUser.id,
-      authId: uuids.auth,
-      sub: userData.sub,
+      userId: data.user!.id,
+      authId: faker.string.uuid(),
+      sub: data.userData!.sub,
     });
 
     const response = await app.handle(getRequest("/me", true));
@@ -139,23 +93,20 @@ describe("User Module", async () => {
     const json = await response.json();
     expect(json).toMatchObject({
       message: "User details fetched successfully!",
-      data: testUser,
+      data: data.user,
     });
   });
 
   it("GET /users?include=orgs returns User data including list of Orgs", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return userData.sub;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
     await orgService.create({
-      user: testUser.id,
-      org,
+      user: data.user!.id,
+      org: data.org!,
     });
 
     const response = await app.handle(getRequest(`/users?include=orgs`, true));
@@ -164,26 +115,23 @@ describe("User Module", async () => {
     expect(json).toMatchObject({
       message: "User & details fetched successfully",
       data: {
-        user: testUser,
-        orgs: [org],
+        user: data.user,
+        orgs: [data.org!],
       },
     });
   });
 
   it("GET /users?include=reports returns User data including list of reports", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return userData.sub;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
     await reportService.create({
-      user: testUser.id,
-      org: uuids.org,
-      report,
+      user: data.user!.id,
+      org: data.org!.id,
+      report: data.report!,
     });
 
     const response = await app.handle(
@@ -194,26 +142,23 @@ describe("User Module", async () => {
     expect(json).toMatchObject({
       message: "User & details fetched successfully",
       data: {
-        user: testUser,
-        reports: [report],
+        user: data.user,
+        reports: [data.report!],
       },
     });
   });
 
   it("GET /users?include=invoices returns User data including list of invoices", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return userData.sub;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
     await invoiceService.create({
-      user: testUser.id,
-      org: uuids.org,
-      invoice,
+      user: data.user!.id,
+      org: data.org!.id,
+      invoice: data.invoice!,
     });
 
     const response = await app.handle(
@@ -230,13 +175,19 @@ describe("User Module", async () => {
     expect(json).toMatchObject({
       message: "User & details fetched successfully",
       data: {
-        user: testUser,
+        user: data.user,
         invoices: [newInvoice],
       },
     });
   });
 
   it("GET /users/reports returns all Reports associated with User", async () => {
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
+
     const response = await app.handle(getRequest(`/users/reports`, true));
     expect(response.ok).toBeTrue();
     const json = await response.json();
@@ -244,12 +195,18 @@ describe("User Module", async () => {
     expect(json).toMatchObject({
       message: "User resources fetched successfully.",
       data: {
-        reports: [report],
+        reports: [data.report!],
       },
     });
   });
 
   it("GET /users/invoices returns all Invoices associated with User", async () => {
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
+
     const response = await app.handle(getRequest(`/users/invoices`, true));
     expect(response.ok).toBeTrue();
     const json = await response.json();
@@ -268,6 +225,12 @@ describe("User Module", async () => {
   });
 
   it("GET /users/orgs returns all Orgs associated with User", async () => {
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
+
     const response = await app.handle(getRequest(`/users/orgs`, true));
     expect(response.ok).toBeTrue();
     const json = await response.json();
@@ -275,40 +238,41 @@ describe("User Module", async () => {
     expect(json).toMatchObject({
       message: "User resources fetched successfully.",
       data: {
-        orgs: [org],
+        orgs: [data.org!],
       },
     });
   });
 
   it("PUT /users/:id updates the current User", async () => {
-    await suiteMocks();
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
-    testUser.firstName = faker.person.firstName();
-    testUser.lastName = faker.person.lastName();
+    data.user!.firstName = faker.person.firstName();
+    data.user!.lastName = faker.person.lastName();
 
     const response = await app.handle(
-      putRequest(`/users/${testUser.id}`, testUser),
+      putRequest(`/users/${data.user!.id}`, data.user!),
     );
     const json = await response.json();
 
     expect(json).toMatchObject({
-      data: testUser,
+      data: data.user,
       message: "User updated successfully.",
     });
   });
 
   it("DELETE /users/:id removes the User data", async () => {
-    await suiteMocks();
-    await mock.module("../../utils/extract-sub.ts", async () => {
-      return {
-        getSub: () => {
-          return userData.sub;
-        },
-      };
-    });
+    mocks.push(
+      await mockModule("../utils/extract-sub.ts", () => ({
+        getSub: jest.fn(() => Promise.resolve(data.userData!.sub)),
+      }))
+    );
 
     const response = await app.handle(
-      deleteRequest(`/users/${testUser.id}`, true),
+      deleteRequest(`/users/${data.user!.id}`, true),
     );
     const json = await response.json();
 

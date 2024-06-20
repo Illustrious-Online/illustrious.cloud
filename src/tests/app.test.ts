@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
-import { getRequest } from "../";
-import { app } from "../../app";
-import config from "../../config";
+import { getRequest } from ".";
+import { app } from "../app";
+import config from "../config";
 
 describe("Elysia", () => {
   it('"/" returns config details ', async () => {

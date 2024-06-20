@@ -11,14 +11,9 @@ import { getSub } from "../utils/extract-sub";
 export const create = async (
   context: Context,
 ): Promise<SuccessResponse<Invoice>> => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers;
   const body = context.body as SubmitInvoice;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization!);
   const user = await userService.validatePermissions(sub, body.org);
   const data = await invoiceService.create({
     user: user.id,
@@ -54,14 +49,9 @@ export const fetchOne = async (context: Context) => {
 };
 
 export const update = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
+  const { authorization } = context.headers;
   const body = context.body as SubmitInvoice;
-  const sub = await getSub(context.headers.authorization);
+  const sub = await getSub(authorization!);
 
   await userService.validatePermissions(sub, body.org);
   const data = await invoiceService.update(body.invoice);
@@ -73,13 +63,8 @@ export const update = async (context: Context) => {
 };
 
 export const deleteOne = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
-  const sub = await getSub(context.headers.authorization);
+  const { authorization } = context.headers;
+  const sub = await getSub(authorization!);
   const { id, org } = context.params;
 
   await userService.validatePermissions(sub, org);

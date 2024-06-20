@@ -7,6 +7,7 @@ import config from "../config";
 import AuthUserInfo from "../domain/interfaces/authUserInfo";
 import Tokens from "../domain/interfaces/tokens";
 import * as authService from "../services/auth";
+import ResponseError from "../domain/exceptions/ResponseError";
 
 let userSub = faker.string.uuid();
 const testUser = {

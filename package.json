@@ -14,7 +14,7 @@
     "format": "bunx @biomejs/biome format --write ./src",
     "check": "bunx @biomejs/biome check ./src",
     "check:apply": "bunx @biomejs/biome check --write ./src",
-    "test": "./src/utils/run-tests.sh",
+    "test": "set -o pipefail && ./src/utils/run-tests.sh",
     "prepare": "husky"
   },
   "dependencies": {

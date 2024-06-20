@@ -11,4 +11,3 @@ services:
       POSTGRES_DB: illustrious
     ports:
       - "5432:5432"
-

@@ -4,9 +4,8 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 $DIR/reset-db.sh
 bun run db:docker &
-if [[ -z "$1" ]]; then
-  ./wait-for-it.sh localhost:5432 --strict --timeout=1000
-else
+./wait-for-it.sh localhost:5432 --strict --timeout=1000
+if [ -n "$1" ]; then
   sleep 2
   ./wait-for-it.sh localhost:5432 --strict --timeout=300
 fi

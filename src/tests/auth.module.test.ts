@@ -4,10 +4,10 @@ import { faker } from "@faker-js/faker";
 import { deleteRequest, getRequest } from ".";
 import { app } from "../app";
 import config from "../config";
+import ResponseError from "../domain/exceptions/ResponseError";
 import AuthUserInfo from "../domain/interfaces/authUserInfo";
 import Tokens from "../domain/interfaces/tokens";
 import * as authService from "../services/auth";
-import ResponseError from "../domain/exceptions/ResponseError";
 
 let userSub = faker.string.uuid();
 const testUser = {

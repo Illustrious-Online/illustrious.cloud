@@ -6,6 +6,7 @@ import { app } from "../app";
 import AuthUserInfo from "../domain/interfaces/authUserInfo";
 import Tokens from "../domain/interfaces/tokens";
 import * as authService from "../services/auth";
+import config from "../config";
 
 let userSub = faker.string.uuid();
 const testUser = {
@@ -105,10 +106,11 @@ describe("Auth Module", () => {
 
     const response = await app.handle(getRequest("/auth/success?code=123"));
     const location = response.headers.get("location");
+    const { url } = config.app;
 
     expect(response.ok).toBeTrue;
-    expect(location).toBe(
-      "http://localhost:8000?accessToken=access_token&refreshToken=refresh_token",
+    expect(location).toContain(
+      `${url}?accessToken=access_token&refreshToken=refresh_token`,
     );
     expect(response.status).toBe(302);
   });
@@ -116,10 +118,11 @@ describe("Auth Module", () => {
   it("GET /auth/success successfully redirect with existing sub", async () => {
     const response = await app.handle(getRequest("/auth/success?code=123"));
     const location = response.headers.get("location");
+    const { url } = config.app;
 
     expect(response.ok).toBeTrue;
     expect(location).toBe(
-      "http://localhost:8000?accessToken=access_token&refreshToken=refresh_token",
+      `${url}?accessToken=access_token&refreshToken=refresh_token`,
     );
     expect(response.status).toBe(302);
   });
@@ -131,10 +134,11 @@ describe("Auth Module", () => {
 
     const response = await app.handle(getRequest("/auth/success?code=123"));
     const location = response.headers.get("location");
+    const { url } = config.app;
 
     expect(response.ok).toBeTrue;
     expect(location).toBe(
-      "http://localhost:8000?accessToken=access_token&refreshToken=refresh_token",
+      `${url}?accessToken=access_token&refreshToken=refresh_token`,
     );
     expect(response.status).toBe(302);
   });
@@ -146,10 +150,11 @@ describe("Auth Module", () => {
 
     const response = await app.handle(getRequest("/auth/success?code=123"));
     const location = response.headers.get("location");
+    const { url } = config.app;
 
     expect(response.ok).toBeTrue;
     expect(location).toBe(
-      "http://localhost:8000?accessToken=access_token&refreshToken=refresh_token",
+      `${url}?accessToken=access_token&refreshToken=refresh_token`,
     );
     expect(response.status).toBe(302);
   });
@@ -157,9 +162,10 @@ describe("Auth Module", () => {
   it("LOGOUT /auth/logout successfully logs user out", async () => {
     const response = await app.handle(getRequest("/auth/logout"));
     const location = response.headers.get("location");
+    const { dashboardUrl } = config.app;
 
     expect(response.ok).toBeTrue;
-    expect(location).toContain("http://localhost:3000");
+    expect(location).toContain(dashboardUrl);
     expect(response.status).toBe(301);
   });
 

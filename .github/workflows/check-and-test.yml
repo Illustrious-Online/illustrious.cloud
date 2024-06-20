@@ -29,7 +29,7 @@ jobs:
       - name: Download .env file
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/api/development.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/api/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       - name: Run Biome Checks
@@ -37,11 +37,7 @@ jobs:
       - name: Start Docker and wait for reboot
         run: |
           bun run db:docker &
-          sleep 2
-          ./wait-for-it.sh localhost:5432 --strict --timeout=300
-          # Cheeky for pg reboot (?)
-          sleep 5
-          ./wait-for-it.sh localhost:5432 --strict --timeout=300
+          ./wait-for-it.sh localhost:5432 --strict --timeout=1000
       - name: Run db migrations for testing
         run: bun run db:migrate
       - name: Run unit tests

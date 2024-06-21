@@ -47,6 +47,7 @@ jobs:
       - name: Build Docker image
         run: |
           rm -rf .env
+          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
       - name: Authenticate with DO registry

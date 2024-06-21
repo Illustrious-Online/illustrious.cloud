@@ -40,7 +40,6 @@ jobs:
           bunx drizzle-kit migrate
       - name: Remove actions IP to trusted source for database
         run: |
-          IP=$(curl -s ifconfig.me)
           JSON=$(doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$TEST --output json)
           ID=$(echo $JSON | jq -r '.[] | select(.value == "$IP").uuid')
           doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID

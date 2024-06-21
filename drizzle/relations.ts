@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm/relations";
 import {
+  authentications,
   invoices,
+  orgInvoices,
+  orgReports,
   orgUsers,
   orgs,
   reports,
@@ -10,14 +13,16 @@ import {
   users,
 } from "./schema";
 
-export const OrgRelations = relations(orgs, ({ one }) => ({
+export const OrgRelations = relations(orgs, ({ one, many }) => ({
   OrgUser: one(orgUsers, {
     fields: [orgs.id],
     references: [orgUsers.orgId],
   }),
+  OrgReport: many(orgReports),
+  OrgInvoice: many(orgInvoices),
 }));
 
-export const OrgUserRelations = relations(orgUsers, ({ one, many }) => ({
+export const OrgUserRelations = relations(orgUsers, ({ one }) => ({
   Orgs: one(orgs, {
     fields: [orgUsers.orgId],
     references: [orgs.id],
@@ -26,13 +31,13 @@ export const OrgUserRelations = relations(orgUsers, ({ one, many }) => ({
     fields: [orgUsers.userId],
     references: [users.id],
   }),
-  UserInvoices: many(userInvoices),
-  UserReports: many(userReports),
 }));
 
 export const UserRelations = relations(users, ({ many }) => ({
   OrgUsers: many(orgUsers),
   UserAuthentications: many(userAuthentications),
+  UserReports: many(userReports),
+  UserInvoices: many(userInvoices)
 }));
 
 export const UserAuthentications = relations(
@@ -42,6 +47,13 @@ export const UserAuthentications = relations(
       fields: [userAuthentications.userId],
       references: [users.id],
     }),
+  }),
+);
+
+export const AuthenticationRelations = relations(
+  authentications,
+  ({ many }) => ({
+    UserAuthentications: many(userAuthentications),
   }),
 );
 
@@ -58,6 +70,7 @@ export const UserInvoiceRelations = relations(userInvoices, ({ one }) => ({
 
 export const InvoiceRelations = relations(invoices, ({ many }) => ({
   UserInvoices: many(userInvoices),
+  OrgInvoices: many(orgInvoices)
 }));
 
 export const UserReportRelations = relations(userReports, ({ one }) => ({
@@ -73,4 +86,5 @@ export const UserReportRelations = relations(userReports, ({ one }) => ({
 
 export const ReportRelations = relations(reports, ({ many }) => ({
   UserReports: many(userReports),
+  OrgReports: many(orgReports),
 }));

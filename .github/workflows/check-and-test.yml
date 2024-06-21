@@ -28,7 +28,7 @@ jobs:
       - name: Download file dependencies
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/api/ci-production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           spaces-cli down $SPACE_URL/api/deployment.yaml -o ./deployment.yaml -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Add actions IP to trusted source for database
         run: |
@@ -45,7 +45,10 @@ jobs:
           ID=$(echo $JSON | jq -r '.[] | select(.value == "$IP").uuid')
           doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
       - name: Build Docker image
-        run: docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
+        run: |
+          rm -rf .env
+          spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container

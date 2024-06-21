@@ -4,20 +4,37 @@ on:
     branches-ignore:
       - main
 jobs:
+  # Label of the container job
   check-and-test:
+    # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASSWORD: illustrious
+      DB_NAME: illustrious
+      DB_SSL: "false"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
       - name: Install Dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          bun install --frozen-lockfile
+          bun install -g spaces-cli
+          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
+          spaces-cli down $SPACE_URL/api/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Run Biome Checks
         run: bun run check
+      - name: Start Docker and wait for reboot
+        run: |
+          bun run db:docker &
+          ./wait-for-it.sh localhost:5432 --strict --timeout=1000
+      - name: Run db migrations for testing
+        run: bun run db:migrate
       - name: Run unit tests
-        run: bun run test
+        run: bun test

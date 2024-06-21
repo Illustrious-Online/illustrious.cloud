@@ -41,14 +41,8 @@ jobs:
       - name: Remove actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)
-          echo "===== IP ====="
-          echo $IP
           JSON=$(doctl databases firewalls list ${{ secrets.DB_UUID }} --output json)
-          echo "===== JSON ====="
-          echo $JSON
-          ID=$(echo $JSON | jq -r '.[] | select(.value == "$IP").uuid')
-          echo "===== ID ====="
-          echo $ID
+          ID=$(echo $JSON | jq -r '.[] | select(.value == '\"$IP\"').uuid')
           doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
       - name: Build Docker image
         run: |

@@ -13,10 +13,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: latest
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
@@ -29,16 +25,24 @@ jobs:
           token: ${{ secrets.DO_TOKEN }}
       - name: Install spaces-cli
         run: bun install -g spaces-cli
-      - name: Download .env file
+      - name: Download file dependencies
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-      - name: Download cert file
-        run: |
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/api/cert.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/api/deployment.yaml -o ./deployment.yaml -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Add actions IP to trusted source for database
+        run: |
+          IP=$(curl -s ifconfig.me)
+          doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$IP
       - name: Push database migrations
         run: bunx drizzle-kit migrate
+      - name: Remove actions IP to trusted source for database
+        run: |
+            IP=$(curl -s ifconfig.me)
+            JSON=$(doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$TEST --output json)
+            ID=$(echo $JSON | jq -r '.[] | select(.value == "$IP").uuid')
+            doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
       - name: Build Docker image
         run: docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
       - name: Authenticate with DO registry
@@ -47,11 +51,6 @@ jobs:
         run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
-      - name: Download cert for database updates
-        run: |
-          spaces-cli down /api/deployment.yaml -o ./deployment.yaml \
-            -r ${{ secrets.SPACE_REGION }} -s ${{ secrets.SPACE_NAME }} \
-            -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl apply -f $GITHUB_WORKSPACE/deployment.yaml
       - name: Verify deployment

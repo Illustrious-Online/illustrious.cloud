@@ -4,61 +4,20 @@ on:
     branches-ignore:
       - main
 jobs:
-  release:
+  check-and-test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
       - name: Install Dependencies
         run: bun install --frozen-lockfile
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DO_TOKEN }}
-      - name: Install spaces-cli
-        run: bun install -g spaces-cli
-      - name: Download file dependencies
-        run: |
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/api/ci-production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/api/deployment.yaml -o ./deployment.yaml -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-      - name: Add actions IP to trusted source for database
-        run: |
-          IP=$(curl -s ifconfig.me)
-          doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$IP
-      - name: Push database migrations
-        run: |
-          export NODE_TLS_REJECT_UNAUTHORIZED=0
-          bunx drizzle-kit migrate
-      - name: Remove actions IP to trusted source for database
-        run: |
-          IP=$(curl -s ifconfig.me)
-          JSON=$(doctl databases firewalls list ${{ secrets.DB_UUID }} --output json)
-          ID=$(echo $JSON | jq -r '.[] | select(.value == '\"$IP\"').uuid')
-          doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
-      - name: Build Docker image
-        run: |
-          rm -rf .env
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
-      - name: Authenticate with DO registry
-        run: doctl registry login --expiry-seconds 1200
-      - name: Push Docker Container
-        run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
-      - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.DO_KUBE }}
-      - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl apply -f $GITHUB_WORKSPACE/deployment.yaml
-      - name: Verify deployment
-        run: kubectl rollout status deployment/ill-dashboard
-      - name: Execute Semantic Release
-        run: bunx semantic-release
+      - name: Run Biome Checks
+        run: bun run check
+      - name: Run unit tests
+        run: bun run test

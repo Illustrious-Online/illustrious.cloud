@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { Readable } from "stream";
 import { Elysia } from "elysia";
-import jwt, { JsonWebTokenError } from "jsonwebtoken";
+import { JsonWebTokenError, verify } from "jsonwebtoken";
 
 import config from "../config";
 import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
@@ -16,7 +16,7 @@ export default (app: Elysia) =>
     await fetch(`${config.auth.url}/pem`).then((response) => {
       if (response.body) {
         let writer = fs.createWriteStream("public.pem");
-        // @ts-expect-error: Readable expects any instead of Uint8Array...
+        // @ts-expect-error
         Readable.fromWeb(response.body).pipe(writer);
       }
     });
@@ -25,11 +25,12 @@ export default (app: Elysia) =>
     fs.unlinkSync("public.pem");
 
     try {
-      jwt.verify(bearer, secret, { algorithms: ["RS256"] });
-      return true;
+      verify(bearer, secret, { algorithms: ["RS256"] });
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
         throw new UnauthorizedError(error.message);
       }
     }
+
+    return true;
   });

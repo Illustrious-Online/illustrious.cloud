@@ -3,19 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/app.ts",
-    "docker:dev": "docker compose up",
-    "docker:build": "docker build -t ill-dashboard:latest .",
-    "docker:tag": "docker tag ill-dashboard registry.digitalocean.com/illustrious-dashboard/ill-dashboard",
-    "docker:push": "docker push registry.digitalocean.com/illustrious-dashboard/ill-dashboard",
-    "docker:deploy": "bun run docker:build && bun run docker:tag && bun run docker:push",
     "start": "NODE_ENV=production bun src/app.ts",
-    "migrate": "bunx drizzle-kit push",
+    "start:docker": "docker-compose -f docker-compose.app.yml up",
+    "db:docker": "docker compose -f docker-compose.db.yml up",
+    "db:reset": "./src/utils/reset-db.sh",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:push": "bunx drizzle-kit push",
     "lint": "bunx @biomejs/biome lint --apply ./src",
     "format": "bunx @biomejs/biome format --write ./src",
     "check": "bunx @biomejs/biome check ./src",
-    "check:apply": "bunx @biomejs/biome check --apply ./src"
+    "check:apply": "bunx @biomejs/biome check --write ./src",
+    "test": "set -o pipefail && ./src/utils/run-tests.sh",
+    "prepare": "husky"
   },
   "dependencies": {
     "@elysiajs/bearer": "^1.0.2",
@@ -27,20 +27,22 @@
     "elysia": "latest",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "moment": "^2.30.1",
     "pg": "^8.11.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.7.2",
+    "@faker-js/faker": "^8.4.1",
     "@prisma/client": "^5.13.0",
     "@types/node": "^20.12.10",
     "@types/pg": "^8.11.6",
-    "@types/qs": "^6.9.15",
     "@types/uuid": "^9.0.8",
     "axios": "^1.6.8",
     "bun-types": "latest",
     "drizzle-kit": "^0.21.0",
-    "jwks-rsa": "^3.1.0",
-    "qs": "^6.12.1",
+    "husky": "^9.0.11",
+    "postgres": "^3.4.4",
     "semantic-release": "^23.0.8",
     "ts-node": "^10.9.2",
     "tsx": "^4.9.3",
@@ -49,7 +51,9 @@
     "yoctocolors": "^2.0.0"
   },
   "release": {
-    "branches": ["main"]
+    "branches": [
+      "main"
+    ]
   },
   "module": "src/app.ts"
 }

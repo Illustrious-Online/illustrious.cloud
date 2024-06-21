@@ -12,13 +12,22 @@ import {
 
 export const Role = pgEnum("Role", ["CLIENT", "ADMIN", "OWNER"]);
 
+export const authentications = pgTable("Authentication", {
+  id: text("id").primaryKey().notNull(),
+  sub: text("sub").notNull()
+});
+
+export type Authentication = typeof authentications.$inferSelect;
+export type InsertAuthentication = typeof authentications.$inferInsert;
+
 export const invoices = pgTable("Invoice", {
   id: text("id").primaryKey().notNull(),
+  owner: text("owner").notNull(),
   paid: boolean("paid").notNull(),
-  value: numeric("value", { precision: 65, scale: 30 }).notNull(),
-  start: timestamp("start", { precision: 3, mode: "string" }).notNull(),
-  end: timestamp("end", { precision: 3, mode: "string" }).notNull(),
-  due: timestamp("due", { precision: 3, mode: "string" }).notNull(),
+  value: numeric("value", { precision: 12, scale: 2 }).notNull(),
+  start: timestamp("start", { mode: "date" }).notNull(),
+  end: timestamp("end", { mode: "date" }).notNull(),
+  due: timestamp("due", { mode: "date" }).notNull(),
 });
 
 export type Invoice = typeof invoices.$inferSelect;
@@ -49,8 +58,9 @@ export type InsertOrgUser = typeof orgUsers.$inferInsert;
 
 export const reports = pgTable("Report", {
   id: text("id").primaryKey().notNull(),
+  owner: text("owner").notNull(),
   rating: integer("rating").notNull(),
-  notes: text("notes").notNull(),
+  notes: text("notes"),
 });
 
 export type Report = typeof reports.$inferSelect;
@@ -61,7 +71,10 @@ export const users = pgTable(
   {
     id: text("id").primaryKey().notNull(),
     email: text("email").notNull(),
-    name: text("name"),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    picture: text("picture"),
+    phone: text("phone")
   },
   (table) => {
     return {
@@ -76,10 +89,15 @@ export type InsertUser = typeof users.$inferInsert;
 export const userAuthentications = pgTable(
   "UserAuthentications",
   {
-    id: text("id").primaryKey().notNull(),
     userId: text("userId")
       .notNull()
       .references(() => users.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    authId: text("authId")
+      .notNull()
+      .references(() => authentications.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -87,7 +105,7 @@ export const userAuthentications = pgTable(
   (table) => {
     return {
       UserAuthentication_pkey: primaryKey({
-        columns: [table.id, table.userId],
+        columns: [table.authId, table.userId],
         name: "UserAuthentication_pkey",
       }),
     };
@@ -154,3 +172,61 @@ export const userReports = pgTable(
 
 export type UserReport = typeof userReports.$inferSelect;
 export type InsertUserReport = typeof userReports.$inferInsert;
+
+export const orgReports = pgTable(
+  "OrgReport",
+  {
+    orgId: text("orgId")
+      .notNull()
+      .references(() => orgs.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    reportId: text("reportId")
+      .notNull()
+      .references(() => reports.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => {
+    return {
+      OrgReport_pkey: primaryKey({
+        columns: [table.orgId, table.reportId],
+        name: "OrgReport_pkey",
+      }),
+    };
+  },
+);
+
+export type OrgReport = typeof orgReports.$inferSelect;
+export type InsertOrgReport = typeof orgReports.$inferInsert;
+
+export const orgInvoices = pgTable(
+  "OrgInvoice",
+  {
+    orgId: text("orgId")
+      .notNull()
+      .references(() => orgs.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    invoiceId: text("invoiceId")
+      .notNull()
+      .references(() => invoices.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => {
+    return {
+      OrgInvoice_pkey: primaryKey({
+        columns: [table.orgId, table.invoiceId],
+        name: "OrgInvoice_pkey",
+      }),
+    };
+  },
+);
+
+export type OrgInvoice = typeof orgInvoices.$inferSelect;
+export type InsertOrgInvoice = typeof orgInvoices.$inferInsert;

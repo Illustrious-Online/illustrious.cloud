@@ -16,14 +16,8 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
-export const app = new Elysia();
-
-app
+export const app = new Elysia()
   .use(cors())
-  .use(swagger())
-  .use(bearer())
-  .use(loggerPlugin)
-  .use(errorPlugin)
   .use(
     swagger({
       path: "/docs",
@@ -32,9 +26,26 @@ app
           title: "Illustrious Cloud API Docs",
           version: config.app.version,
         },
+        security: [{ JwtAuth: [] }],
+        components: {
+          securitySchemes: {
+            JwtAuth: {
+              type: "http",
+              scheme: "bearer",
+              bearerFormat: "JWT",
+              description: "Enter JWT Bearer token **_only_**",
+            },
+          },
+        },
+      },
+      swaggerOptions: {
+        persistAuthorization: true,
       },
     }),
   )
+  .use(bearer())
+  .use(loggerPlugin)
+  .use(errorPlugin)
   .get("/", () => ({
     name: config.app.name,
     version: config.app.version,
@@ -44,6 +55,6 @@ app
   .listen(config.app.port, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(
-      `Illustrious Cloud API is running at ${app.server?.hostname}:${app.server?.port}`,
+      `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,
     );
   });

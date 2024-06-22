@@ -19,6 +19,7 @@ import Tokens from "../domain/interfaces/tokens";
  * @returns {Tokens} A promise that resolves the authorization tokens.
  */
 export async function getTokens(code: string): Promise<Tokens> {
+  console.log('this is a test');
   const headers = new Headers();
   headers.append("Content-Type", "application/x-www-form-urlencoded");
   headers.append("Accept", "application/json");

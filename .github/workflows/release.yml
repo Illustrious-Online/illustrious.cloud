@@ -42,6 +42,7 @@ jobs:
         run: |
           export NODE_TLS_REJECT_UNAUTHORIZED=0
           bunx drizzle-kit migrate
+          export NODE_TLS_REJECT_UNAUTHORIZED=1
       - name: Remove actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)
@@ -53,10 +54,10 @@ jobs:
           rm -rf .env
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
+          docker build -t ${{ secrets.REGISTRY_URL }}/dashboard:latest .
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container
-        run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
+        run: docker push ${{ secrets.REGISTRY_URL }}/dashboard:latest
       - name: Execute Semantic Release
         run: bunx semantic-release

@@ -53,19 +53,10 @@ jobs:
           rm -rf .env
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/api/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:$(echo $GITHUB_SHA | head -c7) .
+          docker build -t ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest .
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container
-        run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:$(echo $GITHUB_SHA | head -c7)
-      - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.DO_KUBE }}
-      - name: Deploy to DigitalOcean Kubernetes
-        run: |
-          DEPLOYMENT=$(echo $GITHUB_SHA | head -c7)
-          sed -e "s/VersionNumber/$DEPLOYMENT/g" ./ci-deployment.yaml > ./deployment.yaml
-          kubectl apply -f $GITHUB_WORKSPACE/deployment.yaml
-      - name: Verify deployment
-        run: kubectl rollout status deployment/ill-dash
+        run: docker push ${{ secrets.REGISTRY_URL }}/ill-dashboard:latest
       - name: Execute Semantic Release
         run: bunx semantic-release

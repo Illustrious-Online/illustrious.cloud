@@ -8,9 +8,10 @@ COPY bun.lockb .
 
 RUN bun install
 
+COPY drizzle drizzle
 COPY src src
 COPY tsconfig.json .
-# COPY public public
+COPY ca-certificate.crt .
 
 ENV NODE_ENV production
 CMD ["bun", "start"]

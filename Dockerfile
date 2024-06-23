@@ -11,7 +11,7 @@ RUN bun install
 COPY drizzle drizzle
 COPY src src
 COPY tsconfig.json .
-COPY ca-certificate.crt .
+COPY cert.crt .
 
 ENV NODE_ENV production
 CMD ["bun", "start"]

@@ -58,8 +58,6 @@ jobs:
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container
-        run: |
-          docker rmi ${{ secrets.REGISTRY_URL }}/dashboard:latest
-          docker push ${{ secrets.REGISTRY_URL }}/dashboard:latest
+        run: docker push ${{ secrets.REGISTRY_URL }}/dashboard:latest
       - name: Execute Semantic Release
         run: bunx semantic-release

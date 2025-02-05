@@ -1,20 +1,15 @@
 import { NotFoundError } from "elysia";
 
 import { and, eq } from "drizzle-orm";
-import { db } from "../../drizzle/db";
+import ConflictError from "@/domain/exceptions/ConflictError";
+import type { CreateInvoice } from "@/domain/interfaces/invoices";
+import { db } from "../drizzle/db";
 import {
-  Invoice,
+  type Invoice,
   invoices,
   orgInvoices,
-  orgUsers,
-  orgs,
   userInvoices,
-} from "../../drizzle/schema";
-import ConflictError from "../domain/exceptions/ConflictError";
-import ServerError from "../domain/exceptions/ServerError";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { CreateInvoice } from "../domain/interfaces/invoices";
-import { UserRole } from "../domain/types/UserRole";
+} from "../drizzle/schema";
 
 /**
  * Creates a new Invoice.
@@ -25,7 +20,7 @@ import { UserRole } from "../domain/types/UserRole";
  * @throws {Error} If an error occurs while creating the Invoice.
  */
 export async function create(payload: CreateInvoice): Promise<Invoice> {
-  const { user, org, invoice } = payload;
+  const { client, creator, org, invoice } = payload;
   const foundInvoice = await db
     .select()
     .from(invoices)
@@ -37,10 +32,12 @@ export async function create(payload: CreateInvoice): Promise<Invoice> {
 
   const result = await db.insert(invoices).values(invoice).returning();
 
-  await db.insert(userInvoices).values({
-    userId: user,
-    invoiceId: invoice.id,
-  });
+  for (const role of [client, creator]) {
+    await db.insert(userInvoices).values({
+      userId: role,
+      invoiceId: invoice.id,
+    });
+  }
 
   await db.insert(orgInvoices).values({
     orgId: org,
@@ -56,58 +53,7 @@ export async function create(payload: CreateInvoice): Promise<Invoice> {
  * @param payload - The id of the Invoice to fetch; optional userId to validate relationship.
  * @returns {Promise<Invoice>} A promise that resolves the Invoice object.
  */
-export async function fetchById(payload: {
-  id: string;
-  userId: string;
-}): Promise<Invoice> {
-  const { userId, id } = payload;
-  const usersInvoice = await db
-    .select()
-    .from(userInvoices)
-    .where(
-      and(eq(userInvoices.userId, userId), eq(userInvoices.invoiceId, id)),
-    );
-
-  if (usersInvoice.length === 0) {
-    const invoiceOrg = await db
-      .select()
-      .from(orgInvoices)
-      .where(eq(orgInvoices.invoiceId, id));
-
-    if (invoiceOrg.length === 0) {
-      throw new UnauthorizedError(
-        "User does not have direct association this Invoice.",
-      );
-    }
-
-    const users = await db
-      .select()
-      .from(orgUsers)
-      .where(
-        and(
-          eq(orgUsers.userId, userId),
-          eq(orgUsers.orgId, invoiceOrg[0].orgId),
-        ),
-      )
-      .innerJoin(orgs, eq(orgs.id, invoiceOrg[0].orgId));
-
-    if (users.length !== 1) {
-      throw new UnauthorizedError(
-        "User does not have and Org assocation this Invoice.",
-      );
-    }
-
-    const orgUser = users[0].OrgUser;
-    const clientIndex = Object.keys(UserRole).indexOf("CLIENT");
-    const roleIndex = Object.keys(UserRole).indexOf(orgUser.role);
-
-    if (roleIndex < clientIndex) {
-      throw new UnauthorizedError(
-        "User does not have permissions to access this Invoice.",
-      );
-    }
-  }
-
+export async function fetchById(id: string): Promise<Invoice> {
   const data = await db.select().from(invoices).where(eq(invoices.id, id));
 
   if (data.length === 0) {
@@ -124,16 +70,16 @@ export async function fetchById(payload: {
  * @returns {Promise<Invoice>} A promise that resolves to an Invoice object.
  */
 export async function update(payload: Invoice): Promise<Invoice> {
-  const { id, owner, paid, value, start, end, due } = payload;
+  const { id, paid, value, start, end, due, updatedAt } = payload;
   const result = await db
     .update(invoices)
     .set({
-      owner,
       paid,
       value,
       start,
       end,
       due,
+      updatedAt,
     })
     .where(eq(invoices.id, id))
     .returning();
@@ -148,7 +94,19 @@ export async function update(payload: Invoice): Promise<Invoice> {
  * @throws {ConflictError} If a user with the same data already exists.
  */
 export async function deleteOne(invoiceId: string): Promise<void> {
-  db.delete(invoices).where(eq(invoices.id, invoiceId));
-  db.delete(userInvoices).where(eq(userInvoices.invoiceId, invoiceId));
-  db.delete(orgInvoices).where(eq(orgInvoices.invoiceId, invoiceId));
+  await db.delete(userInvoices).where(eq(userInvoices.invoiceId, invoiceId));
+  await db.delete(orgInvoices).where(eq(orgInvoices.invoiceId, invoiceId));
+  await db.delete(invoices).where(eq(invoices.id, invoiceId));
+}
+
+export async function validatePermissions(userId: string, invoiceId: string) {
+  return await db
+    .select()
+    .from(userInvoices)
+    .where(
+      and(
+        eq(userInvoices.userId, userId),
+        eq(userInvoices.invoiceId, invoiceId),
+      ),
+    );
 }

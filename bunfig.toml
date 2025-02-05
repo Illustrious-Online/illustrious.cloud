@@ -1,5 +1,5 @@
 [test]
 coverage = true
 coverageSkipTestFiles = true
-# Coverage for functions at 0.3 temporarily for drizzle schema testing.
-coverageThreshold = { lines = 0.7, functions = 0.3 }
+coverageThreshold = { lines = 0.75, functions = 0.85 }
+coverageReporter = ["lcov"]

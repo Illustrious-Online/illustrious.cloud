@@ -1,22 +1,11 @@
-import { Invoice } from "../../../drizzle/schema";
-
-export interface CreateInvoice {
-  user: string;
-  org: string;
-  invoice: Invoice;
-}
+import type { Invoice } from "../../drizzle/schema";
 
 export interface SubmitInvoice {
+  client: string;
   org: string;
   invoice: Invoice;
 }
 
-export interface FetchInvoice {
-  id: string;
-  userId?: string;
-}
-
-export interface FetchAllInvoices {
-  type: string;
-  id: string;
+export interface CreateInvoice extends SubmitInvoice {
+  creator: string;
 }

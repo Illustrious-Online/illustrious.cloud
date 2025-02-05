@@ -1,0 +1,27 @@
+{{- if .Values.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Release.Name }}-letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ .Values.certManager.email }}
+    privateKeySecretRef:
+      name: {{ .Release.Name }}-letsencrypt-key
+    solvers:
+      - http01:
+          ingress: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-tls
+spec:
+  secretName: {{ .Release.Name }}-tls
+  issuerRef:
+    name: {{ .Release.Name }}-letsencrypt
+    kind: Issuer
+  dnsNames:
+    - {{ .Values.ingress.hostname }}
+{{- end }}

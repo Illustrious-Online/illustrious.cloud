@@ -1,2 +1,2 @@
-bun run check:apply
+bun run check
 echo "\n=====\n=====> Don't forget to test your changes!\n=====\n"

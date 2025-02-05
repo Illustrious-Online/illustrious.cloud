@@ -1,71 +1,95 @@
-import { Context } from "elysia";
-
-import { Report } from "../../drizzle/schema";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { SubmitReport } from "../domain/interfaces/reports";
-import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import * as reportService from "../services/report";
-import * as userService from "../services/user";
-import { getSub } from "../utils/extract-sub";
+import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { SubmitReport } from "@/domain/interfaces/reports";
+import { UserRole } from "@/domain/types/UserRole";
+import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { Report } from "../drizzle/schema";
+import type { AuthenticatedContext } from "../plugins/auth";
+import * as reportService from "@/services/report";
 
 export const create = async (
-  context: Context,
+  context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {
-  const { authorization } = context.headers as { authorization: string };
+  const { user, permissions } = context;
+  const { superAdmin, org, report } = permissions;
   const body = context.body as SubmitReport;
-  const sub = await getSub(authorization);
-  const user = await userService.validatePermissions(sub, body.org);
-  const data = await reportService.create({
-    user: user.id,
-    org: body.org,
-    report: body.report,
-  });
 
-  return {
-    data,
-    message: "Report created successfully.",
-  };
+  if (superAdmin || (org?.role && org.role > UserRole.CLIENT)) {
+    const data = await reportService.create({
+      client: body.client,
+      org: body.org,
+      report: body.report,
+      creator: user.id,
+    });
+
+    return {
+      data,
+      message: "Report created successfully.",
+    };
+  }
+
+  throw new UnauthorizedError("You do not have permission to create a report.");
 };
 
-export const fetchOne = async (context: Context) => {
-  const { authorization } = context.headers as { authorization: string };
-  const { id } = context.params;
-  const sub = await getSub(authorization);
-  const user = await userService.fetchOne({ sub });
-  const data = await reportService.fetchOne({
-    id,
-    userId: user.id,
-  });
+export const fetchOne = async (context: AuthenticatedContext) => {
+  const { report: reportId } = context.params;
+  const { permissions } = context;
+  const { superAdmin, org, report } = permissions;
 
-  return {
-    message: "Report fetched successfully.",
-    data,
-  };
+  if (superAdmin || (org?.role && org.role > UserRole.EMPLOYEE) || report) {
+    const data = await reportService.fetchOne(reportId);
+
+    return {
+      message: "Report fetched successfully.",
+      data,
+    };
+  }
+
+  throw new UnauthorizedError(
+    "You do not have permission to access this report.",
+  );
 };
 
-export const update = async (context: Context) => {
-  const { authorization } = context.headers as { authorization: string };
+export const update = async (context: AuthenticatedContext) => {
   const body = context.body as SubmitReport;
-  const sub = await getSub(authorization);
+  const { permissions } = context;
+  const { superAdmin, report, org } = permissions;
 
-  await userService.validatePermissions(sub, body.org);
-  const data = await reportService.update(body.report);
+  if (
+    superAdmin ||
+    (org?.role &&
+      (org.role > UserRole.EMPLOYEE || (report && org.role > UserRole.CLIENT)))
+  ) {
+    const data = await reportService.update(body.report);
 
-  return {
-    data,
-    message: "Report updated successfully.",
-  };
+    return {
+      data,
+      message: "Report updated successfully.",
+    };
+  }
+
+  throw new UnauthorizedError(
+    "You do not have permission to update this report.",
+  );
 };
 
-export const deleteOne = async (context: Context) => {
-  const { authorization } = context.headers as { authorization: string };
-  const sub = await getSub(authorization);
-  const { id, org } = context.params;
+export const deleteOne = async (context: AuthenticatedContext) => {
+  const { report: reportId } = context.params;
+  const { permissions } = context;
+  const { superAdmin, report, org } = permissions;
 
-  await userService.validatePermissions(sub, org);
-  await reportService.deleteOne(id);
+  if (
+    superAdmin ||
+    (org?.role &&
+      (org.role > UserRole.EMPLOYEE || (report && org.role > UserRole.CLIENT)))
+  ) {
+    await reportService.deleteOne(reportId);
 
-  return {
-    message: "Report deleted successfully.",
-  };
+    return {
+      message: "Report deleted successfully.",
+    };
+  }
+
+  throw new UnauthorizedError(
+    "You do not have permission to delete this report.",
+  );
 };

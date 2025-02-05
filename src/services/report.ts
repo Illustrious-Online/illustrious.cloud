@@ -1,21 +1,15 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
 
-import { db } from "../../drizzle/db";
+import ConflictError from "@/domain/exceptions/ConflictError";
+import type { CreateReport } from "@/domain/interfaces/reports";
+import { db } from "../drizzle/db";
 import {
-  Report,
-  Role,
+  type Report,
   orgReports,
-  orgUsers,
-  orgs,
   reports,
   userReports,
-} from "../../drizzle/schema";
-import ConflictError from "../domain/exceptions/ConflictError";
-import ServerError from "../domain/exceptions/ServerError";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { CreateReport, FetchReport } from "../domain/interfaces/reports";
-import { UserRole } from "../domain/types/UserRole";
+} from "../drizzle/schema";
 
 /**
  * Creates a new Report.
@@ -26,7 +20,7 @@ import { UserRole } from "../domain/types/UserRole";
  * @throws {Error} If an error occurs while creating the Report.
  */
 export async function create(payload: CreateReport): Promise<Report> {
-  const { user, org, report } = payload;
+  const { client, creator, org, report } = payload;
   const foundReport = await db
     .select()
     .from(reports)
@@ -38,10 +32,12 @@ export async function create(payload: CreateReport): Promise<Report> {
 
   const result = await db.insert(reports).values(report).returning();
 
-  await db.insert(userReports).values({
-    userId: user,
-    reportId: report.id,
-  });
+  for (const role of [client, creator]) {
+    await db.insert(userReports).values({
+      userId: role,
+      reportId: report.id,
+    });
+  }
 
   await db.insert(orgReports).values({
     orgId: org,
@@ -57,53 +53,7 @@ export async function create(payload: CreateReport): Promise<Report> {
  * @param payload - The id of the Report to fetch; optional userId to validate relationship.
  * @returns {Promise<Report>} A promise that resolves the Report object.
  */
-export async function fetchOne(payload: FetchReport): Promise<Report> {
-  const { userId, id } = payload;
-  const usersReport = await db
-    .select()
-    .from(userReports)
-    .where(and(eq(userReports.userId, userId), eq(userReports.reportId, id)));
-
-  if (usersReport.length === 0) {
-    const reportOrg = await db
-      .select()
-      .from(orgReports)
-      .where(eq(orgReports.reportId, id));
-
-    if (reportOrg.length === 0) {
-      throw new UnauthorizedError(
-        "User does not have direct association this Report.",
-      );
-    }
-
-    const users = await db
-      .select()
-      .from(orgUsers)
-      .where(
-        and(
-          eq(orgUsers.userId, userId),
-          eq(orgUsers.orgId, reportOrg[0].orgId),
-        ),
-      )
-      .innerJoin(orgs, eq(orgs.id, reportOrg[0].orgId));
-
-    if (users.length !== 1) {
-      throw new UnauthorizedError(
-        "User does not have and Org assocation this Report.",
-      );
-    }
-
-    const orgUser = users[0].OrgUser;
-    const clientIndex = Object.keys(UserRole).indexOf("CLIENT");
-    const roleIndex = Object.keys(UserRole).indexOf(orgUser.role);
-
-    if (roleIndex < clientIndex) {
-      throw new UnauthorizedError(
-        "User does not have permissions to access this Report.",
-      );
-    }
-  }
-
+export async function fetchOne(id: string): Promise<Report> {
   const data = await db.select().from(reports).where(eq(reports.id, id));
 
   if (data.length === 0) {
@@ -120,7 +70,7 @@ export async function fetchOne(payload: FetchReport): Promise<Report> {
  * @returns {Promise<Report>} A promise that resolves to an Report object.
  */
 export async function update(payload: Report): Promise<Report> {
-  const { id, owner, rating, notes } = payload;
+  const { id, rating, notes } = payload;
   const foundReport = await db.select().from(reports).where(eq(reports.id, id));
 
   if (!foundReport) {
@@ -130,7 +80,6 @@ export async function update(payload: Report): Promise<Report> {
   const result = await db
     .update(reports)
     .set({
-      owner,
       rating,
       notes,
     })
@@ -151,7 +100,7 @@ export async function update(payload: Report): Promise<Report> {
  * @throws {ConflictError} If a user with the same data already exists.
  */
 export async function deleteOne(reportId: string): Promise<void> {
-  db.delete(reports).where(eq(reports.id, reportId));
   db.delete(userReports).where(eq(userReports.reportId, reportId));
   db.delete(orgReports).where(eq(orgReports.reportId, reportId));
+  db.delete(reports).where(eq(reports.id, reportId));
 }

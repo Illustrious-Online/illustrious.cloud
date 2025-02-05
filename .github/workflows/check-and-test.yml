@@ -1,40 +1,52 @@
-name: Execute checks & tests
+name: "[illustrious.cloud] Execute checks & tests"
 on:
-  push:
-    branches-ignore:
-      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 jobs:
-  # Label of the container job
-  check-and-test:
-    # Containers must run in Linux based operating systems
+  cloud-check-and-test:
     runs-on: ubuntu-latest
-    env:
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: admin
-      DB_PASSWORD: illustrious
-      DB_NAME: illustrious
-      DB_SSL: "false"
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: illustrious
+          POSTGRES_DB: illustrious
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Install Dependencies
+        run: bun install --frozen-lockfile
+      - name: Install spaces-cli
+        run: bun install -g spaces-cli
+      - name: Download dependency files
         run: |
-          bun install --frozen-lockfile
-          bun install -g spaces-cli
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/api/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Push drizzle details
+        run: bunx drizzle-kit migrate
       - name: Run Biome Checks
         run: bun run check
-      - name: Start Docker and wait for reboot
-        run: |
-          bun run db:docker &
-          ./wait-for-it.sh localhost:5432 --strict --timeout=1000
-      - name: Run db migrations for testing
-        run: bun run db:migrate
       - name: Run unit tests
-        run: bun test
+        run: bun run test
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: illustrious-cloud
+          files: ./coverage/lcov-report/index-lcov.html
+          slug: Illustrious-Online/illustrious.cloud

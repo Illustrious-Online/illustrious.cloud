@@ -1,26 +1,27 @@
+import { supabaseClient } from "@/app";
+import config from "@/config";
+import { User } from "@/domain/models/user";
+import { UserRole } from "@/domain/types/UserRole";
+import axios from "axios";
 import { and, eq } from "drizzle-orm";
-import { db } from "../../drizzle/db";
+import BadRequestError from "@/domain/exceptions/BadRequestError";
+import ConflictError from "@/domain/exceptions/ConflictError";
+import ServerError from "@/domain/exceptions/ServerError";
+import type { FetchUser } from "@/domain/interfaces/users";
+import { db } from "../drizzle/db";
 import {
-  Invoice,
-  Org,
-  Report,
-  Role,
-  User,
-  authentications,
+  type User as IllustriousUser,
+  type Invoice,
+  type Org,
+  type Report,
   invoices,
   orgUsers,
   orgs,
   reports,
-  userAuthentications,
   userInvoices,
   userReports,
   users,
-} from "../../drizzle/schema";
-import BadRequestError from "../domain/exceptions/BadRequestError";
-import ConflictError from "../domain/exceptions/ConflictError";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import { CreateUser, FetchUser } from "../domain/interfaces/users";
-import { UserRole } from "../domain/types/UserRole";
+} from "../drizzle/schema";
 
 /**
  * Creates a new user.
@@ -30,22 +31,17 @@ import { UserRole } from "../domain/types/UserRole";
  * @throws {ConflictError} If a user with the same data already exists.
  * @throws {Error} If an error occurs while creating the user.
  */
-export async function create(payload: User): Promise<User> {
-  let currentUser;
-
-  currentUser = await db.select().from(users).where(eq(users.id, payload.id));
-
-  if (currentUser.length > 0) {
-    throw new ConflictError("User already exists!");
+export async function updateOrCreate(
+  payload: IllustriousUser,
+): Promise<IllustriousUser> {
+  if (!payload.id) {
+    throw new BadRequestError("Payload is missing required details");
   }
 
-  currentUser = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, payload.email));
+  const user: IllustriousUser | undefined = await fetchOne({ id: payload.id });
 
-  if (currentUser.length > 0) {
-    throw new ConflictError("User already exists!");
+  if (user) {
+    return await update(payload);
   }
 
   const result = await db.insert(users).values(payload).returning();
@@ -57,9 +53,9 @@ export async function create(payload: User): Promise<User> {
  * Fetches a User by email, id, sub.
  *
  * @param payload - The email, id, or sub of the User to fetch.
- * @returns {Promise<User>} A promise that resolves the User object.
+ * @returns {Promise<IllustriousUser>} A promise that resolves the User object.
  */
-export async function fetchOne(payload: FetchUser): Promise<User> {
+export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
   if (payload.id) {
     const result = await db
       .select()
@@ -76,32 +72,15 @@ export async function fetchOne(payload: FetchUser): Promise<User> {
     return result[0];
   }
 
-  if (payload.sub) {
-    const response = await db
-      .select()
-      .from(authentications)
-      .leftJoin(
-        userAuthentications,
-        eq(userAuthentications.authId, authentications.id),
-      );
-
-    const auth = response.find(
-      (res) => res.Authentication.sub === payload.sub,
-    )?.UserAuthentications;
-
-    if (!auth) {
-      throw new ConflictError("Unable to find user with the provided sub");
-    }
-
+  if (payload.identifier) {
     const result = await db
       .select()
       .from(users)
-      .where(eq(users.id, auth.userId));
-
+      .where(eq(users.identifier, payload.identifier));
     return result[0];
   }
 
-  throw new BadRequestError("Failed to fetch user with provided details");
+  throw new ConflictError("User could not be found with the provided details.");
 }
 
 /**
@@ -113,36 +92,50 @@ export async function fetchOne(payload: FetchUser): Promise<User> {
  */
 export async function fetchResources(
   id: string,
-  type: string,
-): Promise<Invoice[] | Report[] | Org[]> {
-  if (type === "reports") {
+  type?: {
+    reports?: boolean;
+    invoices?: boolean;
+    orgs?: boolean;
+  },
+): Promise<{
+  reports?: Report[];
+  invoices?: Invoice[];
+  orgs?: Org[];
+}> {
+  const result: {
+    reports?: Report[];
+    invoices?: Invoice[];
+    orgs?: Org[];
+  } = {};
+
+  if (!type || type.reports) {
     const usersReports = await db
       .select()
       .from(reports)
       .innerJoin(userReports, eq(userReports.userId, id));
 
-    return usersReports.map((result) => result.Report);
+    result.reports = usersReports.map((result) => result.Report);
   }
 
-  if (type === "invoices") {
+  if (!type || type.invoices) {
     const usersInvoices = await db
       .select()
       .from(invoices)
       .innerJoin(userInvoices, eq(userInvoices.userId, id));
 
-    return usersInvoices.map((result) => result.Invoice);
+    result.invoices = usersInvoices.map((result) => result.Invoice);
   }
 
-  if (type === "orgs") {
+  if (!type || type.orgs) {
     const usersOrgs = await db
       .select()
       .from(orgs)
       .innerJoin(orgUsers, eq(orgUsers.userId, id));
 
-    return usersOrgs.map((result) => result.Org);
+    result.orgs = usersOrgs.map((result) => result.Org);
   }
 
-  throw new BadRequestError("Required details for look up are missing");
+  return result;
 }
 
 /**
@@ -151,7 +144,9 @@ export async function fetchResources(
  * @param payload - The new User data to update.
  * @returns {Promise<User>} A promise that resolves to an User object.
  */
-export async function update(payload: User): Promise<User> {
+export async function update(
+  payload: IllustriousUser,
+): Promise<IllustriousUser> {
   const { id, email, firstName, lastName, picture, phone } = payload;
   const result = await db
     .update(users)
@@ -168,6 +163,19 @@ export async function update(payload: User): Promise<User> {
   return result[0];
 }
 
+const supaConfig = {
+  method: "post",
+  maxBodyLength: Number.POSITIVE_INFINITY,
+  headers: {
+    Authorization: `Bearer ${config.auth.edgeKey}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+  },
+  url: `https://${config.auth.supabaseId}.supabase.co/functions/v1`,
+};
+
 /**
  * Removes an Organization and all related resources.
  *
@@ -175,61 +183,76 @@ export async function update(payload: User): Promise<User> {
  * @param id - The Organization ID to be removed.
  * @throws {ConflictError} If an Organization is not allowed to be removed.
  */
-export async function deleteOne(userId: string): Promise<void> {
-  const userAuths = await db
-    .select()
-    .from(userAuthentications)
-    .where(eq(userAuthentications.userId, userId));
+export async function deleteOne(
+  userId: string,
+  identifier: string,
+): Promise<void> {
+  const userList = await db.select().from(users).where(eq(users.id, userId));
 
-  if (userAuths.length < 1) {
-    throw new ConflictError("Unable to find user authentication.");
+  if (userList.length < 1) {
+    throw new ConflictError(
+      "User could not be found with the provided details",
+    );
   }
 
-  userAuths.forEach(async (userAuth) => {
-    await db
-      .delete(userAuthentications)
-      .where(eq(userAuthentications.authId, userAuth.authId));
-    await db
-      .delete(authentications)
-      .where(eq(authentications.id, userAuth.authId));
-  });
+  const unpaidInvoices = await db
+    .select()
+    .from(invoices)
+    .innerJoin(userInvoices, eq(userInvoices.userId, userId))
+    .where(eq(invoices.paid, false));
 
-  db.delete(users).where(eq(users.id, userId));
+  if (unpaidInvoices.length > 0) {
+    throw new ConflictError("User has unpaid invoices");
+  }
+
+  const ownedOrgs = await db
+    .select()
+    .from(orgUsers)
+    .where(and(eq(orgUsers.userId, userId), eq(orgUsers.role, UserRole.OWNER)));
+
+  if (ownedOrgs.length > 0) {
+    throw new ConflictError("User is an owner of an organization");
+  }
+
+  await db.delete(users).where(eq(users.id, userId));
+
+  if (!config.app.env.includes("test")) {
+    await axios.request({
+      ...supaConfig,
+      url: `${supaConfig.url}/delete-user`,
+      data: {
+        user: identifier,
+      },
+    });
+  }
 }
 
 /**
- * Validates that the provided user has access/permissions to resource.
+ * Links a Steam account to the user's profile.
  *
- * @param sub - The sub item obtained from authorization token.
- * @param org - The Organization ID to validate permissions.
- * @throws {ConflictError} If an Organization has failed to be removed.
- * @throws {UnauthorizedError} If the permissions are not allowed to remote Organization.
+ * @param {boolean} [authenticate] - If true, the function will authenticate the user with Steam.
+ * @returns {Promise<{ url?: string; message?: string }>} A promise that resolves to an object containing the URL for Steam authentication or a message.
+ * @throws {ServerError} Throws an error if the server responds with a status of 500.
  */
-export async function validatePermissions(
-  sub: string,
-  org: string,
-): Promise<User> {
-  const user = await fetchOne({ sub });
-  const userFromOrg = await db
-    .select()
-    .from(orgUsers)
-    .where(and(eq(orgUsers.userId, user.id), eq(orgUsers.orgId, org)));
+export async function linkSteam(
+  authenticate?: boolean,
+): Promise<{ url?: string; message?: string }> {
+  const path = `/steam-auth${authenticate ? "/authenticate" : ""}`;
+  const steamConfig = {
+    ...supaConfig,
+    url: `${supaConfig.url}${path}`,
+  };
 
-  if (userFromOrg.length === 0) {
-    throw new ConflictError(
-      "Unable to continue: Failed to find user in organization",
+  const response = await axios.request(steamConfig);
+
+  if (response.status === 500) {
+    throw new ServerError(
+      authenticate
+        ? "Error linking Steam account"
+        : "Error completing link with Steam",
+      500,
     );
   }
 
-  const orgUser = userFromOrg[0];
-  const clientIndex = Object.keys(UserRole).indexOf("CLIENT");
-  const roleIndex = Object.keys(UserRole).indexOf(orgUser.role);
-
-  if (roleIndex < clientIndex) {
-    throw new UnauthorizedError(
-      "Unable to continue: User is not have sufficient permissions",
-    );
-  }
-
-  return user;
+  return response.data;
 }

@@ -1,19 +1,19 @@
-import { Elysia } from "elysia";
+import type { Elysia } from "elysia";
 import { StatusCodes } from "http-status-codes";
 
-import config from "../config";
-import BadRequestError from "../domain/exceptions/BadRequestError";
-import ConflictError from "../domain/exceptions/ConflictError";
-import ResponseError from "../domain/exceptions/ResponseError";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import ErrorResponse from "../domain/types/generic/ErrorResponse";
+import config from "@/config";
+import BadRequestError from "@/domain/exceptions/BadRequestError";
+import ConflictError from "@/domain/exceptions/ConflictError";
+import ResponseError from "@/domain/exceptions/ResponseError";
+import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type ErrorResponse from "@/domain/types/generic/ErrorResponse";
 
 export default (app: Elysia) =>
   app
     .error({ BadRequestError, ConflictError, ResponseError, UnauthorizedError })
     .onError((handler): ErrorResponse<number> => {
       if (config.app.env !== "test") {
-        console.error(handler.error?.stack);
+        console.error((handler.error as Error)?.stack);
       }
 
       if (
@@ -25,7 +25,7 @@ export default (app: Elysia) =>
         handler.set.status = handler.error.status;
 
         return {
-          message: handler.error.message,
+          message: (handler.error as Error).message,
           code: handler.error.status,
         };
       }
@@ -49,7 +49,7 @@ export default (app: Elysia) =>
       handler.set.status = StatusCodes.SERVICE_UNAVAILABLE;
 
       return {
-        message: handler.error.message,
+        message: (handler.error as Error).message,
         code: handler.set.status,
       };
     });

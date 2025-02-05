@@ -1,20 +1,28 @@
-import fs from "fs";
 import bearer from "@elysiajs/bearer";
 import cors from "@elysiajs/cors";
 import swagger from "@elysiajs/swagger";
-import * as Sentry from "@sentry/bun";
 import { Elysia } from "elysia";
 
+import { createClient } from "@supabase/supabase-js";
 import config from "./config";
 import errorPlugin from "./plugins/error";
 import loggerPlugin from "./plugins/logger";
 import authRoutes from "./routes/auth";
 import protectedRoutes from "./routes/protected";
 
-Sentry.init({
-  dsn: config.app.sentryUrl,
-  tracesSampleRate: 1.0,
-});
+import * as Sentry from "@sentry/bun";
+
+if (config.app.env === "production") {
+  Sentry.init({
+    dsn: config.app.sentryUrl,
+    tracesSampleRate: 1.0,
+  });
+}
+
+export const supabaseClient = createClient(
+  `https://${config.auth.supabaseId}.supabase.co`,
+  config.auth.supabaseServiceRoleKey,
+);
 
 export const app = new Elysia()
   .use(cors())

@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import type { Elysia } from "elysia";
 
 import authPlugin from "../plugins/auth";
 import invoiceRouter from "../routes/invoice";

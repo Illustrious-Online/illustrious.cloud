@@ -1,13 +1,11 @@
 import { relations } from "drizzle-orm/relations";
 import {
-  authentications,
   invoices,
   orgInvoices,
   orgReports,
   orgUsers,
   orgs,
   reports,
-  userAuthentications,
   userInvoices,
   userReports,
   users,
@@ -35,42 +33,24 @@ export const OrgUserRelations = relations(orgUsers, ({ one }) => ({
 
 export const UserRelations = relations(users, ({ many }) => ({
   OrgUsers: many(orgUsers),
-  UserAuthentications: many(userAuthentications),
   UserReports: many(userReports),
-  UserInvoices: many(userInvoices)
+  UserInvoices: many(userInvoices),
 }));
-
-export const UserAuthentications = relations(
-  userAuthentications,
-  ({ one }) => ({
-    User: one(users, {
-      fields: [userAuthentications.userId],
-      references: [users.id],
-    }),
-  }),
-);
-
-export const AuthenticationRelations = relations(
-  authentications,
-  ({ many }) => ({
-    UserAuthentications: many(userAuthentications),
-  }),
-);
 
 export const UserInvoiceRelations = relations(userInvoices, ({ one }) => ({
   Invoice: one(invoices, {
     fields: [userInvoices.invoiceId],
     references: [invoices.id],
   }),
-  OrgUser: one(orgUsers, {
+  User: one(users, {
     fields: [userInvoices.userId],
-    references: [orgUsers.id],
+    references: [users.id],
   }),
 }));
 
 export const InvoiceRelations = relations(invoices, ({ many }) => ({
   UserInvoices: many(userInvoices),
-  OrgInvoices: many(orgInvoices)
+  OrgInvoices: many(orgInvoices),
 }));
 
 export const UserReportRelations = relations(userReports, ({ one }) => ({
@@ -78,9 +58,9 @@ export const UserReportRelations = relations(userReports, ({ one }) => ({
     fields: [userReports.reportId],
     references: [reports.id],
   }),
-  OrgUser: one(orgUsers, {
+  User: one(users, {
     fields: [userReports.userId],
-    references: [orgUsers.id],
+    references: [users.id],
   }),
 }));
 

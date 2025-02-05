@@ -1,4 +1,4 @@
-import { User } from "../../../drizzle/schema";
+import type { User } from "../../drizzle/schema";
 
 export interface CreateUser {
   sub: string;
@@ -6,7 +6,7 @@ export interface CreateUser {
 }
 
 export interface FetchUser {
-  id?: string;
-  sub?: string;
-  email?: string;
+  id?: string | null;
+  email?: string | null;
+  identifier?: string | null;
 }

@@ -11,7 +11,7 @@ export function durationString(beforeTime: bigint): string {
   const timeDifference = now - beforeTime;
   const nanoseconds = Number(timeDifference);
 
-  let timeMessage: string = "";
+  let timeMessage = "";
 
   if (nanoseconds >= 1e9) {
     const seconds = (nanoseconds / 1e9).toFixed(2);

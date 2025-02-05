@@ -1,21 +1,19 @@
-FROM oven/bun
+FROM oven/bun:latest AS builder
 
 WORKDIR /app
 
-COPY .env .
-COPY package.json .
-COPY bun.lockb .
+COPY package.json bun.lockb turbo.json ./
+COPY apps/ill.cloud /app
 
 RUN bun install
+RUN bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/app.ts
 
-COPY drizzle drizzle
-COPY src src
-COPY tsconfig.json .
-COPY cert.crt .
+FROM oven/bun:latest AS production
 
+WORKDIR /app
+
+COPY --from=builder /app /app
+
+EXPOSE 4000
 ENV NODE_ENV production
-CMD ["bun", "start"]
-
-EXPOSE 8000
-
-
+CMD ["./server"]

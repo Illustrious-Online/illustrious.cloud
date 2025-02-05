@@ -1,8 +1,7 @@
 import {
   boolean,
+  decimal,
   integer,
-  numeric,
-  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -10,11 +9,9 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const Role = pgEnum("Role", ["CLIENT", "ADMIN", "OWNER"]);
-
 export const authentications = pgTable("Authentication", {
   id: text("id").primaryKey().notNull(),
-  sub: text("sub").notNull()
+  sub: text("sub").notNull(),
 });
 
 export type Authentication = typeof authentications.$inferSelect;
@@ -22,12 +19,14 @@ export type InsertAuthentication = typeof authentications.$inferInsert;
 
 export const invoices = pgTable("Invoice", {
   id: text("id").primaryKey().notNull(),
-  owner: text("owner").notNull(),
   paid: boolean("paid").notNull(),
-  value: numeric("value", { precision: 12, scale: 2 }).notNull(),
+  value: decimal("price", { precision: 10, scale: 2 }).notNull(),
   start: timestamp("start", { mode: "date" }).notNull(),
   end: timestamp("end", { mode: "date" }).notNull(),
   due: timestamp("due", { mode: "date" }).notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt"),
+  deletedAt: timestamp("deletedAt"),
 });
 
 export type Invoice = typeof invoices.$inferSelect;
@@ -42,25 +41,38 @@ export const orgs = pgTable("Org", {
 export type Org = typeof orgs.$inferSelect;
 export type InsertOrg = typeof orgs.$inferInsert;
 
-export const orgUsers = pgTable("OrgUser", {
-  id: text("id").primaryKey().notNull(),
-  role: Role("role").default("CLIENT").notNull(),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "restrict", onUpdate: "cascade" }),
-  orgId: text("orgId")
-    .notNull()
-    .references(() => orgs.id, { onDelete: "restrict", onUpdate: "cascade" }),
-});
+export const orgUsers = pgTable(
+  "OrgUser",
+  {
+    role: integer("role").default(0).notNull(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    orgId: text("orgId")
+      .notNull()
+      .references(() => orgs.id, { onDelete: "restrict", onUpdate: "cascade" }),
+  },
+  (table) => {
+    return {
+      OrgUser_pkey: primaryKey({
+        columns: [table.orgId, table.userId],
+        name: "OrgUser_pkey",
+      }),
+    };
+  },
+);
 
 export type OrgUser = typeof orgUsers.$inferSelect;
 export type InsertOrgUser = typeof orgUsers.$inferInsert;
 
 export const reports = pgTable("Report", {
   id: text("id").primaryKey().notNull(),
-  owner: text("owner").notNull(),
   rating: integer("rating").notNull(),
   notes: text("notes"),
+  createdAt: timestamp("createdAt").notNull(),
 });
 
 export type Report = typeof reports.$inferSelect;
@@ -70,11 +82,13 @@ export const users = pgTable(
   "User",
   {
     id: text("id").primaryKey().notNull(),
-    email: text("email").notNull(),
+    identifier: text("identifier").notNull(),
+    email: text("email"),
     firstName: text("first_name"),
     lastName: text("last_name"),
     picture: text("picture"),
-    phone: text("phone")
+    phone: text("phone"),
+    superAdmin: boolean("super_admin").default(false).notNull(),
   },
   (table) => {
     return {
@@ -85,35 +99,6 @@ export const users = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-
-export const userAuthentications = pgTable(
-  "UserAuthentications",
-  {
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
-    authId: text("authId")
-      .notNull()
-      .references(() => authentications.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
-  },
-  (table) => {
-    return {
-      UserAuthentication_pkey: primaryKey({
-        columns: [table.authId, table.userId],
-        name: "UserAuthentication_pkey",
-      }),
-    };
-  },
-);
-
-export type UserAuthentication = typeof userAuthentications.$inferSelect;
-export type InsertUserAuthentication = typeof userAuthentications.$inferInsert;
 
 export const userInvoices = pgTable(
   "UserInvoice",

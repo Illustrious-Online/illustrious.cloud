@@ -1,0 +1,24 @@
+elysiajs:
+  image:
+    repository: your-docker-repo/nextjs-app
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 2
+  nodeSelector: {}
+
+ingress:
+  enabled: true
+  hostname: "api.illustrious.cloud"
+  tls: true
+  certManager: true
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 4000
+  name: elysiajs-service
+
+certManager:
+  enabled: true
+  email: "nick@illustrious.online"
+  clusterIssuer: "letsencrypt-prod"

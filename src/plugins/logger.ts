@@ -1,5 +1,5 @@
-import Elysia from "elysia";
-import process from "process";
+import process from "node:process";
+import type Elysia from "elysia";
 import * as yc from "yoctocolors";
 import { durationString, methodString } from "../utils/logger";
 
@@ -35,7 +35,9 @@ export default (app: Elysia) =>
         logStr.push(String(error.status));
       }
 
-      logStr.push(error.message);
+      if ("message" in error) {
+        logStr.push(error.message);
+      }
 
       const beforeTime: bigint = store.beforeTime;
       logStr.push(durationString(beforeTime));

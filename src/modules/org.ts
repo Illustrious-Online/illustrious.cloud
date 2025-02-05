@@ -1,28 +1,24 @@
-import { Context } from "elysia";
+import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import { UserRole } from "@/domain/types/UserRole";
+import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { Invoice, Org, Report, User } from "../drizzle/schema";
+import type { AuthenticatedContext } from "../plugins/auth";
+import * as orgService from "@/services/org";
 
-import { jwtDecode } from "jwt-decode";
-import { Invoice, Org, Report, User } from "../../drizzle/schema";
-import UnauthorizedError from "../domain/exceptions/UnauthorizedError";
-import SuccessResponse from "../domain/types/generic/SuccessResponse";
-import * as orgService from "../services/org";
-import * as userService from "../services/user";
-import { getSub } from "../utils/extract-sub";
+export interface OrgDetails {
+  org: Org;
+  reports?: Report[];
+  invoices?: Invoice[];
+  users?: User[];
+}
 
 export const create = async (
-  context: Context,
+  context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
-  }
-
-  const body = context.body as Org;
-  const sub = await getSub(context.headers.authorization);
-  const user = await userService.fetchOne({ sub });
+  const { body, user } = context;
   const data = await orgService.create({
     user: user.id,
-    org: body,
+    org: body as Org,
   });
 
   return {
@@ -31,33 +27,48 @@ export const create = async (
   };
 };
 
-export const fetchOrg = async (context: Context) => {
-  const { id } = context.params;
+export const fetchOne = async (
+  context: AuthenticatedContext,
+): Promise<SuccessResponse<OrgDetails>> => {
+  const { org: orgParam } = context.params;
   const { include } = context.query;
-  const data = await orgService.fetchOne(id);
-  const result: {
-    org: Org;
-    reports?: Report[];
-    invoices?: Invoice[];
-    users?: User[];
-  } = { org: data };
+  const { permissions } = context;
+  const { superAdmin, org } = permissions;
 
-  if (include?.includes("invoices")) {
-    const orgInvoices = (await orgService.fetchAll(
-      id,
-      "invoices",
-    )) as Invoice[];
-    result.invoices = orgInvoices;
+  if (!superAdmin && !org?.role) {
+    throw new UnauthorizedError(
+      "User does not have permission to fetch organization details.",
+    );
   }
 
-  if (include?.includes("reports")) {
-    const orgReports = (await orgService.fetchAll(id, "reports")) as Report[];
-    result.reports = orgReports;
-  }
+  const data = await orgService.fetchOne(orgParam);
+  const result: OrgDetails = { org: data };
+  const notClient = org?.id && org?.role && org?.role > UserRole.CLIENT;
 
-  if (include?.includes("users")) {
-    const orgUsers = (await orgService.fetchAll(id, "users")) as User[];
-    result.users = orgUsers;
+  if ((superAdmin || notClient) && org?.id) {
+    if (include?.includes("invoices")) {
+      const orgInvoices = (await orgService.fetchResources(
+        org.id,
+        "invoices",
+      )) as Invoice[];
+      result.invoices = orgInvoices;
+    }
+
+    if (include?.includes("reports")) {
+      const orgReports = (await orgService.fetchResources(
+        org.id,
+        "reports",
+      )) as Report[];
+      result.reports = orgReports;
+    }
+
+    if (include?.includes("users")) {
+      const orgUsers = (await orgService.fetchResources(
+        org.id,
+        "users",
+      )) as User[];
+      result.users = orgUsers;
+    }
   }
 
   return {
@@ -66,49 +77,60 @@ export const fetchOrg = async (context: Context) => {
   };
 };
 
-export const fetchResources = async (context: Context) => {
-  const { id, type } = context.params;
-  const data = await orgService.fetchAll(id, type);
+export const fetchResources = async (context: AuthenticatedContext) => {
+  const { id, resource } = context.params;
+  const { permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if (!superAdmin && org?.role === UserRole.CLIENT) {
+    throw new UnauthorizedError(
+      "User does not have permission to fetch this organization's resources.",
+    );
+  }
+
+  const data = await orgService.fetchResources(id, resource);
 
   return {
     data: {
-      [type]: data,
+      [resource]: data,
     },
     message: "Organization resources fetched successfully.",
   };
 };
 
-export const update = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
+export const update = async (context: AuthenticatedContext) => {
+  const body = context.body as Org;
+  const { permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if (org?.role !== undefined) {
+    if (!superAdmin && org.role < UserRole.OWNER) {
+      throw new UnauthorizedError(
+        "User does not have permission to update organization details.",
+      );
+    }
   }
 
-  const body = context.body as Org;
-  const sub = await getSub(context.headers.authorization);
-
-  await userService.validatePermissions(sub, body.id);
-  const data = await orgService.update(body);
-
   return {
-    data,
+    data: await orgService.update(body),
     message: "Organization updated successfully.",
   };
 };
 
-export const deleteOne = async (context: Context) => {
-  if (!context.headers.authorization) {
-    throw new UnauthorizedError(
-      "Unable to continue: Cannot find token containing user sub",
-    );
+export const deleteOne = async (context: AuthenticatedContext) => {
+  const { org: orgParam } = context.params;
+  const { permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if (org?.role !== undefined) {
+    if (!superAdmin && org.role < UserRole.OWNER) {
+      throw new UnauthorizedError(
+        "User does not have permission to delete organization.",
+      );
+    }
   }
 
-  const { id } = context.params;
-  const sub = await getSub(context.headers.authorization);
-  const user = await userService.fetchOne({ sub });
-
-  await orgService.deleteOne(user.id, id);
+  await orgService.deleteOne(orgParam);
 
   return {
     message: "Organization deleted successfully.",

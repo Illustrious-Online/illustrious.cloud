@@ -1,10 +1,10 @@
 apiVersion: v2
-name: nextjs-app
-description: A Helm chart for deploying an Elysia.js API with ArgoCD, Nginx Ingress, and Cert Manager
+name: ill-cloud
+description: A Helm chart for deploying an Elysia.js API to Kubernetes
 version: 0.1.0
 appVersion: "1.0"
 dependencies:
-- name: nginx-ingress
+- name: ingress-nginx
   version: "1.12.0"
   repository: "https://kubernetes.github.io/ingress-nginx"
 - name: cert-manager

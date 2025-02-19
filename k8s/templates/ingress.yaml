@@ -4,6 +4,7 @@ metadata:
   name: {{ .Release.Name }}-ingress
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   ingressClassName: "nginx"
   rules:
@@ -16,7 +17,7 @@ spec:
               service:
                 name: {{ .Release.Name }}
                 port:
-                  number: 80
+                  name: https
   tls:
     - hosts:
         - {{ .Values.ingress.host }}

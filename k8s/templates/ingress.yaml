@@ -18,7 +18,7 @@ spec:
               service:
                 name: {{ .Release.Name }}
                 port:
-                  name: https
+                  number: 80
   tls:
     - hosts:
         - {{ .Values.ingress.host }}

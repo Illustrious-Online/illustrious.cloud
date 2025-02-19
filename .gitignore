@@ -14,7 +14,6 @@
 
 # production
 /build
-deployment.yaml
 
 # misc
 .DS_Store

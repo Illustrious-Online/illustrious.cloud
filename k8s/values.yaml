@@ -1,6 +1,6 @@
 elysiajs:
   image:
-    repository: your-docker-repo/nextjs-app
+    repository: illustriousonline/ill-cloud
     tag: latest
     pullPolicy: IfNotPresent
   replicas: 2

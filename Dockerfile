@@ -2,8 +2,8 @@ FROM oven/bun:latest AS builder
 
 WORKDIR /app
 
-COPY package.json bun.lockb turbo.json ./
-COPY apps/ill.cloud /app
+COPY package.json bun.lockb ./
+COPY ./ /app
 
 RUN bun install
 RUN bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/app.ts

@@ -25,12 +25,8 @@ spec:
     {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
-    {{- range .Values.ingress.tls }}
     - hosts:
-        {{- range .hosts }}
-        - {{ . }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
+        - {{ .Values.ingress.hostname }}
+      secretName: {{ .Release.Name }}-tls
   {{- end }}
 {{- end }}

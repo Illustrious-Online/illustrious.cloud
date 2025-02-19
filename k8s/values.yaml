@@ -1,24 +1,34 @@
-elysiajs:
-  image:
-    repository: illustriousonline/ill-cloud
-    tag: latest
-    pullPolicy: IfNotPresent
-  replicas: 2
-  nodeSelector: {}
+replicaCount: 2 # Scale as needed
+
+image:
+  repository: illustriousonline/ill-cloud
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 3000
 
 ingress:
   enabled: true
-  hostname: "api.illustrious.cloud"
-  tls: true
-  certManager: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  host: api.illustrious.cloud
+  path: /
+  pathType: Prefix
+  tlsSecretName: api-tls
 
-service:
-  type: LoadBalancer
-  port: 80
-  targetPort: 4000
-  name: elysiajs-service
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
 
-certManager:
+hpa:
   enabled: true
-  email: "nick@illustrious.online"
-  clusterIssuer: "letsencrypt-prod"
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70

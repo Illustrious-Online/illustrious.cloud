@@ -2,7 +2,7 @@ replicaCount: 2 # Scale as needed
 
 image:
   repository: illustriousonline/ill-cloud
-  tag: latest
+  tag: 0.0.1
   pullPolicy: Always
 
 service:

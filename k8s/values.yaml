@@ -1,8 +1,11 @@
 replicaCount: 2 # Scale as needed
 
+deployment:
+  namespace: ill-cloud
+
 image:
   repository: illustriousonline/ill-cloud
-  tag: 0.0.1
+  tag: 0.0.1 # Update this on release action to match release version
   pullPolicy: Always
 
 service:

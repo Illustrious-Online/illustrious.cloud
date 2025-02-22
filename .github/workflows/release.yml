@@ -24,47 +24,51 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
+      ### Install server dependencies
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DO_TOKEN }}
       - name: Install spaces-cli
         run: bun install -g spaces-cli
+      ### Clone repository & install application dependencies
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Download test dependency files
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+      ### Update the database
       - name: Push drizzle details
         run: bunx drizzle-kit migrate
+      ### Run checks and tests
       - name: Run Biome Checks
         run: bun run check
       - name: Run unit tests
         run: bun run test
+      ### Upload coverage reports
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: illustrious-cloud
-          files: ./coverage/lcov-report/index-lcov.html
+          files: ./coverage/lcov.info
           slug: Illustrious-Online/illustrious.cloud
-      - name: Perform versioning updates
+      ### Update the Kubernetes deployment
+      - name: Update argocd values
         run: |
-          bunx semantic-release
-          export VERSION=$(bunx version)
-          echo "Updating version to $VERSION"
-          sed -i "s/#VERSION#/$VERSION/g" k8s/values.yaml
-      - name: Download dependency files
+          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
+      ### Prepare for deploying to production
+      - name: Download ci dependency files
         run: |
           rm -rf ./.env
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
@@ -74,6 +78,7 @@ jobs:
         run: |
           IP=$(curl -s ifconfig.me)
           doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$IP
+      ### Forcefully push database migrations
       - name: Push database migrations
         run: |
           export NODE_TLS_REJECT_UNAUTHORIZED=0
@@ -85,14 +90,22 @@ jobs:
           JSON=$(doctl databases firewalls list ${{ secrets.DB_UUID }} --output json)
           ID=$(echo $JSON | jq -r '.[] | select(.value == '\"$IP\"').uuid')
           doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
+      ### Build new docker image with new version
       - name: Build Docker image
         run: |
           rm -rf apps/ill.cloud/.env
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/production.env -o ./apps/ill.cloud/.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           bun run build
-          docker build -t ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$(bunx version) -f packages/deployment/docker/cloud.Dockerfile .
+          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          docker build -t ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
+      ### Login to DO registry and push docker image
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container
-        run: docker push ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$(bunx version)
+        run: |
+          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          docker push ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION
+      ### Execute final versioning updates via semantic-release
+      - name: Execute semantic-release
+        run: npx semantic-release

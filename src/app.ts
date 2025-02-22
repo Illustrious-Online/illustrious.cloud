@@ -20,7 +20,7 @@ if (config.app.env === "production") {
 }
 
 export const supabaseClient = createClient(
-  `https://${config.auth.supabaseId}.supabase.co`,
+  `https://${config.auth.supabaseId ?? 'test'}.supabase.co`,
   config.auth.supabaseServiceRoleKey,
 );
 

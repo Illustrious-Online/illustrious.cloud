@@ -173,7 +173,7 @@ const supaConfig = {
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
   },
-  url: `https://${config.auth.supabaseId}.supabase.co/functions/v1`,
+  url: `https://${config.auth.supabaseId ?? 'test'}.supabase.co/functions/v1`,
 };
 
 /**

@@ -1,4 +1,4 @@
-name: "[ill.cloud] Perform release"
+name: "Illustrious Cloud Release"
 permissions:
   contents: read
   pull-requests: write

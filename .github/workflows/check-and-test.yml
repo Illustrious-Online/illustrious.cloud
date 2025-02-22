@@ -23,30 +23,35 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      ### Install server dependencies
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
       - name: Install spaces-cli
         run: bun install -g spaces-cli
+      ### Clone repository & install application dependencies
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
       - name: Download dependency files
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+        ### Update the database
       - name: Push drizzle details
         run: bunx drizzle-kit migrate
+      ### Run checks and tests
       - name: Run Biome Checks
         run: bun run check
       - name: Run unit tests
-        run: bun run test
+        run: bun test
+      ### Upload coverage reports
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: illustrious-cloud
-          files: ./coverage/lcov-report/index-lcov.html
+          files: ./coverage/lcov.info
           slug: Illustrious-Online/illustrious.cloud

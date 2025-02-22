@@ -1,7 +1,7 @@
 import ServerError from "@/domain/exceptions/ServerError";
+import * as authController from "@/modules/auth";
 import type { Provider } from "@supabase/supabase-js";
 import type { Elysia } from "elysia";
-import * as authController from "@/modules/auth";
 
 /**
  * Sets up authentication routes for the application.

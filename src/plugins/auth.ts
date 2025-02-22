@@ -1,13 +1,13 @@
+import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { and, eq } from "drizzle-orm";
 import type { Context, Elysia, Context as ElysiaContext } from "elysia";
-import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { db } from "../drizzle/db";
 
-import { supabaseClient } from "../app";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
+import { supabaseClient } from "../app";
 import {
   type Org,
   type User,

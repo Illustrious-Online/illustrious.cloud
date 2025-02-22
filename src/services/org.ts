@@ -1,11 +1,11 @@
 import { NotFoundError } from "elysia";
 import { v4 as uuidv4 } from "uuid";
 
-import { eq } from "drizzle-orm";
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
 import { UserRole } from "@/domain/types/UserRole";
+import { eq } from "drizzle-orm";
 import { db } from "../drizzle/db";
 import {
   type Invoice,

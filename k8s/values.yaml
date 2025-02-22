@@ -5,7 +5,7 @@ deployment:
 
 image:
   repository: illustriousonline/ill-cloud
-  tag: 0.0.1 # Update this on release action to match release version
+  tag: 0.0.1
   pullPolicy: Always
 
 service:

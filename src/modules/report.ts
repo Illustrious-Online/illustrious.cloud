@@ -2,9 +2,9 @@ import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import * as reportService from "@/services/report";
 import type { Report } from "../drizzle/schema";
 import type { AuthenticatedContext } from "../plugins/auth";
-import * as reportService from "@/services/report";
 
 export const create = async (
   context: AuthenticatedContext,

@@ -2,9 +2,9 @@ import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import * as invoiceService from "@/services/invoice";
 import type { Invoice } from "../drizzle/schema";
 import type { AuthenticatedContext } from "../plugins/auth";
-import * as invoiceService from "@/services/invoice";
 
 /**
  * Creates a new invoice.

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
+import * as authService from "@/services/auth";
 import type { Context } from "elysia";
 import { vi } from "vitest";
-import * as authService from "@/services/auth";
 import { oauthCallback, signInWithOAuth, signOut } from "./auth";
 
 const defaultContext: Context = {} as Context;

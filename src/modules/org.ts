@@ -1,9 +1,9 @@
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import * as orgService from "@/services/org";
 import type { Invoice, Org, Report, User } from "../drizzle/schema";
 import type { AuthenticatedContext } from "../plugins/auth";
-import * as orgService from "@/services/org";
 
 export interface OrgDetails {
   org: Org;

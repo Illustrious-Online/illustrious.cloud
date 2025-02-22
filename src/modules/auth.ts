@@ -2,9 +2,9 @@ import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { User } from "@/drizzle/schema";
+import * as authService from "@/services/auth";
 import type { Provider } from "@supabase/supabase-js";
 import type { Context } from "elysia";
-import * as authService from "@/services/auth";
 
 export const signInWithOAuth = async (context: Context) => {
   const { provider } = context.params;

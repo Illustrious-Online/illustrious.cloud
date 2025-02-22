@@ -1,5 +1,5 @@
-import { type Elysia, t } from "elysia";
 import * as reportController from "@/modules/report";
+import { type Elysia, t } from "elysia";
 
 export default (app: Elysia) =>
   app

@@ -1,13 +1,13 @@
 import { supabaseClient } from "@/app";
 import config from "@/config";
-import { User } from "@/domain/models/user";
-import { UserRole } from "@/domain/types/UserRole";
-import axios from "axios";
-import { and, eq } from "drizzle-orm";
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type { FetchUser } from "@/domain/interfaces/users";
+import { User } from "@/domain/models/user";
+import { UserRole } from "@/domain/types/UserRole";
+import axios from "axios";
+import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle/db";
 import {
   type User as IllustriousUser,
@@ -173,7 +173,7 @@ const supaConfig = {
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
   },
-  url: `https://${config.auth.supabaseId ?? 'test'}.supabase.co/functions/v1`,
+  url: `https://${config.auth.supabaseId ?? "test"}.supabase.co/functions/v1`,
 };
 
 /**

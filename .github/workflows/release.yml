@@ -78,7 +78,7 @@ jobs:
           rm -rf ./.env
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/ca-certificate.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Add actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)
@@ -98,19 +98,20 @@ jobs:
       ### Build new docker image with new version
       - name: Build Docker image
         run: |
-          rm -rf apps/ill.cloud/.env
+          rm -rf .env cert.crt
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/cloud/production.env -o ./apps/ill.cloud/.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           bun run build
-          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           docker build -t ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
       ### Login to DO registry and push docker image
       - name: Authenticate with DO registry
         run: doctl registry login --expiry-seconds 1200
       - name: Push Docker Container
         run: |
-          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           docker push ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION
       ### Execute final versioning updates via semantic-release
       - name: Execute semantic-release
-        run: npx semantic-release
+        run: bunx semantic-release

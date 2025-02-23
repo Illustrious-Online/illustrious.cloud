@@ -39,7 +39,7 @@ jobs:
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-        ### Update the database
+      ### Update the database
       - name: Push drizzle details
         run: bunx drizzle-kit migrate
       ### Run checks and tests

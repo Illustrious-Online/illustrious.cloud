@@ -11,12 +11,12 @@ import { supabaseClient } from "../app";
 import {
   type Org,
   type User,
-  orgInvoices,
-  orgReports,
-  orgUsers,
-  userInvoices,
-  userReports,
-  users,
+  orgInvoice,
+  orgReport,
+  orgUser,
+  userInvoice,
+  userReport,
+  user,
 } from "../drizzle/schema";
 
 export interface AuthenticatedContext extends Context {
@@ -61,9 +61,9 @@ const authPlugin = (app: Elysia) =>
     // Find the user in the database
     const findUser = await db
       .select()
-      .from(users)
-      .where(eq(users.id, data.user.id));
-    const user: User = findUser[0];
+      .from(user)
+      .where(eq(user.id, data.user.id));
+    const fetchUser: User = findUser[0];
     let permissions: {
       superAdmin: boolean;
       org?: {
@@ -77,15 +77,15 @@ const authPlugin = (app: Elysia) =>
         creator?: boolean;
       };
     } = {
-      superAdmin: user.superAdmin,
+      superAdmin: fetchUser.superAdmin,
     };
 
     if (path.includes("org")) {
       const orgId = org ?? (body as Org).id;
       const findOrgUser = await db
         .select()
-        .from(orgUsers)
-        .where(and(eq(orgUsers.orgId, orgId), eq(orgUsers.userId, user.id)));
+        .from(orgUser)
+        .where(and(eq(orgUser.orgId, orgId), eq(orgUser.userId, user.id)));
 
       if (findOrgUser.length > 0) {
         permissions.org = {
@@ -99,24 +99,24 @@ const authPlugin = (app: Elysia) =>
       const invoiceId = invoice ?? (body as SubmitInvoice).invoice.id;
       const findInvoiceUser = await db
         .select()
-        .from(userInvoices)
+        .from(userInvoice)
         .where(
           and(
-            eq(userInvoices.invoiceId, invoiceId),
-            eq(userInvoices.userId, user.id),
+            eq(userInvoice.invoiceId, invoiceId),
+            eq(userInvoice.userId, user.id),
           ),
         );
       const findOrgInvoice = await db
         .select()
-        .from(orgInvoices)
-        .where(eq(orgInvoices.invoiceId, invoiceId));
+        .from(orgInvoice)
+        .where(eq(orgInvoice.invoiceId, invoiceId));
 
       if ((body as SubmitInvoice).client) {
         const { client, org } = body as SubmitInvoice;
         const findClientUser = await db
           .select()
-          .from(orgUsers)
-          .where(and(eq(orgUsers.orgId, org), eq(orgUsers.userId, client)));
+          .from(orgUser)
+          .where(and(eq(orgUser.orgId, org), eq(orgUser.userId, client)));
 
         if (!findClientUser.length) {
           throw new ConflictError("Client not found in the organization");
@@ -137,24 +137,24 @@ const authPlugin = (app: Elysia) =>
       const reportId = report ? report : (body as SubmitReport).report.id;
       const findReportUser = await db
         .select()
-        .from(userReports)
+        .from(userReport)
         .where(
           and(
-            eq(userReports.reportId, reportId),
-            eq(userReports.userId, user.id),
+            eq(userReport.reportId, reportId),
+            eq(userReport.userId, user.id),
           ),
         );
       const findOrgReport = await db
         .select()
-        .from(orgReports)
-        .where(eq(orgReports.reportId, reportId));
+        .from(orgReport)
+        .where(eq(orgReport.reportId, reportId));
 
       if ((body as SubmitReport).client) {
         const { client, org } = body as SubmitReport;
         const findClientUser = await db
           .select()
-          .from(orgUsers)
-          .where(and(eq(orgUsers.orgId, org), eq(orgUsers.userId, client)));
+          .from(orgUser)
+          .where(and(eq(orgUser.orgId, org), eq(orgUser.userId, client)));
 
         if (!findClientUser.length) {
           throw new ConflictError("Client not found in the organization");
@@ -178,8 +178,8 @@ const authPlugin = (app: Elysia) =>
       const { id } = permissions.org;
       const findOrgUser = await db
         .select()
-        .from(orgUsers)
-        .where(and(eq(orgUsers.orgId, id), eq(orgUsers.userId, user.id)));
+        .from(orgUser)
+        .where(and(eq(orgUser.orgId, id), eq(orgUser.userId, user.id)));
 
       permissions.org = {
         ...permissions.org,

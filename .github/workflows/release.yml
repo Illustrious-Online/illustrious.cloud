@@ -4,7 +4,7 @@ permissions:
   pull-requests: write
 on:
   pull_request:
-    types: 
+    types:
       - closed
     branches:
       - main
@@ -12,20 +12,6 @@ jobs:
   cloud-release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: illustrious
-          POSTGRES_DB: illustrious
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -48,7 +34,8 @@ jobs:
       - name: Download test dependency files
         run: |
           export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       ### Update the database
@@ -73,12 +60,6 @@ jobs:
           NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
       ### Prepare for deploying to production
-      - name: Download ci dependency files
-        run: |
-          rm -rf ./.env
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
-          spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Add actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)

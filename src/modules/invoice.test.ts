@@ -1,15 +1,16 @@
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { UserRole } from "@/domain/types/UserRole";
-import type { User as IllustriousUser, Invoice, Org } from "@/drizzle/schema";
+import type { User, Invoice, Org } from "@/drizzle/schema";
 import type { AuthenticatedContext } from "@/plugins/auth";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
 import { create, deleteOne, fetchOne, update } from "./invoice";
+import { afterAll, beforeAll, describe, it, expect } from "bun:test";
 
 const defaultContext: Context = {} as Context;
-const mockUser: IllustriousUser = {
+const mockUser: User = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
   email: faker.internet.email(),
@@ -19,7 +20,7 @@ const mockUser: IllustriousUser = {
   phone: null,
   superAdmin: true,
 };
-const secondUser: IllustriousUser = {
+const secondUser: User = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
   email: faker.internet.email(),
@@ -34,14 +35,19 @@ const mockOrg: Org = {
   name: faker.company.name(),
   contact: faker.internet.email(),
 };
+
+const date = new Date();
+const endDate = new Date();
+endDate.setDate(endDate.getDate() + 30);
+
 const mockInvoice: Invoice = {
   id: faker.string.uuid(),
-  value: "100.23",
+  price: "100.23",
   paid: false,
-  start: new Date(),
-  end: new Date(),
-  due: new Date(),
-  createdAt: new Date(),
+  start: date,
+  end: endDate,
+  due: endDate,
+  createdAt: date,
   updatedAt: null,
   deletedAt: null,
 };

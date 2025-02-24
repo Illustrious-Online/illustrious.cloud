@@ -50,21 +50,25 @@ const secondUser: User = {
   phone: null,
   superAdmin: false,
 };
+
 const date = new Date();
+const endDate = new Date();
+endDate.setDate(endDate.getDate() + 30);
+
 const mockInvoice: Invoice = {
   id: faker.string.uuid(),
-  value: "100.23",
+  price: "100.23",
   paid: false,
   start: date,
-  end: date,
-  due: date,
+  end: endDate,
+  due: endDate,
   createdAt: date,
   updatedAt: null,
   deletedAt: null,
 };
 const mockReport: Report = {
   id: faker.string.uuid(),
-  createdAt: new Date(),
+  createdAt: date,
   rating: 5,
   notes: "Report 1 notes",
 };
@@ -111,6 +115,8 @@ describe("User Module", () => {
         user: mockUser,
       } as AuthenticatedContext);
 
+      console.log("RESPONSE", response.data);
+      console.log("mockuser", mockUser);
       expect(response.data?.user).toEqual(mockUser);
       expect(response.data?.invoices).toEqual([mockInvoice]);
       expect(response.data?.reports).toEqual([mockReport]);

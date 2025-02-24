@@ -1,6 +1,6 @@
 apiVersion: v2
-name: elysia-app
-description: Helm chart for deploying an Elysia.js application
+name: ill-cloud
+description: Helm chart for deploying the Illustrious Cloud application
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
+version: 0.0.2
+appVersion: "0.0.2"

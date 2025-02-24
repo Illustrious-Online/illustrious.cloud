@@ -14,14 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      SPACE_URL: https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
     steps:
       ### Install server dependencies
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5
         with:
           bun-version: latest
       - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+        uses: digitalocean/action-doctl@135ac0aa0eed4437d547c6f12c364d3006b42824
         with:
           token: ${{ secrets.DO_TOKEN }}
       - name: Install spaces-cli
@@ -33,7 +34,6 @@ jobs:
           persist-credentials: false
       - name: Download test dependency files
         run: |
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
@@ -48,7 +48,7 @@ jobs:
         run: bun test
       ### Upload coverage reports
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: illustrious-cloud
@@ -57,8 +57,10 @@ jobs:
       ### Update the Kubernetes deployment
       - name: Update argocd values
         run: |
-          NEW_VERSION=$(npx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
+          sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
+          sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
       ### Prepare for deploying to production
       - name: Add actions IP to trusted source for database
         run: |
@@ -76,23 +78,24 @@ jobs:
           JSON=$(doctl databases firewalls list ${{ secrets.DB_UUID }} --output json)
           ID=$(echo $JSON | jq -r '.[] | select(.value == '\"$IP\"').uuid')
           doctl databases firewalls remove ${{ secrets.DB_UUID }} --uuid $ID
-      ### Build new docker image with new version
-      - name: Build Docker image
+      ### Set up production environment variables
+      - name: Download production environment variables
         run: |
           rm -rf .env cert.crt
-          export SPACE_URL=https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
           spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      ### Build new docker image with new version
+      - name: Build and push versioned Docker image
+        run: |
           bun run build
           NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
-          docker build -t ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
-      ### Login to DO registry and push docker image
-      - name: Authenticate with DO registry
-        run: doctl registry login --expiry-seconds 1200
-      - name: Push Docker Container
+          docker build -t ${{ secrets.REGISTRY_URL }}:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
+      ### Build new docker image with latest version
+      - name: Build and push latest Docker image
         run: |
-          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
-          docker push ${{ secrets.REGISTRY_URL }}/illustrious-cloud:$NEW_VERSION
+          doctl registry repository delete-tag ${{ secrets.REGISTRY_URL }} latest
+          docker build -t ${{ secrets.REGISTRY_URL }}:latest -f packages/deployment/docker/cloud.Dockerfile .
+          docker push ${{ secrets.REGISTRY_URL }}:latest
       ### Execute final versioning updates via semantic-release
       - name: Execute semantic-release
         run: bunx semantic-release

@@ -1,4 +1,4 @@
-replicaCount: 2 # Scale as needed
+replicaCount: 2
 
 deployment:
   namespace: ill-cloud

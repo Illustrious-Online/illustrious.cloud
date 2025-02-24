@@ -115,8 +115,6 @@ describe("User Module", () => {
         user: mockUser,
       } as AuthenticatedContext);
 
-      console.log("RESPONSE", response.data);
-      console.log("mockuser", mockUser);
       expect(response.data?.user).toEqual(mockUser);
       expect(response.data?.invoices).toEqual([mockInvoice]);
       expect(response.data?.reports).toEqual([mockReport]);

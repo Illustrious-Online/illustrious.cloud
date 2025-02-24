@@ -104,9 +104,6 @@ export async function validatePermissions(userId: string, invoiceId: string) {
     .select()
     .from(userInvoice)
     .where(
-      and(
-        eq(userInvoice.userId, userId),
-        eq(userInvoice.invoiceId, invoiceId),
-      ),
+      and(eq(userInvoice.userId, userId), eq(userInvoice.invoiceId, invoiceId)),
     );
 }

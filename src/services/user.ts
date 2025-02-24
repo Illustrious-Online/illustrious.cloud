@@ -13,12 +13,12 @@ import {
   type Org,
   type Report,
   invoice,
-  orgUser,
   org,
+  orgUser,
   report,
+  user,
   userInvoice,
   userReport,
-  user,
 } from "../drizzle/schema";
 
 /**
@@ -36,7 +36,9 @@ export async function updateOrCreate(
     throw new BadRequestError("Payload is missing required details");
   }
 
-  const fetchUser: IllustriousUser | undefined = await fetchOne({ id: payload.id });
+  const fetchUser: IllustriousUser | undefined = await fetchOne({
+    id: payload.id,
+  });
 
   if (fetchUser) {
     return await update(payload);
@@ -55,10 +57,7 @@ export async function updateOrCreate(
  */
 export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
   if (payload.id) {
-    const result = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, payload.id));
+    const result = await db.select().from(user).where(eq(user.id, payload.id));
     return result[0];
   }
 

@@ -23,7 +23,6 @@ export const me = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<UserDetails>> => {
   const { user } = context;
-  console.log('user', user);
 
   if (!user || !user.id) {
     throw new BadRequestError("Required user information is missing.");

@@ -13,14 +13,14 @@ import {
   type Report,
   type User,
   invoice,
+  org,
   orgInvoice,
   orgReport,
   orgUser,
-  org,
   report,
+  user,
   userInvoice,
   userReport,
-  user,
 } from "../drizzle/schema";
 
 /**
@@ -175,9 +175,7 @@ export async function deleteOne(id: string): Promise<void> {
       await db
         .delete(userInvoice)
         .where(eq(userInvoice.invoiceId, i.invoiceId));
-      await db
-        .delete(orgInvoice)
-        .where(eq(orgInvoice.invoiceId, i.invoiceId));
+      await db.delete(orgInvoice).where(eq(orgInvoice.invoiceId, i.invoiceId));
       await db.delete(invoice).where(eq(invoice.id, i.invoiceId));
     }
   }

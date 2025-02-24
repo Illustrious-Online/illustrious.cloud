@@ -1,3 +1,4 @@
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User as IllustriousUser, Org, Report } from "@/drizzle/schema";
@@ -7,7 +8,6 @@ import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
 import { create, deleteOne, fetchOne, update } from "./report";
-import { afterAll, beforeAll, describe, it, expect } from "bun:test";
 
 const defaultContext: Context = {} as Context;
 const mockUser: IllustriousUser = {

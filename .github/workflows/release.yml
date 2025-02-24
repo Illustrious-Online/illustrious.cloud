@@ -73,12 +73,13 @@ jobs:
       ### Build new docker image as latest version
       - name: Build and push latest Docker image
         run: |
-          doctl registry repository delete-tag ${{ secrets.REGISTRY_URL }} latest
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
           docker build -t ${{ secrets.REGISTRY_URL }}:latest .
           docker push ${{ secrets.REGISTRY_URL }}:latest
       ### Push new versioned Docker image to registry
       - name: Push versioned Docker image to registry
         run: |
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
           export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml

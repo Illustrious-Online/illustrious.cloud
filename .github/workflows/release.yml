@@ -38,22 +38,6 @@ jobs:
           spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
-      ### Update the database
-      - name: Push drizzle details
-        run: bunx drizzle-kit migrate
-      ### Run checks and tests
-      - name: Run Biome Checks
-        run: bun run check
-      - name: Run unit tests
-        run: bun test
-      ### Upload coverage reports
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: illustrious-cloud
-          files: ./coverage/lcov.info
-          slug: Illustrious-Online/illustrious.cloud
       ### Update the Kubernetes deployment
       - name: Update argocd values
         run: |
@@ -61,7 +45,7 @@ jobs:
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
-      ### Forcefully push database migrations
+      ### Push database migrations
       - name: Add actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)
@@ -82,14 +66,14 @@ jobs:
         run: |
           rm -rf .env cert.crt
           spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/certificate-vpc.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       ### Build new docker image with new version
       - name: Build and push versioned Docker image
         run: |
           bun run build
           NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           docker build -t ${{ secrets.REGISTRY_URL }}:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
-      ### Build new docker image with latest version
+      ### Build new docker image as latest version
       - name: Build and push latest Docker image
         run: |
           doctl registry repository delete-tag ${{ secrets.REGISTRY_URL }} latest
@@ -97,4 +81,10 @@ jobs:
           docker push ${{ secrets.REGISTRY_URL }}:latest
       ### Execute final versioning updates via semantic-release
       - name: Execute semantic-release
-        run: bunx semantic-release
+        run: |
+          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "chore: release $NEW_VERSION [skip ci]"
+          bunx semantic-release

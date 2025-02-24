@@ -61,12 +61,11 @@ jobs:
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
-      ### Prepare for deploying to production
+      ### Forcefully push database migrations
       - name: Add actions IP to trusted source for database
         run: |
           IP=$(curl -s ifconfig.me)
           doctl databases firewalls append ${{ secrets.DB_UUID }} --rule ip_addr:$IP
-      ### Forcefully push database migrations
       - name: Push database migrations
         run: |
           export NODE_TLS_REJECT_UNAUTHORIZED=0

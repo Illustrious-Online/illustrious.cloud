@@ -86,6 +86,7 @@ jobs:
         run: |
           echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
           export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          echo $NEW_VERSION
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml

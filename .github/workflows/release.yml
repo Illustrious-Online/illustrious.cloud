@@ -41,7 +41,7 @@ jobs:
       ### Update the Kubernetes deployment
       - name: Update argocd values
         run: |
-          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
@@ -68,21 +68,27 @@ jobs:
           spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           spaces-cli down $SPACE_URL/cloud/certificate-vpc.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       ### Build new docker image with new version
-      - name: Build and push versioned Docker image
-        run: |
-          bun run build
-          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
-          docker build -t ${{ secrets.REGISTRY_URL }}:$NEW_VERSION -f packages/deployment/docker/cloud.Dockerfile .
+      - name: Build the application
+        run: bun run build
       ### Build new docker image as latest version
       - name: Build and push latest Docker image
         run: |
           doctl registry repository delete-tag ${{ secrets.REGISTRY_URL }} latest
-          docker build -t ${{ secrets.REGISTRY_URL }}:latest -f packages/deployment/docker/cloud.Dockerfile .
+          docker build -t ${{ secrets.REGISTRY_URL }}:latest .
           docker push ${{ secrets.REGISTRY_URL }}:latest
+      ### Push new versioned Docker image to registry
+      - name: Push versioned Docker image to registry
+        run: |
+          export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
+          sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
+          sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
+          docker build -t ${{ secrets.REGISTRY_URL }}:$NEW_VERSION .
+          docker push ${{ secrets.REGISTRY_URL }}:$NEW_VERSION
       ### Execute final versioning updates via semantic-release
       - name: Execute semantic-release
         run: |
-          NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .

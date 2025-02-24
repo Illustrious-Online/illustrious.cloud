@@ -32,6 +32,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Checkout default branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
       - name: Download test dependency files
         run: |
           spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}

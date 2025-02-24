@@ -1,12 +1,22 @@
+## Basic Initialization
+```
+mv .env.example .env
+bun install
+```
+
 ## Development
 To start the development server run:
 ```bash
 bun run dev
 ```
 
+> Development database will be required to complete testing in pre-commit event!
+
 To start the development database:
 ```bash
-docker run -d -p 5432:5432 --name illustrious -e POSTGRES_PASSWORD=illustrious postgres
+### Docker Daemon needs to be running for this change
+### i.e.: sudo systemctl start docker
+bun run db:docker
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+Open http://localhost:8000/ with your browser to see the result.

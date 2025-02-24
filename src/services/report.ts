@@ -4,12 +4,7 @@ import { NotFoundError } from "elysia";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateReport } from "@/domain/interfaces/reports";
 import { db } from "../drizzle/db";
-import {
-  type Report,
-  orgReports,
-  reports,
-  userReports,
-} from "../drizzle/schema";
+import { type Report, orgReport, report, userReport } from "../drizzle/schema";
 
 /**
  * Creates a new Report.
@@ -20,28 +15,28 @@ import {
  * @throws {Error} If an error occurs while creating the Report.
  */
 export async function create(payload: CreateReport): Promise<Report> {
-  const { client, creator, org, report } = payload;
+  const { client, creator, org, report: payloadReport } = payload;
   const foundReport = await db
     .select()
-    .from(reports)
-    .where(eq(reports.id, report.id));
+    .from(report)
+    .where(eq(report.id, payloadReport.id));
 
   if (foundReport.length > 0) {
     throw new ConflictError("Report already exists!");
   }
 
-  const result = await db.insert(reports).values(report).returning();
+  const result = await db.insert(report).values(payloadReport).returning();
 
   for (const role of [client, creator]) {
-    await db.insert(userReports).values({
+    await db.insert(userReport).values({
       userId: role,
-      reportId: report.id,
+      reportId: payloadReport.id,
     });
   }
 
-  await db.insert(orgReports).values({
+  await db.insert(orgReport).values({
     orgId: org,
-    reportId: report.id,
+    reportId: payloadReport.id,
   });
 
   return result[0];
@@ -54,7 +49,7 @@ export async function create(payload: CreateReport): Promise<Report> {
  * @returns {Promise<Report>} A promise that resolves the Report object.
  */
 export async function fetchOne(id: string): Promise<Report> {
-  const data = await db.select().from(reports).where(eq(reports.id, id));
+  const data = await db.select().from(report).where(eq(report.id, id));
 
   if (data.length === 0) {
     throw new NotFoundError();
@@ -71,19 +66,19 @@ export async function fetchOne(id: string): Promise<Report> {
  */
 export async function update(payload: Report): Promise<Report> {
   const { id, rating, notes } = payload;
-  const foundReport = await db.select().from(reports).where(eq(reports.id, id));
+  const foundReport = await db.select().from(report).where(eq(report.id, id));
 
   if (!foundReport) {
     throw new ConflictError("Could not find expected report");
   }
 
   const result = await db
-    .update(reports)
+    .update(report)
     .set({
       rating,
       notes,
     })
-    .where(eq(reports.id, id))
+    .where(eq(report.id, id))
     .returning();
 
   if (result.length === 0) {
@@ -100,7 +95,7 @@ export async function update(payload: Report): Promise<Report> {
  * @throws {ConflictError} If a user with the same data already exists.
  */
 export async function deleteOne(reportId: string): Promise<void> {
-  db.delete(userReports).where(eq(userReports.reportId, reportId));
-  db.delete(orgReports).where(eq(orgReports.reportId, reportId));
-  db.delete(reports).where(eq(reports.id, reportId));
+  db.delete(userReport).where(eq(userReport.reportId, reportId));
+  db.delete(orgReport).where(eq(orgReport.reportId, reportId));
+  db.delete(report).where(eq(report.id, reportId));
 }

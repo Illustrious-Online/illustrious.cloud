@@ -1,70 +1,89 @@
 import { relations } from "drizzle-orm/relations";
 import {
-  invoices,
-  orgInvoices,
-  orgReports,
-  orgUsers,
-  orgs,
-  reports,
-  userInvoices,
-  userReports,
-  users,
+  invoice,
+  org,
+  orgInvoice,
+  orgReport,
+  orgUser,
+  report,
+  user,
+  userInvoice,
+  userReport,
 } from "./schema";
 
-export const OrgRelations = relations(orgs, ({ one, many }) => ({
-  OrgUser: one(orgUsers, {
-    fields: [orgs.id],
-    references: [orgUsers.orgId],
+export const userInvoiceRelations = relations(userInvoice, ({ one }) => ({
+  invoice: one(invoice, {
+    fields: [userInvoice.invoiceId],
+    references: [invoice.id],
   }),
-  OrgReport: many(orgReports),
-  OrgInvoice: many(orgInvoices),
-}));
-
-export const OrgUserRelations = relations(orgUsers, ({ one }) => ({
-  Orgs: one(orgs, {
-    fields: [orgUsers.orgId],
-    references: [orgs.id],
-  }),
-  User: one(users, {
-    fields: [orgUsers.userId],
-    references: [users.id],
+  user: one(user, {
+    fields: [userInvoice.userId],
+    references: [user.id],
   }),
 }));
 
-export const UserRelations = relations(users, ({ many }) => ({
-  OrgUsers: many(orgUsers),
-  UserReports: many(userReports),
-  UserInvoices: many(userInvoices),
+export const invoiceRelations = relations(invoice, ({ many }) => ({
+  userInvoice: many(userInvoice),
+  orgInvoices: many(orgInvoice),
 }));
 
-export const UserInvoiceRelations = relations(userInvoices, ({ one }) => ({
-  Invoice: one(invoices, {
-    fields: [userInvoices.invoiceId],
-    references: [invoices.id],
-  }),
-  User: one(users, {
-    fields: [userInvoices.userId],
-    references: [users.id],
-  }),
+export const userRelations = relations(user, ({ many }) => ({
+  userInvoice: many(userInvoice),
+  userReports: many(userReport),
+  orgUser: many(orgUser),
 }));
 
-export const InvoiceRelations = relations(invoices, ({ many }) => ({
-  UserInvoices: many(userInvoices),
-  OrgInvoices: many(orgInvoices),
-}));
-
-export const UserReportRelations = relations(userReports, ({ one }) => ({
-  Report: one(reports, {
-    fields: [userReports.reportId],
-    references: [reports.id],
+export const orgReportRelations = relations(orgReport, ({ one }) => ({
+  org: one(org, {
+    fields: [orgReport.orgId],
+    references: [org.id],
   }),
-  User: one(users, {
-    fields: [userReports.userId],
-    references: [users.id],
+  report: one(report, {
+    fields: [orgReport.reportId],
+    references: [report.id],
   }),
 }));
 
-export const ReportRelations = relations(reports, ({ many }) => ({
-  UserReports: many(userReports),
-  OrgReports: many(orgReports),
+export const orgRelations = relations(org, ({ many }) => ({
+  orgReports: many(orgReport),
+  orgInvoices: many(orgInvoice),
+  orgUser: many(orgUser),
+}));
+
+export const reportRelations = relations(report, ({ many }) => ({
+  orgReports: many(orgReport),
+  userReports: many(userReport),
+}));
+
+export const userReportRelations = relations(userReport, ({ one }) => ({
+  report: one(report, {
+    fields: [userReport.reportId],
+    references: [report.id],
+  }),
+  user: one(user, {
+    fields: [userReport.userId],
+    references: [user.id],
+  }),
+}));
+
+export const orgInvoiceRelations = relations(orgInvoice, ({ one }) => ({
+  invoice: one(invoice, {
+    fields: [orgInvoice.invoiceId],
+    references: [invoice.id],
+  }),
+  org: one(org, {
+    fields: [orgInvoice.orgId],
+    references: [org.id],
+  }),
+}));
+
+export const orgUserRelations = relations(orgUser, ({ one }) => ({
+  org: one(org, {
+    fields: [orgUser.orgId],
+    references: [org.id],
+  }),
+  user: one(user, {
+    fields: [orgUser.userId],
+    references: [user.id],
+  }),
 }));

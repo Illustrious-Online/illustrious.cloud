@@ -8,7 +8,10 @@
     }
   },
   "release": {
-    "branches": ["main", "next"]
+    "branches": [
+      "main",
+      "next"
+    ]
   },
   "scripts": {
     "dev": "bun run --watch ./src/app.ts",

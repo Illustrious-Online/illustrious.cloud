@@ -1,10 +1,8 @@
-import { supabaseClient } from "@/app";
 import config from "@/config";
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type { FetchUser } from "@/domain/interfaces/users";
-import { User } from "@/domain/models/user";
 import { UserRole } from "@/domain/types/UserRole";
 import axios from "axios";
 import { and, eq } from "drizzle-orm";
@@ -14,20 +12,20 @@ import {
   type Invoice,
   type Org,
   type Report,
-  invoices,
-  orgUsers,
-  orgs,
-  reports,
-  userInvoices,
-  userReports,
-  users,
+  invoice,
+  org,
+  orgUser,
+  report,
+  user,
+  userInvoice,
+  userReport,
 } from "../drizzle/schema";
 
 /**
  * Creates a new user.
  *
  * @param payload - The user data to be created.
- * @returns {Promise<User>} A promise that resolves to the created user.
+ * @returns {Promise<IllustriousUser>} A promise that resolves to the created user.
  * @throws {ConflictError} If a user with the same data already exists.
  * @throws {Error} If an error occurs while creating the user.
  */
@@ -38,13 +36,15 @@ export async function updateOrCreate(
     throw new BadRequestError("Payload is missing required details");
   }
 
-  const user: IllustriousUser | undefined = await fetchOne({ id: payload.id });
+  const fetchUser: IllustriousUser | undefined = await fetchOne({
+    id: payload.id,
+  });
 
-  if (user) {
+  if (fetchUser) {
     return await update(payload);
   }
 
-  const result = await db.insert(users).values(payload).returning();
+  const result = await db.insert(user).values(payload).returning();
 
   return result[0];
 }
@@ -57,26 +57,23 @@ export async function updateOrCreate(
  */
 export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
   if (payload.id) {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, payload.id));
+    const result = await db.select().from(user).where(eq(user.id, payload.id));
     return result[0];
   }
 
   if (payload.email) {
     const result = await db
       .select()
-      .from(users)
-      .where(eq(users.email, payload.email));
+      .from(user)
+      .where(eq(user.email, payload.email));
     return result[0];
   }
 
   if (payload.identifier) {
     const result = await db
       .select()
-      .from(users)
-      .where(eq(users.identifier, payload.identifier));
+      .from(user)
+      .where(eq(user.identifier, payload.identifier));
     return result[0];
   }
 
@@ -111,8 +108,8 @@ export async function fetchResources(
   if (!type || type.reports) {
     const usersReports = await db
       .select()
-      .from(reports)
-      .innerJoin(userReports, eq(userReports.userId, id));
+      .from(report)
+      .innerJoin(userReport, eq(userReport.userId, id));
 
     result.reports = usersReports.map((result) => result.Report);
   }
@@ -120,8 +117,8 @@ export async function fetchResources(
   if (!type || type.invoices) {
     const usersInvoices = await db
       .select()
-      .from(invoices)
-      .innerJoin(userInvoices, eq(userInvoices.userId, id));
+      .from(invoice)
+      .innerJoin(userInvoice, eq(userInvoice.userId, id));
 
     result.invoices = usersInvoices.map((result) => result.Invoice);
   }
@@ -129,8 +126,8 @@ export async function fetchResources(
   if (!type || type.orgs) {
     const usersOrgs = await db
       .select()
-      .from(orgs)
-      .innerJoin(orgUsers, eq(orgUsers.userId, id));
+      .from(org)
+      .innerJoin(orgUser, eq(orgUser.userId, id));
 
     result.orgs = usersOrgs.map((result) => result.Org);
   }
@@ -142,14 +139,14 @@ export async function fetchResources(
  * Updates a User.
  *
  * @param payload - The new User data to update.
- * @returns {Promise<User>} A promise that resolves to an User object.
+ * @returns {Promise<IllustriousUser>} A promise that resolves to an User object.
  */
 export async function update(
   payload: IllustriousUser,
 ): Promise<IllustriousUser> {
   const { id, email, firstName, lastName, picture, phone } = payload;
   const result = await db
-    .update(users)
+    .update(user)
     .set({
       email,
       firstName,
@@ -157,7 +154,7 @@ export async function update(
       picture,
       phone,
     })
-    .where(eq(users.id, id))
+    .where(eq(user.id, id))
     .returning();
 
   return result[0];
@@ -187,7 +184,7 @@ export async function deleteOne(
   userId: string,
   identifier: string,
 ): Promise<void> {
-  const userList = await db.select().from(users).where(eq(users.id, userId));
+  const userList = await db.select().from(user).where(eq(user.id, userId));
 
   if (userList.length < 1) {
     throw new ConflictError(
@@ -197,9 +194,9 @@ export async function deleteOne(
 
   const unpaidInvoices = await db
     .select()
-    .from(invoices)
-    .innerJoin(userInvoices, eq(userInvoices.userId, userId))
-    .where(eq(invoices.paid, false));
+    .from(invoice)
+    .innerJoin(userInvoice, eq(userInvoice.userId, userId))
+    .where(eq(invoice.paid, false));
 
   if (unpaidInvoices.length > 0) {
     throw new ConflictError("User has unpaid invoices");
@@ -207,14 +204,14 @@ export async function deleteOne(
 
   const ownedOrgs = await db
     .select()
-    .from(orgUsers)
-    .where(and(eq(orgUsers.userId, userId), eq(orgUsers.role, UserRole.OWNER)));
+    .from(orgUser)
+    .where(and(eq(orgUser.userId, userId), eq(orgUser.role, UserRole.OWNER)));
 
   if (ownedOrgs.length > 0) {
     throw new ConflictError("User is an owner of an organization");
   }
 
-  await db.delete(users).where(eq(users.id, userId));
+  await db.delete(user).where(eq(user.id, userId));
 
   if (!config.app.env.includes("test")) {
     await axios.request({

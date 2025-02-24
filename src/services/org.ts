@@ -12,15 +12,15 @@ import {
   type Org,
   type Report,
   type User,
-  invoices,
-  orgInvoices,
-  orgReports,
-  orgUsers,
-  orgs,
-  reports,
-  userInvoices,
-  userReports,
-  users,
+  invoice,
+  org,
+  orgInvoice,
+  orgReport,
+  orgUser,
+  report,
+  user,
+  userInvoice,
+  userReport,
 } from "../drizzle/schema";
 
 /**
@@ -32,20 +32,20 @@ import {
  * @throws {Error} If an error occurs while creating the Organization.
  */
 export async function create(payload: CreateOrg): Promise<Org> {
-  const { user, org } = payload;
-  const newOrg = await db.select().from(orgs).where(eq(orgs.id, org.id));
+  const { user, org: payloadOrg } = payload;
+  const newOrg = await db.select().from(org).where(eq(org.id, payloadOrg.id));
 
   if (newOrg.length > 0) {
     throw new ConflictError("Organization already exists!");
   }
 
-  const result = await db.insert(orgs).values(payload.org).returning();
+  const result = await db.insert(org).values(payload.org).returning();
 
   if (result.length === 0) {
     throw new ConflictError("Failed to create the new organization.");
   }
 
-  await db.insert(orgUsers).values({
+  await db.insert(orgUser).values({
     role: UserRole.OWNER,
     userId: user,
     orgId: result[0].id,
@@ -61,7 +61,7 @@ export async function create(payload: CreateOrg): Promise<Org> {
  * @returns {Promise<Org>} A promise that resolves the Organization object.
  */
 export async function fetchOne(id: string): Promise<Org> {
-  const result = await db.select().from(orgs).where(eq(orgs.id, id));
+  const result = await db.select().from(org).where(eq(org.id, id));
 
   if (result.length === 0) {
     throw new NotFoundError();
@@ -83,42 +83,42 @@ export async function fetchResources(
     case "reports": {
       const orgsReports = db
         .select()
-        .from(orgReports)
-        .where(eq(orgReports.orgId, id))
+        .from(orgReport)
+        .where(eq(orgReport.orgId, id))
         .as("orgsReports");
 
       const _reports = await db
         .select()
-        .from(reports)
-        .innerJoin(orgsReports, eq(reports.id, orgsReports.reportId));
+        .from(report)
+        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
 
       return _reports.map((result) => result.Report);
     }
     case "invoices": {
       const orgsInvoices = db
         .select()
-        .from(orgInvoices)
-        .where(eq(orgInvoices.orgId, id))
+        .from(orgInvoice)
+        .where(eq(orgInvoice.orgId, id))
         .as("orgsInvoices");
 
       const _invoices = await db
         .select()
-        .from(invoices)
-        .innerJoin(orgsInvoices, eq(invoices.id, orgsInvoices.invoiceId));
+        .from(invoice)
+        .innerJoin(orgsInvoices, eq(invoice.id, orgsInvoices.invoiceId));
 
       return _invoices.map((result) => result.Invoice);
     }
     case "users": {
       const orgsUsers = db
         .select()
-        .from(orgUsers)
-        .where(eq(orgUsers.orgId, id))
+        .from(orgUser)
+        .where(eq(orgUser.orgId, id))
         .as("orgsUsers");
 
       const _users = await db
         .select()
-        .from(users)
-        .innerJoin(orgsUsers, eq(users.id, orgsUsers.userId));
+        .from(user)
+        .innerJoin(orgsUsers, eq(user.id, orgsUsers.userId));
 
       return _users.map((result) => result.User);
     }
@@ -136,12 +136,12 @@ export async function fetchResources(
 export async function update(payload: Org): Promise<Org> {
   const { id, name, contact } = payload;
   const result = await db
-    .update(orgs)
+    .update(org)
     .set({
       name,
       contact,
     })
-    .where(eq(orgs.id, id))
+    .where(eq(org.id, id))
     .returning();
 
   return result[0];
@@ -155,7 +155,7 @@ export async function update(payload: Org): Promise<Org> {
  * @throws {ConflictError} If an Organization is not allowed to be removed.
  */
 export async function deleteOne(id: string): Promise<void> {
-  const orgsList = await db.select().from(orgs).where(eq(orgs.id, id));
+  const orgsList = await db.select().from(org).where(eq(org.id, id));
   if (orgsList.length < 1) {
     throw new ConflictError("Unable to find associated org for the user");
   }
@@ -163,33 +163,31 @@ export async function deleteOne(id: string): Promise<void> {
   const currentOrg = orgsList[0];
   const orgInvoicesList = await db
     .select()
-    .from(orgInvoices)
-    .where(eq(orgInvoices.orgId, currentOrg.id));
+    .from(orgInvoice)
+    .where(eq(orgInvoice.orgId, currentOrg.id));
   const orgReportsList = await db
     .select()
-    .from(orgReports)
-    .where(eq(orgReports.orgId, currentOrg.id));
+    .from(orgReport)
+    .where(eq(orgReport.orgId, currentOrg.id));
 
   if (orgInvoicesList.length > 0) {
     for (const i of orgInvoicesList) {
       await db
-        .delete(userInvoices)
-        .where(eq(userInvoices.invoiceId, i.invoiceId));
-      await db
-        .delete(orgInvoices)
-        .where(eq(orgInvoices.invoiceId, i.invoiceId));
-      await db.delete(invoices).where(eq(invoices.id, i.invoiceId));
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, i.invoiceId));
+      await db.delete(orgInvoice).where(eq(orgInvoice.invoiceId, i.invoiceId));
+      await db.delete(invoice).where(eq(invoice.id, i.invoiceId));
     }
   }
 
   if (orgReportsList.length > 0) {
     for (const r of orgReportsList) {
-      await db.delete(userReports).where(eq(userReports.reportId, r.reportId));
-      await db.delete(orgReports).where(eq(orgReports.reportId, r.reportId));
-      await db.delete(reports).where(eq(reports.id, r.reportId));
+      await db.delete(userReport).where(eq(userReport.reportId, r.reportId));
+      await db.delete(orgReport).where(eq(orgReport.reportId, r.reportId));
+      await db.delete(report).where(eq(report.id, r.reportId));
     }
   }
 
-  await db.delete(orgUsers).where(eq(orgUsers.orgId, id));
-  await db.delete(orgs).where(eq(orgs.id, id));
+  await db.delete(orgUser).where(eq(orgUser.orgId, id));
+  await db.delete(org).where(eq(org.id, id));
 }

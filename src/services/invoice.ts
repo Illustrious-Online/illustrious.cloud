@@ -6,9 +6,9 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle/db";
 import {
   type Invoice,
-  invoices,
-  orgInvoices,
-  userInvoices,
+  invoice,
+  orgInvoice,
+  userInvoice,
 } from "../drizzle/schema";
 
 /**
@@ -20,28 +20,28 @@ import {
  * @throws {Error} If an error occurs while creating the Invoice.
  */
 export async function create(payload: CreateInvoice): Promise<Invoice> {
-  const { client, creator, org, invoice } = payload;
+  const { client, creator, org, invoice: payloadInvoice } = payload;
   const foundInvoice = await db
     .select()
-    .from(invoices)
-    .where(eq(invoices.id, invoice.id));
+    .from(invoice)
+    .where(eq(invoice.id, payloadInvoice.id));
 
   if (foundInvoice.length > 0) {
     throw new ConflictError("Invoice already exists!");
   }
 
-  const result = await db.insert(invoices).values(invoice).returning();
+  const result = await db.insert(invoice).values(payloadInvoice).returning();
 
   for (const role of [client, creator]) {
-    await db.insert(userInvoices).values({
+    await db.insert(userInvoice).values({
       userId: role,
-      invoiceId: invoice.id,
+      invoiceId: payloadInvoice.id,
     });
   }
 
-  await db.insert(orgInvoices).values({
+  await db.insert(orgInvoice).values({
     orgId: org,
-    invoiceId: invoice.id,
+    invoiceId: payloadInvoice.id,
   });
 
   return result[0] as Invoice;
@@ -54,7 +54,7 @@ export async function create(payload: CreateInvoice): Promise<Invoice> {
  * @returns {Promise<Invoice>} A promise that resolves the Invoice object.
  */
 export async function fetchById(id: string): Promise<Invoice> {
-  const data = await db.select().from(invoices).where(eq(invoices.id, id));
+  const data = await db.select().from(invoice).where(eq(invoice.id, id));
 
   if (data.length === 0) {
     throw new NotFoundError();
@@ -70,18 +70,18 @@ export async function fetchById(id: string): Promise<Invoice> {
  * @returns {Promise<Invoice>} A promise that resolves to an Invoice object.
  */
 export async function update(payload: Invoice): Promise<Invoice> {
-  const { id, paid, value, start, end, due, updatedAt } = payload;
+  const { id, paid, price, start, end, due, updatedAt } = payload;
   const result = await db
-    .update(invoices)
+    .update(invoice)
     .set({
       paid,
-      value,
+      price,
       start,
       end,
       due,
       updatedAt,
     })
-    .where(eq(invoices.id, id))
+    .where(eq(invoice.id, id))
     .returning();
 
   return result[0];
@@ -94,19 +94,16 @@ export async function update(payload: Invoice): Promise<Invoice> {
  * @throws {ConflictError} If a user with the same data already exists.
  */
 export async function deleteOne(invoiceId: string): Promise<void> {
-  await db.delete(userInvoices).where(eq(userInvoices.invoiceId, invoiceId));
-  await db.delete(orgInvoices).where(eq(orgInvoices.invoiceId, invoiceId));
-  await db.delete(invoices).where(eq(invoices.id, invoiceId));
+  await db.delete(userInvoice).where(eq(userInvoice.invoiceId, invoiceId));
+  await db.delete(orgInvoice).where(eq(orgInvoice.invoiceId, invoiceId));
+  await db.delete(invoice).where(eq(invoice.id, invoiceId));
 }
 
 export async function validatePermissions(userId: string, invoiceId: string) {
   return await db
     .select()
-    .from(userInvoices)
+    .from(userInvoice)
     .where(
-      and(
-        eq(userInvoices.userId, userId),
-        eq(userInvoices.invoiceId, invoiceId),
-      ),
+      and(eq(userInvoice.userId, userId), eq(userInvoice.invoiceId, invoiceId)),
     );
 }

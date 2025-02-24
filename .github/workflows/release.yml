@@ -32,11 +32,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Checkout default branch
-        run: |
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
       - name: Download test dependency files
         run: |
           spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
@@ -86,6 +81,7 @@ jobs:
         run: |
           echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
           export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          echo $NEW_VERSION
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml

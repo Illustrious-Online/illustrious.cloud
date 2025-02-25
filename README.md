@@ -19,4 +19,4 @@ To start the development database:
 bun run db:docker
 ```
 
-Open http://localhost:8000/ with your browser to see the result.
+Open http://localhost:3000/ with your browser to see the result.

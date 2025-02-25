@@ -25,7 +25,6 @@ export const supabaseClient = createClient(
 );
 
 export const app = new Elysia()
-  .use(cors())
   .use(
     swagger({
       path: "/docs",
@@ -37,11 +36,10 @@ export const app = new Elysia()
         security: [{ JwtAuth: [] }],
         components: {
           securitySchemes: {
-            JwtAuth: {
+            bearerAuth: {
               type: "http",
               scheme: "bearer",
               bearerFormat: "JWT",
-              description: "Enter JWT Bearer token **_only_**",
             },
           },
         },
@@ -51,6 +49,7 @@ export const app = new Elysia()
       },
     }),
   )
+  .use(cors())
   .use(bearer())
   .use(loggerPlugin)
   .use(errorPlugin)

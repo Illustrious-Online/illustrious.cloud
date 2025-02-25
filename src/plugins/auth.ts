@@ -39,9 +39,9 @@ export interface AuthenticatedContext extends Context {
 const authPlugin = (app: Elysia) =>
   app.derive(async (context: ElysiaContext) => {
     // Check if the request has a bearer token
-    const { body, path } = context;
-    const { bearer } = context.headers;
-    const { org, invoice, report } = context.params;
+    const { body, path, headers = {}, params = {} } = context;
+    const { bearer } = headers;
+    const { org, invoice, report } = params;
 
     // If the request does not have a bearer token, throw an error
     if (!bearer) {

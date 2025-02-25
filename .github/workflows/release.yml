@@ -82,6 +82,12 @@ jobs:
           sed -i "s/tag: .*/tag: ${NEW_VERSION}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${NEW_VERSION}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${NEW_VERSION}'"/' k8s/Chart.yaml
+      ### Push new versioned Docker image to registry
+      - name: Push versioned Docker image to registry
+        run: |
+          export NEW_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           git add k8s
           git commit -m "chore: Prepare deployment ($NEW_VERSION) [skip ci]"
           git push origin main

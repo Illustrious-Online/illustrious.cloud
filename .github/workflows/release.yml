@@ -91,7 +91,7 @@ jobs:
           sed -i "s/tag: .*/tag: ${{ env.NEXT_VERSION }}/" k8s/values.yaml
           sed -i "s/version: .*/version: ${{ env.NEXT_VERSION }}/" k8s/Chart.yaml
           sed -i 's/appVersion: .*/appVersion: "'${{ env.NEXT_VERSION }}'"/' k8s/Chart.yaml
-          jq --arg newVersion "${{ env.NEXT_VERSION }}" '.version = $newVersion' package.json > tmp.json && mv tmp.json package.json
+          jq --arg nextVersion "${{ env.NEXT_VERSION }}" '.version = $nextVersion' package.json > tmp.json && mv tmp.json package.json
       ### Push argo-cd application updates
       - name: Push argo-cd application updates, if updated
         if: env.NEXT_VERSION != env.CURRENT_VERSION

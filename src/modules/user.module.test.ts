@@ -10,6 +10,7 @@ import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as invoiceService from "@/services/invoice";
 import * as orgService from "@/services/org";
 import * as reportService from "@/services/report";
@@ -18,7 +19,6 @@ import { faker } from "@faker-js/faker";
 import axios from "axios";
 import type { Context } from "elysia";
 import { vi } from "vitest";
-import type { Invoice, Org, Report, User } from "../drizzle/schema";
 import type { AuthenticatedContext } from "../plugins/auth";
 import {
   type UserDetails,

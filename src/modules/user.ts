@@ -2,8 +2,8 @@ import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { Invoice, Org, Report, User } from "../drizzle/schema";
 import type { AuthenticatedContext } from "../plugins/auth";
 
 export interface UserDetails {

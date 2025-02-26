@@ -2,14 +2,14 @@ import { NotFoundError } from "elysia";
 
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateInvoice } from "@/domain/interfaces/invoices";
-import { and, eq } from "drizzle-orm";
-import { db } from "../drizzle/db";
+import { db } from "@/drizzle/db";
 import {
   type Invoice,
   invoice,
   orgInvoice,
   userInvoice,
-} from "../drizzle/schema";
+} from "@/drizzle/schema";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Creates a new Invoice.

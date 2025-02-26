@@ -1,7 +1,6 @@
-import ServerError from "@/domain/exceptions/ServerError";
+import ConflictError from "@/domain/exceptions/ConflictError";
 import * as authController from "@/modules/auth";
-import type { Provider } from "@supabase/supabase-js";
-import type { Elysia } from "elysia";
+import { type Elysia, t } from "elysia";
 
 /**
  * Sets up authentication routes for the application.
@@ -15,7 +14,7 @@ import type { Elysia } from "elysia";
  * - `GET /auth/callback` - Handles the OAuth callback after sign-in.
  * - `GET /signout` - Signs the user out of the application.
  */
-export default (app: Elysia) =>
+export default (app: Elysia): Elysia =>
   app
     .get("/auth/:provider", authController.signInWithOAuth)
     .get("/auth/callback", authController.oauthCallback)

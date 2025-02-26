@@ -1,4 +1,4 @@
-import type { Org } from "../../drizzle/schema";
+import type { Org } from "@/drizzle/schema";
 
 export interface CreateOrg {
   user: string;

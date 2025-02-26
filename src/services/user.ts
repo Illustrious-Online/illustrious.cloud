@@ -4,9 +4,7 @@ import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type { FetchUser } from "@/domain/interfaces/users";
 import { UserRole } from "@/domain/types/UserRole";
-import axios from "axios";
-import { and, eq } from "drizzle-orm";
-import { db } from "../drizzle/db";
+import { db } from "@/drizzle/db";
 import {
   type User as IllustriousUser,
   type Invoice,
@@ -19,7 +17,9 @@ import {
   user,
   userInvoice,
   userReport,
-} from "../drizzle/schema";
+} from "@/drizzle/schema";
+import axios from "axios";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Creates a new user.

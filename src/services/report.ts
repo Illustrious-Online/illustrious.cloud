@@ -3,8 +3,8 @@ import { NotFoundError } from "elysia";
 
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateReport } from "@/domain/interfaces/reports";
-import { db } from "../drizzle/db";
-import { type Report, orgReport, report, userReport } from "../drizzle/schema";
+import { db } from "@/drizzle/db";
+import { type Report, orgReport, report, userReport } from "@/drizzle/schema";
 
 /**
  * Creates a new Report.

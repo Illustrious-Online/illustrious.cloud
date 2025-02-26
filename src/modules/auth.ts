@@ -6,14 +6,9 @@ import * as authService from "@/services/auth";
 import type { Provider } from "@supabase/supabase-js";
 import type { Context } from "elysia";
 
-export const signInWithOAuth = async (context: Context) => {
-  const { provider } = context.params;
-
-  if (!provider) {
-    throw new ConflictError("Provider is required to perform authentication.");
-  }
-
+export const signInWithOAuth = async (provider: string) => {
   const data = await authService.signInWithOAuth(provider as Provider);
+  console.log("returned value", data);
 
   if (!data) {
     throw new ServerError(
@@ -22,7 +17,7 @@ export const signInWithOAuth = async (context: Context) => {
     );
   }
 
-  context.redirect(data);
+  return data;
 };
 
 export const oauthCallback = async (

@@ -1,3 +1,8 @@
+/**
+ * Represents a server error with a specific error code.
+ *
+ * @extends {Error}
+ */
 export default class ServerError extends Error {
   public code: number;
 

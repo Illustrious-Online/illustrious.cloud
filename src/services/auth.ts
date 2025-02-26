@@ -1,9 +1,10 @@
 import { supabaseClient } from "@/app";
+import config from "@/config";
 import ServerError from "@/domain/exceptions/ServerError";
+import type { User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
 import type { Provider } from "@supabase/auth-js";
 import { v4 as uuidv4 } from "uuid";
-import type { User } from "../drizzle/schema";
 
 /**
  * Signs in a user using OAuth with the specified provider.
@@ -12,16 +13,23 @@ import type { User } from "../drizzle/schema";
  * @returns {Promise<{ provider: Provider; url: string; }>} A promise that resolves to an object containing the provider and the URL for the OAuth sign-in.
  * @throws {ServerError} If there is an error during the sign-in process.
  */
-export async function signInWithOAuth(provider: Provider): Promise<string> {
+export async function signInWithOAuth(provider: Provider): Promise<{
+  provider: Provider;
+  url: string;
+}> {
   const { data, error } = await supabaseClient.auth.signInWithOAuth({
     provider: provider,
+    options: {
+      redirectTo: `${config.app.url}/auth/callback`,
+    },
   });
+  console.log("auth data", data);
 
   if (error) {
     throw new ServerError(error.message, 500);
   }
 
-  return data.url;
+  return data;
 }
 
 /**
@@ -31,9 +39,8 @@ export async function signInWithOAuth(provider: Provider): Promise<string> {
  * @returns {Promise<User>} - A promise that resolves to the authenticated user.
  * @throws {ServerError} - Throws an error if the code exchange fails.
  */
-export async function oauthCallback(code: string): Promise<User> {
-  const { data, error } =
-    await supabaseClient.auth.exchangeCodeForSession(code);
+export async function oauthCallback(bearer: string): Promise<User> {
+  const { data, error } = await supabaseClient.auth.getUser(bearer);
 
   if (error) {
     throw new ServerError(error.message, 500);

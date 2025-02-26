@@ -1,4 +1,4 @@
-import type { Invoice } from "../../drizzle/schema";
+import type { Invoice } from "@/drizzle/schema";
 
 export interface SubmitInvoice {
   client: string;

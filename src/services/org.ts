@@ -5,8 +5,7 @@ import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
 import { UserRole } from "@/domain/types/UserRole";
-import { eq } from "drizzle-orm";
-import { db } from "../drizzle/db";
+import { db } from "@/drizzle/db";
 import {
   type Invoice,
   type Org,
@@ -21,7 +20,8 @@ import {
   user,
   userInvoice,
   userReport,
-} from "../drizzle/schema";
+} from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Creates a new Organization.

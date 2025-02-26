@@ -1,4 +1,4 @@
-import type { Report } from "../../drizzle/schema";
+import type { Report } from "@/drizzle/schema";
 
 export interface SubmitReport {
   client: string;

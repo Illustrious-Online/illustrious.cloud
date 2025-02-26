@@ -8,6 +8,43 @@ import ResponseError from "@/domain/exceptions/ResponseError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type ErrorResponse from "@/domain/types/generic/ErrorResponse";
 
+/**
+ * A plugin for handling errors in the Elysia application.
+ *
+ * @param {Elysia} app - The Elysia application instance.
+ * @returns {Elysia} The Elysia application instance with error handling configured.
+ *
+ * @example
+ * ```typescript
+ * import errorPlugin from './plugins/error';
+ * import { Elysia } from 'elysia';
+ *
+ * const app = new Elysia();
+ * app.use(errorPlugin);
+ * ```
+ *
+ * This plugin configures the application to handle various types of errors:
+ * - `BadRequestError`
+ * - `ConflictError`
+ * - `ResponseError`
+ * - `UnauthorizedError`
+ *
+ * It also handles specific error codes:
+ * - `NOT_FOUND`: Sets the status to 404 and returns a "Not Found!" message.
+ * - `VALIDATION`: Sets the status to 400 and returns a "Bad Request!" message.
+ *
+ * For other errors, it sets the status to 503 (Service Unavailable) and returns the error message.
+ *
+ * If the application environment is not "test", the error stack trace is logged to the console.
+ *
+ * @param {Object} handler - The error handler object.
+ * @param {Error} handler.error - The error object.
+ * @param {string} handler.code - The error code.
+ * @param {Object} handler.set - The response settings object.
+ * @param {number} handler.set.status - The HTTP status code to be set.
+ *
+ * @returns {ErrorResponse<number>} The error response object containing the message and status code.
+ */
 export default (app: Elysia) =>
   app
     .error({ BadRequestError, ConflictError, ResponseError, UnauthorizedError })

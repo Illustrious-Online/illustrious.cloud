@@ -4,9 +4,15 @@ import type { Context, Elysia, Context as ElysiaContext } from "elysia";
 import { db } from "../drizzle/db";
 
 import ConflictError from "@/domain/exceptions/ConflictError";
-import type { SubmitInvoice } from "@/domain/interfaces/invoices";
-import type { SubmitReport } from "@/domain/interfaces/reports";
+import type {
+  CreateInvoice,
+  SubmitInvoice,
+} from "@/domain/interfaces/invoices";
+import type { CreateOrg } from "@/domain/interfaces/orgs";
+import type { CreateReport, SubmitReport } from "@/domain/interfaces/reports";
+import { CreateUser } from "@/domain/interfaces/users";
 import { UserRole } from "@/domain/types/UserRole";
+import bearer from "@elysiajs/bearer";
 import { supabaseClient } from "../app";
 import {
   type Org,
@@ -37,162 +43,132 @@ export interface AuthenticatedContext extends Context {
 }
 
 const authPlugin = (app: Elysia) =>
-  app.derive(async (context: ElysiaContext) => {
-    // Check if the request has a bearer token
-    const { body, path, headers = {}, params = {} } = context;
-    const { bearer } = headers;
-    const { org, invoice, report } = params;
+  app.use(bearer()).derive(async ({ bearer, body, path, params }) => {
+    if (path === "/auth") {
+      return;
+    }
 
-    // If the request does not have a bearer token, throw an error
     if (!bearer) {
       throw new UnauthorizedError("Access token is missing!");
     }
 
-    // Get the user data from the supabase using bearer token
     const { data, error } = await supabaseClient.auth.getUser(bearer);
 
-    // If there is an error or no data, throw an error
     if (error || !data) {
       throw new UnauthorizedError(
         `Unauthorized: ${error?.message || "Unknown error"}`,
       );
     }
 
-    // Find the user in the database
     const findUser = await db
       .select()
       .from(user)
       .where(eq(user.id, data.user.id));
+
     const fetchUser: User = findUser[0];
-    let permissions: {
+
+    const permissions: {
       superAdmin: boolean;
       org?: {
         id: string;
         role?: UserRole;
+        create?: boolean;
       };
       invoice?: {
-        creator?: boolean;
+        id: string;
+        access?: boolean;
+        edit?: boolean;
       };
       report?: {
-        creator?: boolean;
+        id: string;
+        access?: boolean;
+        edit?: boolean;
       };
     } = {
       superAdmin: fetchUser.superAdmin,
     };
 
-    if (path.includes("org")) {
-      const orgId = org ?? (body as Org).id;
-      const findOrgUser = await db
-        .select()
-        .from(orgUser)
-        .where(and(eq(orgUser.orgId, orgId), eq(orgUser.userId, user.id)));
-
-      if (findOrgUser.length > 0) {
-        permissions.org = {
-          id: orgId,
-          role: findOrgUser[0].role,
-        };
-      }
+    if (path.includes("/me")) {
+      return {
+        user: fetchUser,
+        permissions,
+      };
     }
 
-    if (path.includes("invoice")) {
-      const invoiceId = invoice ?? (body as SubmitInvoice).invoice.id;
+    if (path.includes("/user")) {
+      const { user: userParam } = params as { user: string };
+
+      if (userParam !== fetchUser.id) {
+        throw new UnauthorizedError(
+          "You do not have permission to access this user's information.",
+        );
+      }
+
+      return {
+        user: fetchUser,
+        permissions,
+      };
+    }
+
+    const { org: orgParam } = params as { org: string };
+    const findOrgUsers = await db
+      .select()
+      .from(orgUser)
+      .where(eq(orgUser.userId, fetchUser.id));
+
+    permissions.org = {
+      id: orgParam ?? (body as CreateOrg).org.id,
+      role: findOrgUsers.find((orgUser) => orgUser.orgId === orgParam)?.role,
+      create: !findOrgUsers.filter((orgUser) => orgUser.role === UserRole.OWNER)
+        .length,
+    };
+
+    if (path.includes("/invoice")) {
+      const { invoice: invoiceParam } = params as { invoice: string };
+      const invoiceId =
+        invoiceParam ?? (body as CreateInvoice | SubmitInvoice).invoice.id;
       const findInvoiceUser = await db
         .select()
         .from(userInvoice)
         .where(
           and(
             eq(userInvoice.invoiceId, invoiceId),
-            eq(userInvoice.userId, user.id),
+            eq(userInvoice.userId, fetchUser.id),
           ),
         );
-      const findOrgInvoice = await db
-        .select()
-        .from(orgInvoice)
-        .where(eq(orgInvoice.invoiceId, invoiceId));
 
-      if ((body as SubmitInvoice).client) {
-        const { client, org } = body as SubmitInvoice;
-        const findClientUser = await db
-          .select()
-          .from(orgUser)
-          .where(and(eq(orgUser.orgId, org), eq(orgUser.userId, client)));
-
-        if (!findClientUser.length) {
-          throw new ConflictError("Client not found in the organization");
-        }
-      }
-
-      permissions = {
-        ...permissions,
-        org: {
-          id: findOrgInvoice[0].orgId,
-        },
-        invoice: findInvoiceUser.length > 0 ? {} : undefined,
+      permissions.invoice = {
+        id: invoiceId,
+        access: findInvoiceUser.length > 0,
+        edit:
+          findInvoiceUser.length > 0 && permissions.org?.role
+            ? permissions.org?.role > UserRole.CLIENT
+            : false,
       };
     }
 
-    // Check if report path was requested
-    if (path.includes("report")) {
-      const reportId = report ? report : (body as SubmitReport).report.id;
+    if (path.includes("/report")) {
+      const { report: reportParam } = params as { report: string };
+      const reportId =
+        reportParam ?? (body as CreateReport | SubmitReport).report.id;
       const findReportUser = await db
         .select()
         .from(userReport)
         .where(
           and(
             eq(userReport.reportId, reportId),
-            eq(userReport.userId, user.id),
+            eq(userReport.userId, fetchUser.id),
           ),
         );
-      const findOrgReport = await db
-        .select()
-        .from(orgReport)
-        .where(eq(orgReport.reportId, reportId));
 
-      if ((body as SubmitReport).client) {
-        const { client, org } = body as SubmitReport;
-        const findClientUser = await db
-          .select()
-          .from(orgUser)
-          .where(and(eq(orgUser.orgId, org), eq(orgUser.userId, client)));
-
-        if (!findClientUser.length) {
-          throw new ConflictError("Client not found in the organization");
-        }
-      }
-
-      permissions = {
-        ...permissions,
-        org: {
-          id: findOrgReport[0].orgId,
-        },
-        report: findReportUser.length > 0 ? {} : undefined,
+      permissions.report = {
+        id: reportId,
+        access: findReportUser.length > 0,
+        edit:
+          findReportUser.length > 0 && permissions.org?.role
+            ? permissions.org?.role > UserRole.CLIENT
+            : false,
       };
-    }
-
-    if (!permissions.org?.id) {
-      throw new ConflictError("Unable to find associated org for the request");
-    }
-
-    if (!permissions.org?.role) {
-      const { id } = permissions.org;
-      const findOrgUser = await db
-        .select()
-        .from(orgUser)
-        .where(and(eq(orgUser.orgId, id), eq(orgUser.userId, user.id)));
-
-      permissions.org = {
-        ...permissions.org,
-        role: findOrgUser[0].role,
-      };
-
-      if (permissions.invoice) {
-        permissions.invoice.creator = findOrgUser[0].role > UserRole.CLIENT;
-      }
-
-      if (permissions.report) {
-        permissions.report.creator = findOrgUser[0].role > UserRole.CLIENT;
-      }
     }
 
     return {

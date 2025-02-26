@@ -11,9 +11,7 @@ export const signInWithOAuth = async (context: Context) => {
   const { provider } = params;
 
   if (!provider) {
-    throw new ConflictError(
-      "Provider is required to perform authentication.",
-    );
+    throw new ConflictError("Provider is required to perform authentication.");
   }
 
   const data = await authService.signInWithOAuth(provider as Provider);

@@ -10,7 +10,7 @@ export default class ConflictError extends Error {
   public status: number;
 
   constructor(public message: string) {
-    super(message);
+    super(`Conflict: ${message}`);
 
     this.status = StatusCodes.CONFLICT;
   }

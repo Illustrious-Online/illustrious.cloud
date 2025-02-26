@@ -14,7 +14,7 @@ import { type Report, orgReport, report, userReport } from "@/drizzle/schema";
  * @throws {ConflictError} If an Report with the same data already exists.
  * @throws {Error} If an error occurs while creating the Report.
  */
-export async function create(payload: CreateReport): Promise<Report> {
+export async function createReport(payload: CreateReport): Promise<Report> {
   const { client, creator, org, report: payloadReport } = payload;
   const foundReport = await db
     .select()
@@ -22,7 +22,7 @@ export async function create(payload: CreateReport): Promise<Report> {
     .where(eq(report.id, payloadReport.id));
 
   if (foundReport.length > 0) {
-    throw new ConflictError("Report already exists!");
+    throw new ConflictError("The report already exists.");
   }
 
   const result = await db.insert(report).values(payloadReport).returning();
@@ -48,11 +48,11 @@ export async function create(payload: CreateReport): Promise<Report> {
  * @param payload - The id of the Report to fetch; optional userId to validate relationship.
  * @returns {Promise<Report>} A promise that resolves the Report object.
  */
-export async function fetchOne(id: string): Promise<Report> {
+export async function fetchReport(id: string): Promise<Report> {
   const data = await db.select().from(report).where(eq(report.id, id));
 
   if (data.length === 0) {
-    throw new NotFoundError();
+    throw new NotFoundError("Report not found.");
   }
 
   return data[0];
@@ -64,12 +64,12 @@ export async function fetchOne(id: string): Promise<Report> {
  * @param payload - The new Report object to update.
  * @returns {Promise<Report>} A promise that resolves to an Report object.
  */
-export async function update(payload: Report): Promise<Report> {
+export async function updateReport(payload: Report): Promise<Report> {
   const { id, rating, notes } = payload;
   const foundReport = await db.select().from(report).where(eq(report.id, id));
 
   if (!foundReport) {
-    throw new ConflictError("Could not find expected report");
+    throw new ConflictError("Could not find the report.");
   }
 
   const result = await db
@@ -82,7 +82,7 @@ export async function update(payload: Report): Promise<Report> {
     .returning();
 
   if (result.length === 0) {
-    throw new ConflictError("Failed to return response on update");
+    throw new ConflictError("Failed to return response on update.");
   }
 
   return result[0];
@@ -94,7 +94,7 @@ export async function update(payload: Report): Promise<Report> {
  * @param invoiceId - The Report ID to be removed.
  * @throws {ConflictError} If a user with the same data already exists.
  */
-export async function deleteOne(reportId: string): Promise<void> {
+export async function removeReport(reportId: string): Promise<void> {
   db.delete(userReport).where(eq(userReport.reportId, reportId));
   db.delete(orgReport).where(eq(orgReport.reportId, reportId));
   db.delete(report).where(eq(report.id, reportId));

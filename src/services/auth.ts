@@ -23,7 +23,6 @@ export async function signInWithOAuth(provider: Provider): Promise<{
       redirectTo: `${config.app.url}/auth/callback`,
     },
   });
-  console.log("auth data", data);
 
   if (error) {
     throw new ServerError(error.message, 500);

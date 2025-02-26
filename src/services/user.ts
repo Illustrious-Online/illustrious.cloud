@@ -56,28 +56,15 @@ export async function updateOrCreate(
  * @returns {Promise<IllustriousUser>} A promise that resolves the User object.
  */
 export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
-  if (payload.id) {
-    const result = await db.select().from(user).where(eq(user.id, payload.id));
-    return result[0];
+  if (!payload.id && !payload.email && !payload.identifier) {
+    throw new ConflictError("User could not be found with the provided details.");
   }
 
-  if (payload.email) {
-    const result = await db
-      .select()
-      .from(user)
-      .where(eq(user.email, payload.email));
-    return result[0];
-  }
+  const key = Object.keys(payload)[0] as keyof FetchUser;
+  const value = Object.values(payload)[0];
 
-  if (payload.identifier) {
-    const result = await db
-      .select()
-      .from(user)
-      .where(eq(user.identifier, payload.identifier));
-    return result[0];
-  }
-
-  throw new ConflictError("User could not be found with the provided details.");
+  const result = await db.select().from(user).where(eq(user[key], value));
+  return result[0];
 }
 
 /**

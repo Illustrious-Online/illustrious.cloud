@@ -27,7 +27,7 @@ export async function createInvoice(payload: CreateInvoice): Promise<Invoice> {
     .where(eq(invoice.id, payloadInvoice.id));
 
   if (foundInvoice.length > 0) {
-    throw new ConflictError("Invoice already exists!");
+    throw new ConflictError("The invoice already exists.");
   }
 
   const result = await db.insert(invoice).values(payloadInvoice).returning();
@@ -57,7 +57,7 @@ export async function fetchInvoice(id: string): Promise<Invoice> {
   const data = await db.select().from(invoice).where(eq(invoice.id, id));
 
   if (data.length === 0) {
-    throw new NotFoundError();
+    throw new NotFoundError("Invoice not found.");
   }
 
   return data[0];
@@ -71,6 +71,12 @@ export async function fetchInvoice(id: string): Promise<Invoice> {
  */
 export async function updateInvoice(payload: Invoice): Promise<Invoice> {
   const { id, paid, price, start, end, due, updatedAt } = payload;
+  const foundInvoice = await db.select().from(invoice).where(eq(invoice.id, id));
+
+  if (!foundInvoice) {
+    throw new ConflictError("Could not find the report.");
+  }
+
   const result = await db
     .update(invoice)
     .set({
@@ -83,6 +89,10 @@ export async function updateInvoice(payload: Invoice): Promise<Invoice> {
     })
     .where(eq(invoice.id, id))
     .returning();
+
+  if (result.length === 0) {
+    throw new ConflictError("Failed to return response on update.");
+  }
 
   return result[0];
 }
@@ -97,13 +107,4 @@ export async function removeInvoice(invoiceId: string): Promise<void> {
   await db.delete(userInvoice).where(eq(userInvoice.invoiceId, invoiceId));
   await db.delete(orgInvoice).where(eq(orgInvoice.invoiceId, invoiceId));
   await db.delete(invoice).where(eq(invoice.id, invoiceId));
-}
-
-export async function validatePermissions(userId: string, invoiceId: string) {
-  return await db
-    .select()
-    .from(userInvoice)
-    .where(
-      and(eq(userInvoice.userId, userId), eq(userInvoice.invoiceId, invoiceId)),
-    );
 }

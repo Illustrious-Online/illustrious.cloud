@@ -4,7 +4,8 @@ import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { AuthenticatedContext } from "../plugins/auth";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import { UserRole } from "@/domain/types/UserRole";
 
 export interface UserDetails {
   user: User;
@@ -59,28 +60,21 @@ export const me = async (
  * const response = await fetchUser(context);
  * console.log(response.data); // { user: { id: '123', superAdmin: true }, invoices: [...], reports: [...] }
  */
-export const fetchUser = async (
+export const getUser = async (
   context: AuthenticatedContext,
-): Promise<SuccessResponse<UserDetails>> => {
-  const { user } = context;
-  const { include } = context.query;
-  const result: UserDetails = { user };
+): Promise<SuccessResponse<User>> => {
+  const { params } = context;
+  const { user: id, by } = params;
 
-  if (include && user.superAdmin) {
-    const userResources = (await userService.fetchResources(user.id, {
-      invoices: include.includes("invoices"),
-      reports: include.includes("reports"),
-      orgs: include.includes("orgs"),
-    })) as UserDetails;
+  const fetchedUser = await userService.fetchOne({ [by ?? "id"]: id });
 
-    result.invoices = userResources.invoices;
-    result.reports = userResources.reports;
-    result.orgs = userResources.orgs;
-  }
+  fetchedUser.phone = null;
+  fetchedUser.lastName = null;
+  fetchedUser.superAdmin = false;
 
   return {
-    data: result,
-    message: `User details fetched successfully${include && !user.superAdmin ? " ('include' details restricted)" : ""}`,
+    data: fetchedUser,
+    message: "User details fetched successfully!",
   };
 };
 
@@ -91,15 +85,29 @@ export const fetchUser = async (
  * @throws {UnauthorizedError} If the token does not match the user to be updated.
  * @returns {Promise<{ data: User, message: string }>} The updated user data and a success message.
  */
-export const updateUser = async (
+export const putUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
-  const { user } = context;
+  const {
+    params: { user: id },
+    permissions: { org, superAdmin },
+    user
+  } = context;
   const body = context.body as User;
-  const { id } = context.params;
+  let allowed: boolean | undefined;
 
-  if (!user.superAdmin && user.id !== id) {
-    throw new UnauthorizedError("Token does not match user to be updated.");
+  if (!superAdmin && id !== user.id && !allowed) {
+    throw new UnauthorizedError("You do not have permission to update this user.");
+  }
+
+  if (
+    superAdmin || id === user.id ||
+    (org?.role && org?.role > UserRole.CLIENT && allowed)
+  ) {
+    return {
+      data: await userService.update(body),
+      message: "User updated successfully.",
+    };
   }
 
   const data = await userService.update(body);

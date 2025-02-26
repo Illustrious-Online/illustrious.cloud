@@ -16,7 +16,7 @@ import { type Elysia, t } from "elysia";
  */
 export default (app: Elysia) =>
   app
-    .post("/report", reportController.create)
-    .get("/report/:report", reportController.fetchOne)
-    .put("/report/:report", reportController.update)
-    .delete("/report/:report", reportController.deleteOne);
+    .post("/report", reportController.createReport)
+    .get("/report/:report", reportController.fetchReport)
+    .put("/report/:report", reportController.updateReport)
+    .delete("/report/:report", reportController.deleteReport);

@@ -18,7 +18,7 @@ import { type Elysia, t } from "elysia";
  */
 export default (app: Elysia) =>
   app
-    .post("/invoice", invoiceController.create)
-    .get("/invoice/:invoice", invoiceController.fetchOne)
-    .put("/invoice", invoiceController.update)
-    .delete("/invoice/:invoice", invoiceController.deleteOne);
+    .post("/invoice", invoiceController.postInvoice)
+    .get("/invoice/:invoice", invoiceController.getInvoice)
+    .put("/invoice", invoiceController.putInvoice)
+    .delete("/invoice/:invoice", invoiceController.deleteInvoice);

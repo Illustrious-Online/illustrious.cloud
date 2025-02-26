@@ -91,7 +91,7 @@ export const fetchUser = async (
  * @throws {UnauthorizedError} If the token does not match the user to be updated.
  * @returns {Promise<{ data: User, message: string }>} The updated user data and a success message.
  */
-export const update = async (
+export const updateUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
   const { user } = context;
@@ -117,7 +117,7 @@ export const update = async (
  * @throws {UnauthorizedError} If the provided user ID does not match the authenticated user ID.
  * @returns An object containing a success message.
  */
-export const deleteOne = async (
+export const deleteUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<string>> => {
   const { user } = context;

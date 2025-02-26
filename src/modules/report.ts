@@ -6,7 +6,7 @@ import type { Report } from "@/drizzle/schema";
 import * as reportService from "@/services/report";
 import type { AuthenticatedContext } from "../plugins/auth";
 
-export const create = async (
+export const createReport = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {
   const { user, permissions } = context;
@@ -30,7 +30,7 @@ export const create = async (
   throw new UnauthorizedError("You do not have permission to create a report.");
 };
 
-export const fetchOne = async (context: AuthenticatedContext) => {
+export const fetchReport = async (context: AuthenticatedContext) => {
   const { report: reportId } = context.params;
   const { permissions } = context;
   const { superAdmin, org, report } = permissions;
@@ -49,7 +49,7 @@ export const fetchOne = async (context: AuthenticatedContext) => {
   );
 };
 
-export const update = async (context: AuthenticatedContext) => {
+export const updateReport = async (context: AuthenticatedContext) => {
   const body = context.body as SubmitReport;
   const { permissions } = context;
   const { superAdmin, report, org } = permissions;
@@ -72,7 +72,7 @@ export const update = async (context: AuthenticatedContext) => {
   );
 };
 
-export const deleteOne = async (context: AuthenticatedContext) => {
+export const deleteReport = async (context: AuthenticatedContext) => {
   const { report: reportId } = context.params;
   const { permissions } = context;
   const { superAdmin, report, org } = permissions;

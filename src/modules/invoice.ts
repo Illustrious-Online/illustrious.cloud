@@ -13,7 +13,7 @@ import type { AuthenticatedContext } from "../plugins/auth";
  * @returns A promise that resolves to a success response containing the created invoice.
  * @throws UnauthorizedError - If the user does not have permission to create an invoice.
  */
-export const create = async (
+export const postInvoice = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Invoice>> => {
   const { user, permissions } = context;
@@ -21,7 +21,7 @@ export const create = async (
   const body = context.body as SubmitInvoice;
 
   if (superAdmin || (org?.role && org.role > UserRole.CLIENT)) {
-    const data = await invoiceService.create({
+    const data = await invoiceService.createInvoice({
       client: body.client,
       creator: user.id,
       org: body.org,
@@ -46,23 +46,23 @@ export const create = async (
  * @returns {Promise<{ data: any; message: string }>} The fetched invoice data and a success message.
  * @throws {UnauthorizedError} If the user does not have permission to access the invoice.
  */
-export const fetchOne = async (context: AuthenticatedContext) => {
+export const getInvoice = async (context: AuthenticatedContext): Promise<SuccessResponse<Invoice>> => {
   const { invoice: invoiceId } = context.params;
   const { permissions } = context;
   const { superAdmin, invoice, org } = permissions;
 
-  if (superAdmin || (org?.role && org.role > UserRole.EMPLOYEE) || invoice) {
-    const data = await invoiceService.fetchById(invoiceId);
-
-    return {
-      data,
-      message: "Invoice fetched successfully.",
-    };
+  if (!superAdmin && (!org?.role || org.role < UserRole.ADMIN) && !invoice?.access) {
+    throw new UnauthorizedError(
+      "Unauthorized: You do not have permission to access this invoice!",
+    );
   }
 
-  throw new UnauthorizedError(
-    "You do not have permission to access this invoice.",
-  );
+  const data = await invoiceService.fetchInvoice(invoiceId);
+
+  return {
+    data,
+    message: "Invoice fetched successfully!",
+  };
 };
 
 /**
@@ -72,7 +72,7 @@ export const fetchOne = async (context: AuthenticatedContext) => {
  * @returns An object containing the updated invoice data and a success message.
  * @throws {UnauthorizedError} If the user does not have permission to update the invoice.
  */
-export const update = async (context: AuthenticatedContext) => {
+export const putInvoice = async (context: AuthenticatedContext) => {
   const body = context.body as SubmitInvoice;
   const { permissions } = context;
   const { superAdmin, invoice, org } = permissions;
@@ -82,7 +82,7 @@ export const update = async (context: AuthenticatedContext) => {
     (org?.role &&
       (org.role > UserRole.EMPLOYEE || (invoice && org.role > UserRole.CLIENT)))
   ) {
-    const data = await invoiceService.update(body.invoice);
+    const data = await invoiceService.updateInvoice(body.invoice);
 
     return {
       data,
@@ -102,7 +102,7 @@ export const update = async (context: AuthenticatedContext) => {
  * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a success message.
  * @throws {UnauthorizedError} If the user does not have permission to delete the invoice.
  */
-export const deleteOne = async (context: AuthenticatedContext) => {
+export const deleteInvoice = async (context: AuthenticatedContext) => {
   const { invoice: invoiceId } = context.params;
   const { permissions } = context;
   const { superAdmin, invoice, org } = permissions;
@@ -112,7 +112,7 @@ export const deleteOne = async (context: AuthenticatedContext) => {
     (org?.role &&
       (org.role > UserRole.EMPLOYEE || (invoice && org.role > UserRole.CLIENT)))
   ) {
-    await invoiceService.deleteOne(invoiceId);
+    await invoiceService.removeInvoice(invoiceId);
 
     return {
       message: "Invoice deleted successfully.",

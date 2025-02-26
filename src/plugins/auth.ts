@@ -1,62 +1,80 @@
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { and, eq } from "drizzle-orm";
-import type { Context, Elysia, Context as ElysiaContext } from "elysia";
+import type { Context, Elysia } from "elysia";
 import { db } from "../drizzle/db";
-
-import ConflictError from "@/domain/exceptions/ConflictError";
 import type {
   CreateInvoice,
   SubmitInvoice,
 } from "@/domain/interfaces/invoices";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
 import type { CreateReport, SubmitReport } from "@/domain/interfaces/reports";
-import { CreateUser } from "@/domain/interfaces/users";
+import type { CreateUser } from "@/domain/interfaces/users";
 import { UserRole } from "@/domain/types/UserRole";
 import bearer from "@elysiajs/bearer";
 import { supabaseClient } from "../app";
 import {
-  type Org,
   type User,
-  orgInvoice,
-  orgReport,
   orgUser,
   user,
   userInvoice,
   userReport,
 } from "../drizzle/schema";
 
+interface AuthPermissions {
+  superAdmin: boolean;
+  org?: {
+    id: string;
+    role?: UserRole;
+    create?: boolean;
+  };
+  invoice?: {
+    id: string;
+    access?: boolean;
+    edit?: boolean;
+  };
+  report?: {
+    id: string;
+    access?: boolean;
+    edit?: boolean;
+  };
+  resource?: string;
+}
+
 export interface AuthenticatedContext extends Context {
   user: User;
-  permissions: {
-    superAdmin: boolean;
-    org?: {
-      id: string;
-      role?: UserRole;
-    };
-    invoice?: {
-      creator?: boolean;
-    };
-    report?: {
-      creator?: boolean;
-    };
-  };
+  permissions: AuthPermissions;
+}
+
+interface AuthParams {
+  user?: string;
+  invoice?: string;
+  report?: string;
+  resource?: string;
+  org?: string;
+}
+
+interface AuthPluginParams {
+  bearer: string;
+  body: CreateInvoice | CreateOrg | CreateReport | CreateUser | SubmitInvoice | SubmitReport | unknown;
+  path: string;
+  params: AuthParams;
 }
 
 const authPlugin = (app: Elysia) =>
-  app.use(bearer()).derive(async ({ bearer, body, path, params }) => {
+  app.use(bearer()).derive(async ({ bearer, body, path, params }: AuthPluginParams) => {
     if (path === "/auth") {
       return;
     }
 
     if (!bearer) {
-      throw new UnauthorizedError("Access token is missing!");
+      throw new UnauthorizedError("Unauthorized: Access token is missing!");
     }
 
     const { data, error } = await supabaseClient.auth.getUser(bearer);
 
     if (error || !data) {
       throw new UnauthorizedError(
-        `Unauthorized: ${error?.message || "Unknown error"}`,
+        `Unauthorized: ${error?.message || "Unknown error!"}`,
       );
     }
 
@@ -65,27 +83,14 @@ const authPlugin = (app: Elysia) =>
       .from(user)
       .where(eq(user.id, data.user.id));
 
-    const fetchUser: User = findUser[0];
+    if (!findUser.length) {
+      throw new UnauthorizedError("Unauthorized: User not found!");
+    }
 
-    const permissions: {
-      superAdmin: boolean;
-      org?: {
-        id: string;
-        role?: UserRole;
-        create?: boolean;
-      };
-      invoice?: {
-        id: string;
-        access?: boolean;
-        edit?: boolean;
-      };
-      report?: {
-        id: string;
-        access?: boolean;
-        edit?: boolean;
-      };
-    } = {
+    const fetchUser: User = findUser[0];
+    const permissions: AuthPermissions = {
       superAdmin: fetchUser.superAdmin,
+      resource: params.resource
     };
 
     if (path.includes("/me")) {
@@ -96,12 +101,24 @@ const authPlugin = (app: Elysia) =>
     }
 
     if (path.includes("/user")) {
-      const { user: userParam } = params as { user: string };
-
-      if (userParam !== fetchUser.id) {
+      if (params.user !== fetchUser.id) {
         throw new UnauthorizedError(
-          "You do not have permission to access this user's information.",
+          "Unauthorized: You do not have permission to access this resource!",
         );
+      }
+
+      if (params.org) {
+        const findOrgUsers = await db
+          .select()
+          .from(orgUser)
+          .where(eq(orgUser.userId, fetchUser.id));
+
+        permissions.org = {
+          id: params.org,
+          role: findOrgUsers.find((orgUser) => orgUser.orgId === params.org)?.role,
+          create: !findOrgUsers.filter((orgUser) => orgUser.role === UserRole.OWNER)
+            .length,
+        };
       }
 
       return {
@@ -110,23 +127,21 @@ const authPlugin = (app: Elysia) =>
       };
     }
 
-    const { org: orgParam } = params as { org: string };
     const findOrgUsers = await db
       .select()
       .from(orgUser)
       .where(eq(orgUser.userId, fetchUser.id));
 
     permissions.org = {
-      id: orgParam ?? (body as CreateOrg).org.id,
-      role: findOrgUsers.find((orgUser) => orgUser.orgId === orgParam)?.role,
+      id: params.org ?? (body as CreateOrg).org.id,
+      role: findOrgUsers.find((orgUser) => orgUser.orgId === params.org)?.role,
       create: !findOrgUsers.filter((orgUser) => orgUser.role === UserRole.OWNER)
         .length,
     };
 
     if (path.includes("/invoice")) {
-      const { invoice: invoiceParam } = params as { invoice: string };
       const invoiceId =
-        invoiceParam ?? (body as CreateInvoice | SubmitInvoice).invoice.id;
+        params.invoice ?? (body as CreateInvoice | SubmitInvoice).invoice.id;
       const findInvoiceUser = await db
         .select()
         .from(userInvoice)
@@ -148,9 +163,8 @@ const authPlugin = (app: Elysia) =>
     }
 
     if (path.includes("/report")) {
-      const { report: reportParam } = params as { report: string };
       const reportId =
-        reportParam ?? (body as CreateReport | SubmitReport).report.id;
+        params.report ?? (body as CreateReport | SubmitReport).report.id;
       const findReportUser = await db
         .select()
         .from(userReport)

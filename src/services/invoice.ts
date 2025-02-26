@@ -19,7 +19,7 @@ import { and, eq } from "drizzle-orm";
  * @throws {ConflictError} If an Invoice with the same data already exists.
  * @throws {Error} If an error occurs while creating the Invoice.
  */
-export async function create(payload: CreateInvoice): Promise<Invoice> {
+export async function createInvoice(payload: CreateInvoice): Promise<Invoice> {
   const { client, creator, org, invoice: payloadInvoice } = payload;
   const foundInvoice = await db
     .select()
@@ -53,7 +53,7 @@ export async function create(payload: CreateInvoice): Promise<Invoice> {
  * @param payload - The id of the Invoice to fetch; optional userId to validate relationship.
  * @returns {Promise<Invoice>} A promise that resolves the Invoice object.
  */
-export async function fetchById(id: string): Promise<Invoice> {
+export async function fetchInvoice(id: string): Promise<Invoice> {
   const data = await db.select().from(invoice).where(eq(invoice.id, id));
 
   if (data.length === 0) {
@@ -69,7 +69,7 @@ export async function fetchById(id: string): Promise<Invoice> {
  * @param payload - The new Invoice data to update.
  * @returns {Promise<Invoice>} A promise that resolves to an Invoice object.
  */
-export async function update(payload: Invoice): Promise<Invoice> {
+export async function updateInvoice(payload: Invoice): Promise<Invoice> {
   const { id, paid, price, start, end, due, updatedAt } = payload;
   const result = await db
     .update(invoice)
@@ -93,7 +93,7 @@ export async function update(payload: Invoice): Promise<Invoice> {
  * @param invoiceId - The Invoice ID to be removed.
  * @throws {ConflictError} If a user with the same data already exists.
  */
-export async function deleteOne(invoiceId: string): Promise<void> {
+export async function removeInvoice(invoiceId: string): Promise<void> {
   await db.delete(userInvoice).where(eq(userInvoice.invoiceId, invoiceId));
   await db.delete(orgInvoice).where(eq(orgInvoice.invoiceId, invoiceId));
   await db.delete(invoice).where(eq(invoice.id, invoiceId));

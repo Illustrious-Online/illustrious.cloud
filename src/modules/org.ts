@@ -12,7 +12,7 @@ export interface OrgDetails {
   users?: User[];
 }
 
-export const create = async (
+export const createOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
   const { body, user } = context;
@@ -27,7 +27,7 @@ export const create = async (
   };
 };
 
-export const fetchOne = async (
+export const fetchOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<OrgDetails>> => {
   const { org: orgParam } = context.params;
@@ -77,7 +77,7 @@ export const fetchOne = async (
   };
 };
 
-export const fetchResources = async (context: AuthenticatedContext) => {
+export const fetchOrgResources = async (context: AuthenticatedContext) => {
   const { id, resource } = context.params;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
@@ -98,7 +98,7 @@ export const fetchResources = async (context: AuthenticatedContext) => {
   };
 };
 
-export const update = async (context: AuthenticatedContext) => {
+export const updateOrg = async (context: AuthenticatedContext) => {
   const body = context.body as Org;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
@@ -117,7 +117,7 @@ export const update = async (context: AuthenticatedContext) => {
   };
 };
 
-export const deleteOne = async (context: AuthenticatedContext) => {
+export const deleteOrg = async (context: AuthenticatedContext) => {
   const { org: orgParam } = context.params;
   const { permissions } = context;
   const { superAdmin, org } = permissions;

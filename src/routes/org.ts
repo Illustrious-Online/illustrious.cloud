@@ -18,8 +18,8 @@ import authPlugin from "../plugins/auth";
  */
 export default (app: Elysia) =>
   app
-    .post("/org", authPlugin, orgController.create)
-    .get("/org/:org", authPlugin, orgController.fetchOne)
-    .get("/org/:org/:resource?/:user?", orgController.fetchResources)
-    .put("/org/:org", authPlugin, orgController.update)
-    .delete("/org/:org", authPlugin, orgController.deleteOne);
+    .post("/org", authPlugin, orgController.createOrg)
+    .get("/org/:org", authPlugin, orgController.fetchOrg)
+    .get("/org/:org/:resource?/:user?", orgController.fetchOrgResources)
+    .put("/org/:org", authPlugin, orgController.updateOrg)
+    .delete("/org/:org", authPlugin, orgController.deleteOrg);

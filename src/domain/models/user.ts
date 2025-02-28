@@ -6,5 +6,7 @@ export const User = t.Object({
   firstName: t.String({ minLength: 1, maxLength: 256 }),
   lastName: t.String({ minLength: 1, maxLength: 256 }),
   picture: t.String({ minLength: 0, maxLength: 256 }),
+  managed: t.Boolean(),
+  superAdmin: t.Boolean(),
   phone: t.Nullable(t.String({ minLength: 0, maxLength: 256 })),
 });

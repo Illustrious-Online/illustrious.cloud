@@ -20,16 +20,18 @@ export interface AuthPermissions {
     create?: boolean;
   };
   invoice?: {
-    id: string;
+    id?: string;
     access?: boolean;
     edit?: boolean;
     create?: boolean;
+    delete?: boolean;
   };
   report?: {
-    id: string;
+    id?: string;
     access?: boolean;
     edit?: boolean;
     create?: boolean;
+    delete?: boolean;
   };
   resource?: string;
 }

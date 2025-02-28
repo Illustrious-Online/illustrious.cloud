@@ -21,13 +21,25 @@ import {
 import axios from "axios";
 import { and, eq } from "drizzle-orm";
 
+const supaConfig = {
+  method: "post",
+  maxBodyLength: Number.POSITIVE_INFINITY,
+  headers: {
+    Authorization: `Bearer ${config.auth.edgeKey}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+  },
+  url: `https://${config.auth.supabaseId ?? "test"}.supabase.co/functions/v1`,
+};
+
 /**
- * Creates a new user.
+ * Updates an existing user or creates a new user if one does not exist.
  *
- * @param payload - The user data to be created.
- * @returns {Promise<IllustriousUser>} A promise that resolves to the created user.
- * @throws {ConflictError} If a user with the same data already exists.
- * @throws {Error} If an error occurs while creating the user.
+ * @param payload - The user data to update or create.
+ * @returns A promise that resolves to the updated or newly created user.
+ * @throws {BadRequestError} If the payload is missing the required `id` field.
  */
 export async function updateOrCreate(
   payload: IllustriousUser,
@@ -50,15 +62,21 @@ export async function updateOrCreate(
 }
 
 /**
- * Fetches a User by email, id, sub.
+ * Fetches a user from the database based on the provided payload.
  *
- * @param payload - The email, id, or sub of the User to fetch.
- * @returns {Promise<IllustriousUser>} A promise that resolves the User object.
+ * @param payload - An object containing user identification details. It must have at least one of the following properties:
+ * - `id`: The unique identifier of the user.
+ * - `email`: The email address of the user.
+ * - `identifier`: Another unique identifier for the user.
+ *
+ * @returns A promise that resolves to an `IllustriousUser` object.
+ *
+ * @throws BadRequestError - If none of the required properties (`id`, `email`, `identifier`) are provided in the payload.
  */
 export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
   if (!payload.id && !payload.email && !payload.identifier) {
-    throw new ConflictError(
-      "User could not be found with the provided details.",
+    throw new BadRequestError(
+      "Required user identification details are missing",
     );
   }
 
@@ -70,11 +88,15 @@ export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
 }
 
 /**
- * Fetches all resources for User from the database.
+ * Fetches specified resources for a given user.
  *
- * @param id - User ID used to gather relationships.
- * @param type - Type as string; either "reports", "invoices", or "orgs".
- * @returns {Promise<Invoice[] | Report[] | Org[]>} A promise that resolves to an array of Resource objects.
+ * @param id - The ID of the user whose resources are to be fetched.
+ * @param resources - An array of resource types to fetch (e.g., "reports", "invoices", "orgs").
+ * @returns A promise that resolves to an object containing the requested resources.
+ *          The object may contain the following properties:
+ *          - `reports`: An array of `Report` objects if "reports" is included in the resources.
+ *          - `invoices`: An array of `Invoice` objects if "invoices" is included in the resources.
+ *          - `orgs`: An array of `Org` objects if "orgs" is included in the resources.
  */
 export async function fetchResources(
   id: string,
@@ -121,10 +143,16 @@ export async function fetchResources(
 }
 
 /**
- * Updates a User.
+ * Updates a user in the database with the provided payload.
  *
- * @param payload - The new User data to update.
- * @returns {Promise<IllustriousUser>} A promise that resolves to an User object.
+ * @param payload - An object containing the user details to be updated.
+ * @param payload.id - The unique identifier of the user.
+ * @param payload.email - The email address of the user.
+ * @param payload.firstName - The first name of the user.
+ * @param payload.lastName - The last name of the user.
+ * @param payload.picture - The URL of the user's profile picture.
+ * @param payload.phone - The phone number of the user.
+ * @returns A promise that resolves to the updated user object.
  */
 export async function updateUser(
   payload: IllustriousUser,
@@ -145,25 +173,21 @@ export async function updateUser(
   return result[0];
 }
 
-const supaConfig = {
-  method: "post",
-  maxBodyLength: Number.POSITIVE_INFINITY,
-  headers: {
-    Authorization: `Bearer ${config.auth.edgeKey}`,
-    "Content-Type": "application/x-www-form-urlencoded",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-  },
-  url: `https://${config.auth.supabaseId ?? "test"}.supabase.co/functions/v1`,
-};
-
 /**
- * Removes an Organization and all related resources.
+ * Removes a user from the database.
  *
- * @param userId - The User ID for current user.
- * @param id - The Organization ID to be removed.
- * @throws {ConflictError} If an Organization is not allowed to be removed.
+ * This function performs several checks before removing the user:
+ * 1. Verifies if the user exists.
+ * 2. Checks if the user has any unpaid invoices.
+ * 3. Ensures the user is not an owner of any organization.
+ *
+ * If any of these checks fail, a `ConflictError` is thrown.
+ * If the environment is not "test", an additional request is made to an external service to delete the user.
+ *
+ * @param userId - The ID of the user to be removed.
+ * @param identifier - An identifier for the user, used in the external service request.
+ * @throws {ConflictError} If the user does not exist, has unpaid invoices, or is an owner of an organization.
+ * @returns {Promise<void>} A promise that resolves when the user is successfully removed.
  */
 export async function removeUser(
   userId: string,

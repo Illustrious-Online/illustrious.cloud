@@ -17,11 +17,15 @@ import { supabaseClient } from "../app";
 import { db } from "../drizzle/db";
 import {
   type User,
+  orgInvoice,
+  orgReport,
   orgUser,
   user,
   userInvoice,
   userReport,
 } from "../drizzle/schema";
+import type { CreateUser } from "@/domain/interfaces/users";
+import BadRequestError from "@/domain/exceptions/BadRequestError";
 
 const authPlugin = (app: Elysia) =>
   app
@@ -59,133 +63,165 @@ const authPlugin = (app: Elysia) =>
           resource: params.resource,
         };
 
-        if (path.includes("/me")) {
+        if (path.includes("/me") || path.includes("/user")) {
           return {
             user: fetchUser,
             permissions,
           };
         }
 
-        if (path.includes("/user")) {
-          if (params.user !== fetchUser.id) {
-            throw new UnauthorizedError(
-              "Unauthorized: You do not have permission to access this resource!",
-            );
-          }
+        if (request.method === "POST") {
+          let orgId: string | undefined;
 
-          if (params.org) {
-            const findOrgUsers = await db
-              .select()
-              .from(orgUser)
-              .where(eq(orgUser.userId, fetchUser.id));
+          if (path.includes("/org")) {
+            const { org: { id } }: CreateOrg = body as CreateOrg;
 
-            permissions.org = {
-              id: params.org,
-              role: findOrgUsers.find((orgUser) => orgUser.orgId === params.org)
-                ?.role,
-              create: !findOrgUsers.filter(
-                (orgUser) => orgUser.role === UserRole.OWNER,
-              ).length,
+            if (!path.includes('/user')) {
+              const findOrgUsers = await db
+                .select()
+                .from(orgUser)
+                .where(eq(orgUser.userId, fetchUser.id)
+              );
+
+              permissions.org = {
+                id,
+                create: findOrgUsers.length === 0,
+              };
+            } else {
+              const orgId = params.org ?? (body as CreateUser).org;
+
+              if (!orgId) {
+                throw new BadRequestError("Required Organization ID is missing.");
+              }
+
+              const findOrgUsers = await db
+                .select()
+                .from(orgUser)
+                .where(
+                  and(
+                    eq(orgUser.userId, fetchUser.id),
+                    eq(orgUser.orgId, orgId),
+                  ),
+              );
+
+              permissions.org = {
+                id,
+                role: findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
+              };
+            }
+
+            return {
+              user: fetchUser,
+              permissions,
             };
           }
 
+          if (path.includes("/invoice")) {
+            const { org }: CreateInvoice = body as CreateInvoice;
+            orgId = org;
+          } else {
+            const { org }: CreateReport = body as CreateReport;
+            orgId = org;
+          }
+
+          const findOrgUsers = await db
+            .select()
+            .from(orgUser)
+            .where(
+              and(
+                eq(orgUser.userId, fetchUser.id),
+                eq(orgUser.orgId, orgId),
+              ),
+          );
+
+          permissions.org = {
+            id: orgId,
+            role: findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role,
+            create: findOrgUsers.length === 0,
+          };
+
           return {
             user: fetchUser,
             permissions,
           };
         }
 
-        const findOrgUsers = await db
-          .select()
-          .from(orgUser)
-          .where(eq(orgUser.userId, fetchUser.id));
+        if (params.org) {
+          const findOrgUsers = await db
+            .select()
+            .from(orgUser)
+            .where(
+              and(
+                eq(orgUser.userId, fetchUser.id),
+                eq(orgUser.orgId, params.org),
+            ));
 
-        permissions.org = {
-          id: params.org ?? (body as CreateOrg).org.id,
-          role: findOrgUsers.find((orgUser) => orgUser.orgId === params.org)
-            ?.role,
-          create: !findOrgUsers.filter(
-            (orgUser) => orgUser.role === UserRole.OWNER,
-          ).length,
-        };
+          permissions.org = {
+            id: params.org,
+            role: findOrgUsers.find((orgUser) => orgUser.orgId === params.org)
+              ?.role,
+          };
+        }
 
-        if (path.includes("/invoice")) {
-          const invoiceId =
-            params.invoice ??
-            (body as CreateInvoice | SubmitInvoice).invoice.id;
+        if (params.invoice) {
           const findInvoiceUser = await db
             .select()
             .from(userInvoice)
+            .innerJoin(orgUser, eq(userInvoice.userId, orgUser.userId))
+            .innerJoin(orgInvoice, eq(userInvoice.invoiceId, orgInvoice.invoiceId))
             .where(
               and(
-                eq(userInvoice.invoiceId, invoiceId),
+                eq(userInvoice.invoiceId, params.invoice),
                 eq(userInvoice.userId, fetchUser.id),
+                eq(orgInvoice.orgId, orgUser.orgId),
               ),
             );
 
+          const { OrgUser: { role }, UserInvoice } = findInvoiceUser[0];
+
           permissions.invoice = {
-            id: invoiceId,
-            access: findInvoiceUser.length > 0,
+            id: params.invoice,
+            access: !!UserInvoice,
+            edit: !!UserInvoice && role
+              ? role > UserRole.CLIENT
+              : false,
+            delete: !!UserInvoice && role
+              ? role > UserRole.EMPLOYEE
+              : false,
           };
-
-          if (request.method === "POST") {
-            permissions.invoice.create = permissions.org?.role
-              ? permissions.org?.role > UserRole.CLIENT
-              : false;
-          }
-
-          if (request.method === "PUT" || request.method === "DELETE") {
-            permissions.invoice.edit =
-              findInvoiceUser.length > 0 && permissions.org?.role
-                ? permissions.org?.role > UserRole.CLIENT
-                : false;
-          }
         }
 
-        if (path.includes("/report")) {
-          const reportId =
-            params.report ?? (body as CreateReport | SubmitReport).report.id;
+        if (params.report) {
           const findReportUser = await db
             .select()
             .from(userReport)
+            .innerJoin(orgUser, eq(userReport.userId, orgUser.userId))
+            .innerJoin(orgReport, eq(userReport.reportId, orgReport.reportId))
             .where(
               and(
-                eq(userReport.reportId, reportId),
+                eq(userReport.reportId, params.report),
                 eq(userReport.userId, fetchUser.id),
+                eq(orgReport.orgId, orgUser.orgId),
               ),
             );
 
-          permissions.report = {
-            id: reportId,
-            access: findReportUser.length > 0,
-            edit:
-              findReportUser.length > 0 && permissions.org?.role
-                ? permissions.org?.role > UserRole.CLIENT
-                : false,
-          };
+          const { OrgUser: { role }, UserReport } = findReportUser[0];
 
           permissions.report = {
-            id: reportId,
-            access: findReportUser.length > 0,
+            id: params.report,
+            access: !!UserReport,
+            edit: !!UserReport && role
+              ? role > UserRole.CLIENT
+              : false,
+            delete: !!UserReport && role
+              ? role > UserRole.EMPLOYEE
+              : false,
           };
-
-          if (request.method === "POST") {
-            permissions.report.create = permissions.org?.role
-              ? permissions.org?.role > UserRole.CLIENT
-              : false;
-          }
-
-          if (request.method === "PUT" || request.method === "DELETE") {
-            permissions.report.edit =
-              findReportUser.length > 0 && permissions.org?.role
-                ? permissions.org?.role > UserRole.CLIENT
-                : false;
-          }
         }
 
         return {
-          user,
-          permissions,
+          user: fetchUser,
+          permissions
         };
       },
     );

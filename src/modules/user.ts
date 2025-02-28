@@ -15,10 +15,11 @@ export interface UserDetails {
 }
 
 /**
- * Fetches the details of the authenticated user including invoices, reports, and organizations.
+ * Fetches the details of the authenticated user.
  *
- * @param context - The authenticated context containing the user information.
- * @returns A promise that resolves to a success response containing the user details.
+ * @param context - The authenticated context containing user and query information.
+ * @returns A promise that resolves to a success response containing user details.
+ * @throws {BadRequestError} If the required user information is missing.
  */
 export const me = async (
   context: AuthenticatedContext,
@@ -45,21 +46,24 @@ export const me = async (
 };
 
 /**
- * Fetches the details of the authenticated user.
+ * Fetches user details based on the provided context.
  *
- * @param context - The authenticated context containing user information and query parameters.
- * @returns A promise that resolves to a success response containing user details.
+ * @param context - The authenticated context containing parameters for fetching the user.
+ * @returns A promise that resolves to a success response containing the user details.
  *
- * The function fetches additional resources (invoices, reports, orgs) if the `include` query parameter is present
- * and the user is a super admin. The additional resources are fetched using the `userService.fetchResources` method.
+ * The fetched user details will have the phone, lastName, and superAdmin fields set to null or false.
  *
  * @example
+ * ```typescript
  * const context = {
- *   user: { id: '123', superAdmin: true },
- *   query: { include: ['invoices', 'reports'] }
+ *   params: {
+ *     user: '12345',
+ *     by: 'email'
+ *   }
  * };
- * const response = await fetchUser(context);
- * console.log(response.data); // { user: { id: '123', superAdmin: true }, invoices: [...], reports: [...] }
+ * const response = await getUser(context);
+ * console.log(response.data); // User details with phone, lastName, and superAdmin modified.
+ * ```
  */
 export const getUser = async (
   context: AuthenticatedContext,
@@ -80,11 +84,11 @@ export const getUser = async (
 };
 
 /**
- * Updates the user information.
+ * Updates a user in the system.
  *
- * @param {AuthenticatedContext} context - The authenticated context containing user information, request body, and parameters.
- * @throws {UnauthorizedError} If the token does not match the user to be updated.
- * @returns {Promise<{ data: User, message: string }>} The updated user data and a success message.
+ * @param context - The authenticated context containing user information, permissions, and request parameters.
+ * @returns A promise that resolves to a success response containing the updated user.
+ * @throws UnauthorizedError - If the user does not have permission to update the specified user.
  */
 export const putUser = async (
   context: AuthenticatedContext,
@@ -123,11 +127,12 @@ export const putUser = async (
 };
 
 /**
- * Deletes a user based on the provided authenticated context.
+ * Deletes a user based on the provided context.
  *
- * @param context - The authenticated context containing user information and parameters.
- * @throws {UnauthorizedError} If the provided user ID does not match the authenticated user ID.
- * @returns An object containing a success message.
+ * @param context - The authenticated context containing user and parameters.
+ * @returns A promise that resolves to a success response with a message.
+ * @throws {UnauthorizedError} If the user is not a super admin and is trying to delete another user's account.
+ * @throws {ServerError} If the user identifier is missing.
  */
 export const deleteUser = async (
   context: AuthenticatedContext,

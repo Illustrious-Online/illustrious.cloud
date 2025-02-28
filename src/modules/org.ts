@@ -5,6 +5,7 @@ import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
+import * as userService from "@/services/user";
 
 export interface OrgDetails {
   org: Org;
@@ -28,11 +29,30 @@ export const postOrg = async (
   };
 };
 
+export const postOrgUser = async (
+  context: AuthenticatedContext,
+): Promise<SuccessResponse<User>> => {
+  const { body, permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if (!superAdmin && org?.role && org?.role < UserRole.ADMIN) {
+    throw new UnauthorizedError(
+      "User does not have permission to create organization users.",
+    );
+  }
+
+  const data = await userService.updateOrCreate(body as User);
+
+  return {
+    data,
+    message: "Organization user created successfully.",
+  };
+};
+
 export const getOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<OrgDetails>> => {
   const { org: orgParam } = context.params;
-  const { include } = context.query;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
 
@@ -42,12 +62,14 @@ export const getOrg = async (
     );
   }
 
+  if (!superAdmin && org?.id !== orgParam && org?.role === UserRole.CLIENT) {
+    throw new UnauthorizedError(
+      "User does not have permission to fetch organization details.",
+    );
+  }
+
   const data = await orgService.fetchOne(orgParam);
   const result: OrgDetails = { org: data };
-  const notClient = org?.id && org?.role && org?.role > UserRole.CLIENT;
-
-  if ((superAdmin || notClient) && org?.id) {
-  }
 
   return {
     data: result,
@@ -72,33 +94,46 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
     );
   }
 
-  const resources = await orgService.fetchResources(orgId, include.split(","));
+  // TODO: Final objective -> Fetch resources based on the user's role and permissions in organization
+  // ADMIN: Fetch all resources associated with the organization
+  // OWNER: Fetch all resources associated with the organization
+  // EMPLOYEE: Fetch all resources associated with the employee
+  // CLIENT: Fetch all resources associated with the client
 
-  if (include?.includes("invoices")) {
-    const orgInvoices = (await orgService.fetchResources(
-      org.id,
-      "invoices",
-    )) as Invoice[];
-    result.invoices = orgInvoices;
+  if (!superAdmin && org?.role === UserRole.EMPLOYEE) {
+    // Only should obtain the resources associated with the employee
+    // if USER is included, only return the items associated with the user and employee together
   }
 
-  if (include?.includes("reports")) {
-    const orgReports = (await orgService.fetchResources(
-      org.id,
-      "reports",
-    )) as Report[];
-    result.reports = orgReports;
-  }
+  // ADMIN + OWNER + SUPERADMIN: Fetch all resources based on request
 
-  if (include?.includes("users")) {
-    const orgUsers = (await orgService.fetchResources(
-      org.id,
-      "users",
-    )) as User[];
-    result.users = orgUsers;
-  }
+  // const resources = await orgService.fetchResources(orgId, include.split(","));
 
-  const data = await orgService.fetchResources(id, resource);
+  // if (include?.includes("invoices")) {
+  //   const orgInvoices = (await orgService.fetchResources(
+  //     org.id,
+  //     "invoices",
+  //   )) as Invoice[];
+  //   result.invoices = orgInvoices;
+  // }
+
+  // if (include?.includes("reports")) {
+  //   const orgReports = (await orgService.fetchResources(
+  //     org.id,
+  //     "reports",
+  //   )) as Report[];
+  //   result.reports = orgReports;
+  // }
+
+  // if (include?.includes("users")) {
+  //   const orgUsers = (await orgService.fetchResources(
+  //     org.id,
+  //     "users",
+  //   )) as User[];
+  //   result.users = orgUsers;
+  // }
+
+  // const data = await orgService.fetchResources(id, resource);
 
   return {
     data: {

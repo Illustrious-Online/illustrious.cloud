@@ -62,6 +62,7 @@ export const user = pgTable(
     lastName: text("last_name"),
     picture: text(),
     phone: text(),
+    managed: boolean().default(false).notNull(),
     superAdmin: boolean("super_admin").default(false).notNull(),
   },
   (table) => [

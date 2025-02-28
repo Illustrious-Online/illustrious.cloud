@@ -48,7 +48,7 @@ export async function oauthCallback(bearer: string): Promise<User> {
   let user: User | null;
 
   try {
-    user = await userService.fetchOne({ id: data?.user.id });
+    user = await userService.fetchUser({ id: data?.user.id });
   } catch (e) {
     user = await userService.updateOrCreate({
       id: uuidv4(),
@@ -58,6 +58,7 @@ export async function oauthCallback(bearer: string): Promise<User> {
       firstName: data?.user.user_metadata?.full_name.split(" ")[0],
       lastName: data?.user.user_metadata?.full_name.split(" ")[1],
       picture: data?.user.user_metadata?.avatar_url,
+      managed: false,
       superAdmin: false,
     });
   }

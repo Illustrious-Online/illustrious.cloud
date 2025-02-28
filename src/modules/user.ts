@@ -1,11 +1,11 @@
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { AuthenticatedContext } from "@/domain/interfaces/auth";
-import { UserRole } from "@/domain/types/UserRole";
 
 export interface UserDetails {
   user: User;
@@ -23,22 +23,23 @@ export interface UserDetails {
 export const me = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<UserDetails>> => {
-  const { user } = context;
+  const { query, user } = context;
+  const { include } = query;
 
   if (!user || !user.id) {
     throw new BadRequestError("Required user information is missing.");
   }
 
-  const result: UserDetails = { user };
-  const myResources = await userService.fetchResources(user.id);
+  let result = { user };
+
+  if (include) {
+    const resources = include.split(",");
+    const foundResources = await userService.fetchResources(user.id, resources);
+    result = { ...result, ...foundResources };
+  }
 
   return {
-    data: {
-      ...result,
-      invoices: myResources.invoices,
-      reports: myResources.reports,
-      orgs: myResources.orgs,
-    },
+    data: result,
     message: "User details fetched successfully!",
   };
 };
@@ -66,7 +67,7 @@ export const getUser = async (
   const { params } = context;
   const { user: id, by } = params;
 
-  const fetchedUser = await userService.fetchOne({ [by ?? "id"]: id });
+  const fetchedUser = await userService.fetchUser({ [by ?? "id"]: id });
 
   fetchedUser.phone = null;
   fetchedUser.lastName = null;
@@ -91,26 +92,29 @@ export const putUser = async (
   const {
     params: { user: id },
     permissions: { org, superAdmin },
-    user
+    user,
   } = context;
   const body = context.body as User;
   let allowed: boolean | undefined;
 
   if (!superAdmin && id !== user.id && !allowed) {
-    throw new UnauthorizedError("You do not have permission to update this user.");
+    throw new UnauthorizedError(
+      "You do not have permission to update this user.",
+    );
   }
 
   if (
-    superAdmin || id === user.id ||
+    superAdmin ||
+    id === user.id ||
     (org?.role && org?.role > UserRole.CLIENT && allowed)
   ) {
     return {
-      data: await userService.update(body),
+      data: await userService.updateUser(body),
       message: "User updated successfully.",
     };
   }
 
-  const data = await userService.update(body);
+  const data = await userService.updateUser(body);
 
   return {
     data,
@@ -141,7 +145,7 @@ export const deleteUser = async (
     throw new ServerError("User identifier is missing.", 500);
   }
 
-  await userService.deleteOne(id, user.identifier);
+  await userService.removeUser(id, user.identifier);
 
   return {
     message: "User deleted successfully.",

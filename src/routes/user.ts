@@ -23,9 +23,8 @@ import auth from "./auth";
 export default (app: Elysia) =>
   app
     .get("/me", userController.me)
-    .get("/user/:user", userController.fetchUser)
-    .get("/user/:user/:resource?/:org?", userController.fetchUserResources)
-    .put("/user/:user", userController.updateUser)
+    .get("/user/:user/:by?", userController.getUser)
+    .put("/user/:user", userController.putUser)
     .delete("/user/:user", userController.deleteUser)
     .post("/user/link/steam", userController.linkSteam)
     .post("/user/link/steam/auth", userController.steamCallback);

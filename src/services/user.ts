@@ -36,12 +36,12 @@ export async function updateOrCreate(
     throw new BadRequestError("Payload is missing required details");
   }
 
-  const fetchUser: IllustriousUser | undefined = await fetchOne({
+  const findUser: IllustriousUser | undefined = await fetchUser({
     id: payload.id,
   });
 
-  if (fetchUser) {
-    return await update(payload);
+  if (findUser) {
+    return await updateUser(payload);
   }
 
   const result = await db.insert(user).values(payload).returning();
@@ -55,9 +55,11 @@ export async function updateOrCreate(
  * @param payload - The email, id, or sub of the User to fetch.
  * @returns {Promise<IllustriousUser>} A promise that resolves the User object.
  */
-export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
+export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
   if (!payload.id && !payload.email && !payload.identifier) {
-    throw new ConflictError("User could not be found with the provided details.");
+    throw new ConflictError(
+      "User could not be found with the provided details.",
+    );
   }
 
   const key = Object.keys(payload)[0] as keyof FetchUser;
@@ -76,11 +78,7 @@ export async function fetchOne(payload: FetchUser): Promise<IllustriousUser> {
  */
 export async function fetchResources(
   id: string,
-  type?: {
-    reports?: boolean;
-    invoices?: boolean;
-    orgs?: boolean;
-  },
+  resources: string[],
 ): Promise<{
   reports?: Report[];
   invoices?: Invoice[];
@@ -92,7 +90,7 @@ export async function fetchResources(
     orgs?: Org[];
   } = {};
 
-  if (!type || type.reports) {
+  if (resources.includes("reports")) {
     const usersReports = await db
       .select()
       .from(report)
@@ -101,7 +99,7 @@ export async function fetchResources(
     result.reports = usersReports.map((result) => result.Report);
   }
 
-  if (!type || type.invoices) {
+  if (resources.includes("invoices")) {
     const usersInvoices = await db
       .select()
       .from(invoice)
@@ -110,7 +108,7 @@ export async function fetchResources(
     result.invoices = usersInvoices.map((result) => result.Invoice);
   }
 
-  if (!type || type.orgs) {
+  if (resources.includes("orgs")) {
     const usersOrgs = await db
       .select()
       .from(org)
@@ -128,7 +126,7 @@ export async function fetchResources(
  * @param payload - The new User data to update.
  * @returns {Promise<IllustriousUser>} A promise that resolves to an User object.
  */
-export async function update(
+export async function updateUser(
   payload: IllustriousUser,
 ): Promise<IllustriousUser> {
   const { id, email, firstName, lastName, picture, phone } = payload;
@@ -167,7 +165,7 @@ const supaConfig = {
  * @param id - The Organization ID to be removed.
  * @throws {ConflictError} If an Organization is not allowed to be removed.
  */
-export async function deleteOne(
+export async function removeUser(
   userId: string,
   identifier: string,
 ): Promise<void> {

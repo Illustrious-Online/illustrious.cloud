@@ -71,7 +71,10 @@ export async function fetchInvoice(id: string): Promise<Invoice> {
  */
 export async function updateInvoice(payload: Invoice): Promise<Invoice> {
   const { id, paid, price, start, end, due, updatedAt } = payload;
-  const foundInvoice = await db.select().from(invoice).where(eq(invoice.id, id));
+  const foundInvoice = await db
+    .select()
+    .from(invoice)
+    .where(eq(invoice.id, id));
 
   if (!foundInvoice) {
     throw new ConflictError("Could not find the report.");

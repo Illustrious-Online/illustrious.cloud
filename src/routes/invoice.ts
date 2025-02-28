@@ -20,5 +20,5 @@ export default (app: Elysia) =>
   app
     .post("/invoice", invoiceController.postInvoice)
     .get("/invoice/:invoice", invoiceController.getInvoice)
-    .put("/invoice", invoiceController.putInvoice)
+    .put("/invoice/:invoice", invoiceController.putInvoice)
     .delete("/invoice/:invoice", invoiceController.deleteInvoice);

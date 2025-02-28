@@ -21,7 +21,7 @@ import {
   userInvoice,
   userReport,
 } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Creates a new Organization.
@@ -77,8 +77,44 @@ export async function fetchOne(id: string): Promise<Org> {
  */
 export async function fetchResources(
   id: string,
-  resource: string,
+  resource: string[],
+  user?: string
 ): Promise<Invoice[] | Report[] | User[]> {
+  const resources: { reports?: Report[], invoices?: Invoice[], users?: User[] } = {};
+  if (resource.includes("reports")) {
+    if (user) {
+      const orgsReports = db
+        .select()
+        .from(orgReport)
+        .where(eq(orgReport.orgId, id))
+        .as("orgsReports");
+
+      const _reports = await db
+        .select()
+        .from(report)
+        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
+
+      resources.reports = _reports.map((result) => result.Report);
+    } else {
+      const orgsReports = db
+        .select()
+        .from(orgReport)
+        .innerJoin(userReport, eq(orgReport.reportId, userReport.reportId))
+        .where(
+          and(
+            eq(orgReport.orgId, id)
+        )
+        .as("orgsReports");
+
+      const _reports = await db
+        .select()
+        .from(report)
+        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
+
+      resources.reports = _reports.map((result) => result.Report);
+    }
+  }
+
   switch (resource) {
     case "reports": {
       const orgsReports = db

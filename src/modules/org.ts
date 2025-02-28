@@ -1,9 +1,10 @@
+import BadRequestError from "@/domain/exceptions/BadRequestError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
-import type { AuthenticatedContext } from "../plugins/auth";
 
 export interface OrgDetails {
   org: Org;
@@ -12,7 +13,7 @@ export interface OrgDetails {
   users?: User[];
 }
 
-export const createOrg = async (
+export const postOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
   const { body, user } = context;
@@ -27,7 +28,7 @@ export const createOrg = async (
   };
 };
 
-export const fetchOrg = async (
+export const getOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<OrgDetails>> => {
   const { org: orgParam } = context.params;
@@ -35,7 +36,7 @@ export const fetchOrg = async (
   const { permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if (!superAdmin && !org?.role) {
+  if (!superAdmin && (!org?.role || org?.role < UserRole.ADMIN)) {
     throw new UnauthorizedError(
       "User does not have permission to fetch organization details.",
     );
@@ -46,46 +47,55 @@ export const fetchOrg = async (
   const notClient = org?.id && org?.role && org?.role > UserRole.CLIENT;
 
   if ((superAdmin || notClient) && org?.id) {
-    if (include?.includes("invoices")) {
-      const orgInvoices = (await orgService.fetchResources(
-        org.id,
-        "invoices",
-      )) as Invoice[];
-      result.invoices = orgInvoices;
-    }
-
-    if (include?.includes("reports")) {
-      const orgReports = (await orgService.fetchResources(
-        org.id,
-        "reports",
-      )) as Report[];
-      result.reports = orgReports;
-    }
-
-    if (include?.includes("users")) {
-      const orgUsers = (await orgService.fetchResources(
-        org.id,
-        "users",
-      )) as User[];
-      result.users = orgUsers;
-    }
   }
 
   return {
     data: result,
-    message: "Organization & details fetched successfully",
+    message: "Organization & details fetched successfully!",
   };
 };
 
-export const fetchOrgResources = async (context: AuthenticatedContext) => {
-  const { id, resource } = context.params;
-  const { permissions } = context;
-  const { superAdmin, org } = permissions;
+export const getOrgResources = async (context: AuthenticatedContext) => {
+  const {
+    params: { org: orgId },
+    permissions: { superAdmin, org },
+    query: { include },
+  } = context;
+
+  if (!org) {
+    throw new BadRequestError("Organization ID is required.");
+  }
 
   if (!superAdmin && org?.role === UserRole.CLIENT) {
     throw new UnauthorizedError(
-      "User does not have permission to fetch this organization's resources.",
+      "User does not have permission to fetch organization resources.",
     );
+  }
+
+  const resources = await orgService.fetchResources(orgId, include.split(","));
+
+  if (include?.includes("invoices")) {
+    const orgInvoices = (await orgService.fetchResources(
+      org.id,
+      "invoices",
+    )) as Invoice[];
+    result.invoices = orgInvoices;
+  }
+
+  if (include?.includes("reports")) {
+    const orgReports = (await orgService.fetchResources(
+      org.id,
+      "reports",
+    )) as Report[];
+    result.reports = orgReports;
+  }
+
+  if (include?.includes("users")) {
+    const orgUsers = (await orgService.fetchResources(
+      org.id,
+      "users",
+    )) as User[];
+    result.users = orgUsers;
   }
 
   const data = await orgService.fetchResources(id, resource);

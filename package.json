@@ -20,7 +20,8 @@
     "db:docker": "docker compose -f docker-compose.db.yml up",
     "db:reset": "./src/utils/reset-db.sh",
     "check": "bunx @biomejs/biome check ./src",
-    "check:fix": "bunx @biomejs/biome check --write ./src"
+    "check:fix": "bunx @biomejs/biome check --write ./src",
+    "prepare": "husky"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",

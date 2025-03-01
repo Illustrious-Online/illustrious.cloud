@@ -67,9 +67,18 @@ export async function fetchOrg(id: string): Promise<Org> {
 }
 
 /**
- * Fetches all resources for an Organization from the database.
+ * Fetches organization resources based on the provided resource types.
  *
- * @returns {Promise<User[]>} A promise that resolves to an array of User objects.
+ * @param id - The ID of the organization.
+ * @param resource - An array of resource types to fetch (e.g., "reports", "invoices", "users").
+ * @param userId - (Optional) The ID of the user to filter the resources by.
+ * @returns A promise that resolves to an object containing the requested organization details.
+ *
+ * @example
+ * ```typescript
+ * const orgDetails = await fetchOrgResources("org123", ["reports", "invoices"], "user456");
+ * console.log(orgDetails);
+ * ```
  */
 export async function fetchOrgResources(
   id: string,

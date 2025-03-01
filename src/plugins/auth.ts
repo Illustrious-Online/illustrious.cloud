@@ -4,10 +4,7 @@ import type {
   AuthPermissions,
   AuthPluginParams,
 } from "@/domain/interfaces/auth";
-import type {
-  CreateInvoice,
-  SubmitInvoice,
-} from "@/domain/interfaces/invoices";
+import type { CreateInvoice } from "@/domain/interfaces/invoices";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
 import type { CreateReport } from "@/domain/interfaces/reports";
 import type { CreateUser } from "@/domain/interfaces/users";
@@ -27,6 +24,65 @@ import {
   userReport,
 } from "../drizzle/schema";
 
+/**
+ * Auth plugin for the Elysia application.
+ *
+ * This plugin handles authentication and authorization for various routes
+ * within the application. It uses bearer tokens to authenticate users and
+ * derives user permissions based on the authenticated user's role and the
+ * requested resource.
+ *
+ * @param {Elysia} app - The Elysia application instance.
+ * @returns {Elysia} The Elysia application instance with the auth plugin applied.
+ *
+ * @throws {UnauthorizedError} If the bearer token is missing or invalid.
+ * @throws {BadRequestError} If required parameters are missing in the request.
+ *
+ * @example
+ * app.use(authPlugin);
+ *
+ * @typedef {Object} AuthPluginParams
+ * @property {string} bearer - The bearer token from the request.
+ * @property {Object} body - The request body.
+ * @property {string} path - The request path.
+ * @property {Object} params - The request parameters.
+ * @property {Object} request - The request object.
+ *
+ * @typedef {Object} AuthPermissions
+ * @property {boolean} superAdmin - Whether the user is a super admin.
+ * @property {string} resource - The requested resource.
+ * @property {Object} [org] - The organization permissions.
+ * @property {string} org.id - The organization ID.
+ * @property {string} [org.role] - The user's role in the organization.
+ * @property {boolean} [org.create] - Whether the user can create resources in the organization.
+ * @property {Object} [invoice] - The invoice permissions.
+ * @property {string} invoice.id - The invoice ID.
+ * @property {boolean} invoice.access - Whether the user has access to the invoice.
+ * @property {boolean} invoice.edit - Whether the user can edit the invoice.
+ * @property {boolean} invoice.delete - Whether the user can delete the invoice.
+ * @property {Object} [report] - The report permissions.
+ * @property {string} report.id - The report ID.
+ * @property {boolean} report.access - Whether the user has access to the report.
+ * @property {boolean} report.edit - Whether the user can edit the report.
+ * @property {boolean} report.delete - Whether the user can delete the report.
+ *
+ * @typedef {Object} User
+ * @property {string} id - The user ID.
+ * @property {boolean} superAdmin - Whether the user is a super admin.
+ *
+ * @typedef {Object} CreateOrg
+ * @property {Object} org - The organization object.
+ * @property {string} org.id - The organization ID.
+ *
+ * @typedef {Object} CreateUser
+ * @property {string} org - The organization ID.
+ *
+ * @typedef {Object} CreateInvoice
+ * @property {string} org - The organization ID.
+ *
+ * @typedef {Object} CreateReport
+ * @property {string} org - The organization ID.
+ */
 const authPlugin = (app: Elysia) =>
   app
     .use(bearer())

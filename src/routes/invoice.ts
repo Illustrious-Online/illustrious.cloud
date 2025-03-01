@@ -6,15 +6,11 @@ import { type Elysia, t } from "elysia";
  *
  * @param {Elysia} app - The Elysia application instance.
  *
- * @remarks
- * This function sets up the following routes:
- * - POST /invoice: Creates a new invoice. Requires authentication.
- * - GET /invoice/:invoice: Fetches a specific invoice by its identifier. Requires authentication.
- * - PUT /invoice: Updates an existing invoice. Requires authentication.
- * - DELETE /invoice/:invoice: Deletes a specific invoice by its identifier. Requires authentication.
- *
- * Each route uses the `authPlugin` middleware to ensure the user is authenticated before accessing the route.
- * The `invoiceController` handles the logic for each route.
+ * The following routes are registered:
+ * - POST /invoice: Creates a new invoice.
+ * - GET /invoice/:invoice: Retrieves an invoice by its ID.
+ * - PUT /invoice/:invoice: Updates an existing invoice by its ID.
+ * - DELETE /invoice/:invoice: Deletes an invoice by its ID.
  */
 export default (app: Elysia) =>
   app

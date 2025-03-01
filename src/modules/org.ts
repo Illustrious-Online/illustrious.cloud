@@ -7,6 +7,12 @@ import type { Org, User } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 
+/**
+ * Creates a new organization.
+ *
+ * @param context - The authenticated context containing the request body and user information.
+ * @returns A promise that resolves to a success response containing the created organization.
+ */
 export const postOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
@@ -22,6 +28,13 @@ export const postOrg = async (
   };
 };
 
+/**
+ * Creates or updates an organization user.
+ *
+ * @param context - The authenticated context containing the request body and user permissions.
+ * @returns A promise that resolves to a success response containing the created or updated user.
+ * @throws {UnauthorizedError} If the user does not have permission to create organization users.
+ */
 export const postOrgUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
@@ -42,6 +55,13 @@ export const postOrgUser = async (
   };
 };
 
+/**
+ * Fetches the organization details based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters and permissions.
+ * @returns A promise that resolves to a success response containing the organization details.
+ * @throws UnauthorizedError - If the user does not have permission to fetch the organization.
+ */
 export const getOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
@@ -63,6 +83,13 @@ export const getOrg = async (
   };
 };
 
+/**
+ * Fetches the resources for a given organization based on the user's context.
+ *
+ * @param context - The authenticated context containing user and organization details.
+ * @returns An object containing the organization resources and a success message.
+ * @throws {UnauthorizedError} If the user does not have permission to fetch organization resources.
+ */
 export const getOrgResources = async (context: AuthenticatedContext) => {
   const {
     params: { org: orgId, user: userId },
@@ -106,6 +133,13 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
   };
 };
 
+/**
+ * Updates the organization details.
+ *
+ * @param context - The authenticated context containing the request body and permissions.
+ * @returns An object containing the updated organization data and a success message.
+ * @throws {UnauthorizedError} If the user does not have permission to update organization details.
+ */
 export const updateOrg = async (context: AuthenticatedContext) => {
   const body = context.body as Org;
   const { permissions } = context;
@@ -125,6 +159,13 @@ export const updateOrg = async (context: AuthenticatedContext) => {
   };
 };
 
+/**
+ * Deletes an organization based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters and permissions.
+ * @throws {UnauthorizedError} If the user does not have permission to delete the organization.
+ * @returns An object containing a success message.
+ */
 export const deleteOrg = async (context: AuthenticatedContext) => {
   const { org: orgParam } = context.params;
   const { permissions } = context;

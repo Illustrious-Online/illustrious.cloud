@@ -22,9 +22,9 @@ import auth from "./auth";
  */
 export default (app: Elysia) =>
   app
-    .get("/me", userController.me)                              // Fetch current user profile & details (`include` optional)
-    .get("/user/:user/:by?", userController.getUser)            // Fetch user profile & details by ID/identifier/sub/email
-    .put("/user/:user", userController.putUser)                 // Update user -> updateOrCreate service
-    .delete("/user/:user", userController.deleteUser)           // Remove user (soft) -> require removal of all invoices/reports/applications
-    .post("/user/link/steam", userController.linkSteam)         // Initiates processs to link steam with illustrious account
+    .get("/me", userController.me) // Fetch current user profile & details (`include` optional)
+    .get("/user/:user/:by?", userController.getUser) // Fetch user profile & details by ID/identifier/sub/email
+    .put("/user/:user", userController.putUser) // Update user -> updateOrCreate service
+    .delete("/user/:user", userController.deleteUser) // Remove user (soft) -> require removal of all invoices/reports/applications
+    .post("/user/link/steam", userController.linkSteam) // Initiates processs to link steam with illustrious account
     .post("/user/link/steam/auth", userController.steamCallback); // Handles the Steam authentication callback

@@ -1,3 +1,4 @@
+import BadRequestError from "@/domain/exceptions/BadRequestError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
   AuthPermissions,
@@ -8,7 +9,8 @@ import type {
   SubmitInvoice,
 } from "@/domain/interfaces/invoices";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
-import type { CreateReport, SubmitReport } from "@/domain/interfaces/reports";
+import type { CreateReport } from "@/domain/interfaces/reports";
+import type { CreateUser } from "@/domain/interfaces/users";
 import { UserRole } from "@/domain/types/UserRole";
 import bearer from "@elysiajs/bearer";
 import { and, eq } from "drizzle-orm";
@@ -24,8 +26,6 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
-import type { CreateUser } from "@/domain/interfaces/users";
-import BadRequestError from "@/domain/exceptions/BadRequestError";
 
 const authPlugin = (app: Elysia) =>
   app
@@ -74,14 +74,15 @@ const authPlugin = (app: Elysia) =>
           let orgId: string | undefined;
 
           if (path.includes("/org")) {
-            const { org: { id } }: CreateOrg = body as CreateOrg;
+            const {
+              org: { id },
+            }: CreateOrg = body as CreateOrg;
 
-            if (!path.includes('/user')) {
+            if (!path.includes("/user")) {
               const findOrgUsers = await db
                 .select()
                 .from(orgUser)
-                .where(eq(orgUser.userId, fetchUser.id)
-              );
+                .where(eq(orgUser.userId, fetchUser.id));
 
               permissions.org = {
                 id,
@@ -91,7 +92,9 @@ const authPlugin = (app: Elysia) =>
               const orgId = params.org ?? (body as CreateUser).org;
 
               if (!orgId) {
-                throw new BadRequestError("Required Organization ID is missing.");
+                throw new BadRequestError(
+                  "Required Organization ID is missing.",
+                );
               }
 
               const findOrgUsers = await db
@@ -102,11 +105,12 @@ const authPlugin = (app: Elysia) =>
                     eq(orgUser.userId, fetchUser.id),
                     eq(orgUser.orgId, orgId),
                   ),
-              );
+                );
 
               permissions.org = {
                 id,
-                role: findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
+                role: findOrgUsers.find((orgUser) => orgUser.orgId === id)
+                  ?.role,
               };
             }
 
@@ -128,11 +132,8 @@ const authPlugin = (app: Elysia) =>
             .select()
             .from(orgUser)
             .where(
-              and(
-                eq(orgUser.userId, fetchUser.id),
-                eq(orgUser.orgId, orgId),
-              ),
-          );
+              and(eq(orgUser.userId, fetchUser.id), eq(orgUser.orgId, orgId)),
+            );
 
           permissions.org = {
             id: orgId,
@@ -154,7 +155,8 @@ const authPlugin = (app: Elysia) =>
               and(
                 eq(orgUser.userId, fetchUser.id),
                 eq(orgUser.orgId, params.org),
-            ));
+              ),
+            );
 
           permissions.org = {
             id: params.org,
@@ -168,7 +170,10 @@ const authPlugin = (app: Elysia) =>
             .select()
             .from(userInvoice)
             .innerJoin(orgUser, eq(userInvoice.userId, orgUser.userId))
-            .innerJoin(orgInvoice, eq(userInvoice.invoiceId, orgInvoice.invoiceId))
+            .innerJoin(
+              orgInvoice,
+              eq(userInvoice.invoiceId, orgInvoice.invoiceId),
+            )
             .where(
               and(
                 eq(userInvoice.invoiceId, params.invoice),
@@ -177,17 +182,16 @@ const authPlugin = (app: Elysia) =>
               ),
             );
 
-          const { OrgUser: { role }, UserInvoice } = findInvoiceUser[0];
+          const {
+            OrgUser: { role },
+            UserInvoice,
+          } = findInvoiceUser[0];
 
           permissions.invoice = {
             id: params.invoice,
             access: !!UserInvoice,
-            edit: !!UserInvoice && role
-              ? role > UserRole.CLIENT
-              : false,
-            delete: !!UserInvoice && role
-              ? role > UserRole.EMPLOYEE
-              : false,
+            edit: !!UserInvoice && role ? role > UserRole.CLIENT : false,
+            delete: !!UserInvoice && role ? role > UserRole.EMPLOYEE : false,
           };
         }
 
@@ -205,23 +209,22 @@ const authPlugin = (app: Elysia) =>
               ),
             );
 
-          const { OrgUser: { role }, UserReport } = findReportUser[0];
+          const {
+            OrgUser: { role },
+            UserReport,
+          } = findReportUser[0];
 
           permissions.report = {
             id: params.report,
             access: !!UserReport,
-            edit: !!UserReport && role
-              ? role > UserRole.CLIENT
-              : false,
-            delete: !!UserReport && role
-              ? role > UserRole.EMPLOYEE
-              : false,
+            edit: !!UserReport && role ? role > UserRole.CLIENT : false,
+            delete: !!UserReport && role ? role > UserRole.EMPLOYEE : false,
           };
         }
 
         return {
           user: fetchUser,
-          permissions
+          permissions,
         };
       },
     );

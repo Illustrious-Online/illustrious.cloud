@@ -1,16 +1,12 @@
 import { NotFoundError } from "elysia";
-import { v4 as uuidv4 } from "uuid";
 
-import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
+import type { OrgDetails } from "@/domain/interfaces/orgs";
 import { UserRole } from "@/domain/types/UserRole";
 import { db } from "@/drizzle/db";
 import {
-  type Invoice,
   type Org,
-  type Report,
-  type User,
   invoice,
   org,
   orgInvoice,
@@ -31,7 +27,7 @@ import { and, eq } from "drizzle-orm";
  * @throws {ConflictError} If an Organization with the same data already exists.
  * @throws {Error} If an error occurs while creating the Organization.
  */
-export async function create(payload: CreateOrg): Promise<Org> {
+export async function createOrg(payload: CreateOrg): Promise<Org> {
   const { user, org: payloadOrg } = payload;
   const newOrg = await db.select().from(org).where(eq(org.id, payloadOrg.id));
 
@@ -60,7 +56,7 @@ export async function create(payload: CreateOrg): Promise<Org> {
  * @param payload - The id of the Organization to fetch.
  * @returns {Promise<Org>} A promise that resolves the Organization object.
  */
-export async function fetchOne(id: string): Promise<Org> {
+export async function fetchOrg(id: string): Promise<Org> {
   const result = await db.select().from(org).where(eq(org.id, id));
 
   if (result.length === 0) {
@@ -75,92 +71,81 @@ export async function fetchOne(id: string): Promise<Org> {
  *
  * @returns {Promise<User[]>} A promise that resolves to an array of User objects.
  */
-export async function fetchResources(
+export async function fetchOrgResources(
   id: string,
   resource: string[],
-  user?: string
-): Promise<Invoice[] | Report[] | User[]> {
-  const resources: { reports?: Report[], invoices?: Invoice[], users?: User[] } = {};
+  userId?: string,
+): Promise<OrgDetails> {
+  const resources: OrgDetails = { id };
+
   if (resource.includes("reports")) {
-    if (user) {
-      const orgsReports = db
-        .select()
-        .from(orgReport)
-        .where(eq(orgReport.orgId, id))
-        .as("orgsReports");
+    const orgsReports = await db
+      .select()
+      .from(orgReport)
+      .innerJoin(userReport, eq(orgReport.reportId, userReport.reportId))
+      .innerJoin(orgUser, eq(userReport.userId, userReport.reportId))
+      .innerJoin(report, eq(orgReport.reportId, report.id))
+      .where(
+        and(
+          eq(orgReport.orgId, id),
+          eq(userReport.reportId, orgReport.reportId),
+          eq(report.id, userReport.reportId),
+        ),
+      );
 
-      const _reports = await db
-        .select()
-        .from(report)
-        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
+    const result = orgsReports
+      .filter((r) => !userId || r.UserReport.userId === userId)
+      .map((r) => ({
+        report: r.Report,
+        userId: r.UserReport.userId,
+        role: r.OrgUser.role,
+      }));
 
-      resources.reports = _reports.map((result) => result.Report);
-    } else {
-      const orgsReports = db
-        .select()
-        .from(orgReport)
-        .innerJoin(userReport, eq(orgReport.reportId, userReport.reportId))
-        .where(
-          and(
-            eq(orgReport.orgId, id)
-        )
-        .as("orgsReports");
-
-      const _reports = await db
-        .select()
-        .from(report)
-        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
-
-      resources.reports = _reports.map((result) => result.Report);
-    }
+    resources.reports = result;
   }
 
-  switch (resource) {
-    case "reports": {
-      const orgsReports = db
-        .select()
-        .from(orgReport)
-        .where(eq(orgReport.orgId, id))
-        .as("orgsReports");
+  if (resource.includes("invoices")) {
+    const orgsInvoices = await db
+      .select()
+      .from(orgInvoice)
+      .innerJoin(userInvoice, eq(orgInvoice.invoiceId, userInvoice.invoiceId))
+      .innerJoin(orgUser, eq(userInvoice.userId, orgUser.userId))
+      .innerJoin(invoice, eq(orgInvoice.invoiceId, invoice.id))
+      .where(
+        and(
+          eq(orgInvoice.orgId, id),
+          eq(userInvoice.invoiceId, orgInvoice.invoiceId),
+          eq(invoice.id, userInvoice.invoiceId),
+        ),
+      );
 
-      const _reports = await db
-        .select()
-        .from(report)
-        .innerJoin(orgsReports, eq(report.id, orgsReports.reportId));
+    const result = orgsInvoices
+      .filter((i) => !userId || i.UserInvoice.userId === userId)
+      .map((i) => ({
+        invoice: i.Invoice,
+        userId: i.UserInvoice.userId,
+        role: i.OrgUser.role,
+      }));
 
-      return _reports.map((result) => result.Report);
-    }
-    case "invoices": {
-      const orgsInvoices = db
-        .select()
-        .from(orgInvoice)
-        .where(eq(orgInvoice.orgId, id))
-        .as("orgsInvoices");
-
-      const _invoices = await db
-        .select()
-        .from(invoice)
-        .innerJoin(orgsInvoices, eq(invoice.id, orgsInvoices.invoiceId));
-
-      return _invoices.map((result) => result.Invoice);
-    }
-    case "users": {
-      const orgsUsers = db
-        .select()
-        .from(orgUser)
-        .where(eq(orgUser.orgId, id))
-        .as("orgsUsers");
-
-      const _users = await db
-        .select()
-        .from(user)
-        .innerJoin(orgsUsers, eq(user.id, orgsUsers.userId));
-
-      return _users.map((result) => result.User);
-    }
-    default:
-      throw new BadRequestError("Required details for look up are missing");
+    resources.invoices = result;
   }
+
+  if (resource.includes("users")) {
+    const orgsUsers = await db
+      .select()
+      .from(orgUser)
+      .innerJoin(user, eq(orgUser.userId, user.id))
+      .where(eq(orgUser.orgId, id));
+
+    const result = orgsUsers.map((u) => ({
+      orgUser: u.User,
+      role: u.OrgUser.role,
+    }));
+
+    resources.users = result;
+  }
+
+  return resources;
 }
 
 /**
@@ -169,7 +154,7 @@ export async function fetchResources(
  * @param payload - The new Organization data to update.
  * @returns {Promise<Org>} A promise that resolves to an Organization object.
  */
-export async function update(payload: Org): Promise<Org> {
+export async function updateOrg(payload: Org): Promise<Org> {
   const { id, name, contact } = payload;
   const result = await db
     .update(org)
@@ -190,7 +175,7 @@ export async function update(payload: Org): Promise<Org> {
  * @param id - The Organization ID to be removed.
  * @throws {ConflictError} If an Organization is not allowed to be removed.
  */
-export async function deleteOne(id: string): Promise<void> {
+export async function deleteOrg(id: string): Promise<void> {
   const orgsList = await db.select().from(org).where(eq(org.id, id));
   if (orgsList.length < 1) {
     throw new ConflictError("Unable to find associated org for the user");

@@ -1,6 +1,5 @@
 import * as orgController from "@/modules/org";
 import { type Elysia, t } from "elysia";
-import authPlugin from "../plugins/auth";
 
 /**
  * Registers routes for organization-related operations.
@@ -19,7 +18,7 @@ import authPlugin from "../plugins/auth";
 export default (app: Elysia) =>
   app
     .post("/org", orgController.postOrg)
-    .post("/org/user", orgController.createOrgUser)
+    .post("/org/user", orgController.postOrgUser)
     .get("/org/:org", orgController.getOrg)
     .get("/org/:org/res/:user?", orgController.getOrgResources)
     .put("/org/:org", orgController.updateOrg)

@@ -21,5 +21,6 @@ export default (app: Elysia) =>
     .post("/org/user", orgController.postOrgUser)
     .get("/org/:org", orgController.getOrg)
     .get("/org/:org/res/:user?", orgController.getOrgResources)
-    .put("/org/:org", orgController.updateOrg)
+    .put("/org/:org", orgController.putOrg)
+    .put("/org/:org/user/:user", orgController.putOrgUser)
     .delete("/org/:org", orgController.deleteOrg);

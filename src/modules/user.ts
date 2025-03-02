@@ -25,7 +25,6 @@ export const me = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<UserDetails>> => {
   const { query, user } = context;
-  const { include } = query;
 
   if (!user || !user.id) {
     throw new BadRequestError("Required user information is missing.");
@@ -33,8 +32,8 @@ export const me = async (
 
   let result = { user };
 
-  if (include) {
-    const resources = include.split(",");
+  if (query.include) {
+    const resources = query.include.split(",");
     const foundResources = await userService.fetchResources(user.id, resources);
     result = { ...result, ...foundResources };
   }
@@ -69,9 +68,15 @@ export const getUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
   const { params } = context;
-  const { user: id, by } = params;
 
-  const fetchedUser = await userService.fetchUser({ [by ?? "id"]: id });
+  if (!params.user) {
+    throw new BadRequestError(
+      "Required user identification details are missing",
+    );
+  }
+
+  const { user: id } = params;
+  const fetchedUser = await userService.fetchUser({ [params.by ?? "id"]: id });
 
   fetchedUser.phone = null;
   fetchedUser.lastName = null;
@@ -99,23 +104,11 @@ export const putUser = async (
     user,
   } = context;
   const body = context.body as User;
-  let allowed: boolean | undefined;
 
-  if (!superAdmin && id !== user.id && !allowed) {
+  if (!superAdmin && id !== user.id && !org?.allowed) {
     throw new UnauthorizedError(
       "You do not have permission to update this user.",
     );
-  }
-
-  if (
-    superAdmin ||
-    id === user.id ||
-    (org?.role && org?.role > UserRole.CLIENT && allowed)
-  ) {
-    return {
-      data: await userService.updateUser(body),
-      message: "User updated successfully.",
-    };
   }
 
   const data = await userService.updateUser(body);

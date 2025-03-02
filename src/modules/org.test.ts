@@ -2,11 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/plugins/auth";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { create, deleteOne, fetchOne, fetchResources, update } from "./org";
+import { postOrg, postOrgUser, getOrg, putOrg, putOrgUser, deleteOrg, getOrgResources } from "./org";
 
 let mockOrg = {
   id: faker.string.uuid(),
@@ -22,6 +22,7 @@ const mockUser: User = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
   superAdmin: true,
 };
 const mockClient: User = {
@@ -32,6 +33,18 @@ const mockClient: User = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
+  superAdmin: false,
+};
+const managedUser: User = {
+  id: faker.string.uuid(),
+  email: faker.internet.email(),
+  identifier: faker.string.uuid(),
+  firstName: null,
+  lastName: null,
+  picture: null,
+  phone: null,
+  managed: true,
   superAdmin: false,
 };
 
@@ -53,7 +66,7 @@ describe("Org Module", () => {
   });
 
   afterAll(async () => {
-    await userService.deleteOne(mockUser.id, mockUser.identifier);
+    await userService.removeUser(mockUser.id, mockUser.identifier);
   });
 
   describe("create", () => {
@@ -61,12 +74,40 @@ describe("Org Module", () => {
       const context = mockContext({
         body: mockOrg,
       });
-      const response = await create(context as AuthenticatedContext);
+      const response = await postOrg(context as AuthenticatedContext);
 
       expect(response).toEqual({
         data: mockOrg,
-        message: "Organization created successfully.",
+        message: "Organization created successfully!",
       });
+    });
+  });
+
+  describe("putOrgUser", () => {
+    it("should create an organization user successfully", async () => {
+      const context = mockContext({
+        body: { id: managedUser.id, org: mockOrg.id },
+      });
+      const response = await postOrgUser(context as AuthenticatedContext);
+
+      expect(response).toEqual({
+        data: managedUser,
+        message: "Organization user created successfully!",
+      });
+    });
+
+    it("should throw UnauthorizedError if user does not have permission", async () => {
+      const context = mockContext({
+        user: mockClient,
+        permissions: {
+          superAdmin: false,
+          org: { id: mockOrg.id, role: UserRole.CLIENT },
+        },
+      });
+
+      await expect(postOrgUser(context as AuthenticatedContext)).rejects.toThrow(
+        UnauthorizedError,
+      );
     });
   });
 
@@ -76,16 +117,11 @@ describe("Org Module", () => {
         params: { org: mockOrg.id },
         query: { include: "invoices=true, reports=true, users=true" },
       });
-      const response = await fetchOne(context as AuthenticatedContext);
+      const response = await getOrg(context as AuthenticatedContext);
 
       expect(response).toEqual({
-        data: {
-          org: mockOrg,
-          invoices: [],
-          reports: [],
-          users: [mockUser],
-        },
-        message: "Organization & details fetched successfully",
+        data: mockOrg,
+        message: "Organization & details fetched successfully!",
       });
     });
 
@@ -98,7 +134,7 @@ describe("Org Module", () => {
         },
       });
 
-      await expect(fetchOne(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(getOrg(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
@@ -107,14 +143,15 @@ describe("Org Module", () => {
   describe("fetchResources", () => {
     it("should fetch organization resources successfully", async () => {
       const context = mockContext({
-        params: { id: mockOrg.id, resource: "invoices" },
+        params: { org: mockOrg.id, resource: "invoices" },
+        query: { include: "invoices" },
       });
 
-      const response = await fetchResources(context as AuthenticatedContext);
+      const response = await getOrgResources(context as AuthenticatedContext);
 
       expect(response).toEqual({
-        data: { invoices: [] },
-        message: "Organization resources fetched successfully.",
+        data: { id: mockOrg.id, invoices: [] },
+        message: "Organization resources fetched successfully!",
       });
     });
 
@@ -123,23 +160,37 @@ describe("Org Module", () => {
         user: mockClient,
         permissions: {
           superAdmin: false,
-          org: { id: mockOrg.id, role: UserRole.CLIENT },
+          org: { org: mockOrg.id, role: UserRole.CLIENT },
         },
       });
 
-      await expect(
-        fetchResources(context as AuthenticatedContext),
-      ).rejects.toThrow(UnauthorizedError);
+      await expect(getOrgResources(context as AuthenticatedContext))
+        .rejects.toThrow(UnauthorizedError);
     });
   });
 
   describe("update", () => {
+    it("should throw UnauthorizedError if user does not have permission", async () => {
+      const context = mockContext({
+        body: { id: mockOrg.id, name: "Updated Org" },
+        user: mockClient,
+        permissions: {
+          superAdmin: false,
+          org: { id: mockOrg.id, role: UserRole.CLIENT },
+        },
+      });
+
+      await expect(putOrg(context as AuthenticatedContext)).rejects.toThrow(
+        UnauthorizedError,
+      );
+    });
+
     it("should update organization details successfully", async () => {
       const context = mockContext({
         body: { id: mockOrg.id, name: "Updated Org" },
       });
 
-      const response = await update(context as AuthenticatedContext);
+      const response = await putOrg(context as AuthenticatedContext);
       mockOrg = {
         ...mockOrg,
         name: "Updated Org",
@@ -147,22 +198,50 @@ describe("Org Module", () => {
 
       expect(response).toEqual({
         data: mockOrg,
-        message: "Organization updated successfully.",
+        message: "Organization updated successfully!",
       });
     });
+  });
 
+  describe("putOrgUser", () => {
     it("should throw UnauthorizedError if user does not have permission", async () => {
       const context = mockContext({
         user: mockClient,
         permissions: {
           superAdmin: false,
-          org: { id: mockOrg.id, role: UserRole.CLIENT },
+          org: { id: mockOrg.id, role: UserRole.CLIENT, managed: false },
         },
-      });
+      }); 
 
-      await expect(update(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(putOrgUser(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
+    });
+
+    it("should update organization users successfully", async () => {
+      const context = mockContext({
+        user: mockClient,
+        permissions: {
+          superAdmin: false,
+          org: { id: mockOrg.id, role: UserRole.CLIENT, managed: false },
+        },
+        body: {
+          ...mockUser,
+          firstName: "Updated",
+          lastName: "User",
+        },
+      }); 
+
+      const response = await putOrgUser(context as AuthenticatedContext);
+
+      expect(response).toEqual({
+        data: {
+          ...mockUser,
+          firstName: "Updated",
+          lastName: "User",
+        },
+        message: "Organization users updated successfully!",
+      });
     });
   });
 
@@ -170,10 +249,10 @@ describe("Org Module", () => {
     it("should delete organization successfully", async () => {
       const context = mockContext({ params: { org: mockOrg.id } });
 
-      const response = await deleteOne(context as AuthenticatedContext);
+      const response = await deleteOrg(context as AuthenticatedContext);
 
       expect(response).toEqual({
-        message: "Organization deleted successfully.",
+        message: "Organization deleted successfully!",
       });
     });
 
@@ -186,7 +265,7 @@ describe("Org Module", () => {
         },
       });
 
-      await expect(deleteOne(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(deleteOrg(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });

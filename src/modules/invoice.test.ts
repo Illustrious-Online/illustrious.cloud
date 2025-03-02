@@ -2,12 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import { UserRole } from "@/domain/types/UserRole";
 import type { Invoice, Org, User } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/plugins/auth";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { create, deleteOne, fetchOne, update } from "./invoice";
+import { postInvoice, deleteInvoice, getInvoice, putInvoice } from "./invoice";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {
@@ -18,6 +18,7 @@ const mockUser: User = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
   superAdmin: true,
 };
 const secondUser: User = {
@@ -28,6 +29,7 @@ const secondUser: User = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
   superAdmin: false,
 };
 const mockOrg: Org = {
@@ -67,12 +69,12 @@ describe("Invoice Module", () => {
   beforeAll(async () => {
     await userService.updateOrCreate(mockUser);
     await userService.updateOrCreate(secondUser);
-    await orgService.create({ user: mockUser.id, org: mockOrg });
+    await orgService.createOrg({ user: mockUser.id, org: mockOrg });
   });
 
   afterAll(async () => {
-    await orgService.deleteOne(mockOrg.id);
-    await userService.deleteOne(mockUser.id, mockUser.identifier);
+    await orgService.removeOrg(mockOrg.id);
+    await userService.removeUser(mockUser.id, mockUser.identifier);
   });
 
   describe("create", () => {
@@ -80,11 +82,11 @@ describe("Invoice Module", () => {
       const context = mockContext({
         body: { client: secondUser.id, org: mockOrg.id, invoice: mockInvoice },
       });
-      const result = await create(context as AuthenticatedContext);
+      const result = await postInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
         data: mockInvoice,
-        message: "Invoice created successfully.",
+        message: "Invoice created successfully!",
       });
     });
 
@@ -98,7 +100,7 @@ describe("Invoice Module", () => {
         body: { client: mockUser.id, org: mockOrg.id, invoice: mockInvoice },
       });
 
-      await expect(create(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(postInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
@@ -111,11 +113,11 @@ describe("Invoice Module", () => {
         params: { invoice: mockInvoice.id },
       });
 
-      const result = await fetchOne(context as AuthenticatedContext);
+      const result = await getInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
         data: mockInvoice,
-        message: "Invoice fetched successfully.",
+        message: "Invoice fetched successfully!",
       });
     });
 
@@ -129,7 +131,7 @@ describe("Invoice Module", () => {
         params: { invoice: mockInvoice.id },
       });
 
-      await expect(fetchOne(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(getInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
@@ -150,7 +152,7 @@ describe("Invoice Module", () => {
         },
       });
 
-      const result = await update(context as AuthenticatedContext);
+      const result = await putInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
         data: {
@@ -158,7 +160,7 @@ describe("Invoice Module", () => {
           paid: true,
           updatedAt,
         },
-        message: "Invoice updated successfully.",
+        message: "Invoice updated successfully!",
       });
     });
 
@@ -178,7 +180,7 @@ describe("Invoice Module", () => {
         },
       });
 
-      await expect(update(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(putInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
@@ -189,10 +191,10 @@ describe("Invoice Module", () => {
       const context = mockContext({
         params: { invoice: mockInvoice.id },
       });
-      const result = await deleteOne(context as AuthenticatedContext);
+      const result = await deleteInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
-        message: "Invoice deleted successfully.",
+        message: "Invoice deleted successfully!",
       });
     });
 
@@ -206,7 +208,7 @@ describe("Invoice Module", () => {
         params: { invoice: mockInvoice.id },
       });
 
-      await expect(deleteOne(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(deleteInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });

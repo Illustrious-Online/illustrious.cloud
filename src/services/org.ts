@@ -184,7 +184,7 @@ export async function updateOrg(payload: Org): Promise<Org> {
  * @param id - The Organization ID to be removed.
  * @throws {ConflictError} If an Organization is not allowed to be removed.
  */
-export async function deleteOrg(id: string): Promise<void> {
+export async function removeOrg(id: string): Promise<void> {
   const orgsList = await db.select().from(org).where(eq(org.id, id));
   if (orgsList.length < 1) {
     throw new ConflictError("Unable to find associated org for the user");

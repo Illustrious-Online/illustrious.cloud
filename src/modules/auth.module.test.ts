@@ -26,9 +26,10 @@ describe("auth module", () => {
         redirect: vi.fn(),
       };
 
-      vi.spyOn(authService, "signInWithOAuth").mockResolvedValue(
-        "http://auth.url",
-      );
+      vi.spyOn(authService, "signInWithOAuth").mockResolvedValue({
+        provider: "google",
+        url: "http://auth.url",
+      });
       await signInWithOAuth(context);
       expect(context.redirect).toHaveBeenCalledWith("http://auth.url");
     });
@@ -56,6 +57,7 @@ describe("auth module", () => {
         lastName: null,
         picture: null,
         phone: null,
+        managed: false,
         superAdmin: false,
       };
       vi.spyOn(authService, "oauthCallback").mockResolvedValue(user);

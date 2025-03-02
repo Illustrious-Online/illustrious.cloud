@@ -8,6 +8,13 @@
       "when": 1740416760926,
       "tag": "0000_pale_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1740789556924,
+      "tag": "0001_little_malice",
+      "breakpoints": true
     }
   ]
 }

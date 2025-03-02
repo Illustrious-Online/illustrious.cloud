@@ -70,16 +70,8 @@ export async function updateOrCreate(
  * - `identifier`: Another unique identifier for the user.
  *
  * @returns A promise that resolves to an `IllustriousUser` object.
- *
- * @throws BadRequestError - If none of the required properties (`id`, `email`, `identifier`) are provided in the payload.
  */
 export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
-  if (!payload.id && !payload.email && !payload.identifier) {
-    throw new BadRequestError(
-      "Required user identification details are missing",
-    );
-  }
-
   const key = Object.keys(payload)[0] as keyof FetchUser;
   const value = Object.values(payload)[0];
 

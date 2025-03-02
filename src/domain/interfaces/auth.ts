@@ -16,8 +16,9 @@ export interface AuthPermissions {
   superAdmin: boolean;
   org?: {
     id: string;
-    role?: UserRole;
+    role: UserRole;
     create?: boolean;
+    managed?: boolean;
   };
   invoice?: {
     id?: string;
@@ -41,7 +42,7 @@ export interface AuthenticatedContext extends Context {
   permissions: AuthPermissions;
 }
 
-interface AuthParams {
+export interface AuthParams {
   user?: string;
   invoice?: string;
   report?: string;

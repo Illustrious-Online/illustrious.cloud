@@ -24,7 +24,7 @@ export const postOrg = async (
 
   return {
     data,
-    message: "Organization created successfully.",
+    message: "Organization created successfully!",
   };
 };
 
@@ -51,7 +51,7 @@ export const postOrgUser = async (
 
   return {
     data,
-    message: "Organization user created successfully.",
+    message: "Organization user created successfully!",
   };
 };
 
@@ -94,7 +94,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
   const {
     params: { org: orgId, user: userId },
     permissions: { superAdmin, org },
-    query: { include },
+    query
   } = context;
 
   if (!org?.role) {
@@ -108,7 +108,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
   if (superAdmin || org.role > UserRole.EMPLOYEE) {
     const data = await orgService.fetchOrgResources(
       orgId,
-      include?.split(","),
+      query.include?.split(","),
       userId,
     );
 
@@ -120,7 +120,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
   if (!superAdmin && org?.role < UserRole.ADMIN) {
     const data = await orgService.fetchOrgResources(
       orgId,
-      include?.split(","),
+      query.include?.split(","),
       userId,
     );
 
@@ -129,7 +129,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
 
   return {
     data: result,
-    message: "Organization resources fetched successfully.",
+    message: "Organization resources fetched successfully!",
   };
 };
 
@@ -140,24 +140,40 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
  * @returns An object containing the updated organization data and a success message.
  * @throws {UnauthorizedError} If the user does not have permission to update organization details.
  */
-export const updateOrg = async (context: AuthenticatedContext) => {
+export const putOrg = async (context: AuthenticatedContext) => {
   const body = context.body as Org;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if (org?.role !== undefined) {
-    if (!superAdmin && org.role < UserRole.OWNER) {
-      throw new UnauthorizedError(
-        "User does not have permission to update organization details.",
-      );
-    }
+  if (!superAdmin && org && org.role < UserRole.ADMIN) {
+    throw new UnauthorizedError(
+      "User does not have permission to update organization details.",
+    );
   }
 
   return {
     data: await orgService.updateOrg(body),
-    message: "Organization updated successfully.",
+    message: "Organization updated successfully!",
   };
 };
+
+export const putOrgUser = async (context: AuthenticatedContext) => {
+  const { body, permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if ((!superAdmin && org?.role && org?.role < UserRole.ADMIN) || !org?.managed) {
+    throw new UnauthorizedError(
+      "User does not have permission to update organization users.",
+    );
+  }
+
+  const data = await userService.updateOrCreate(body as User);
+
+  return {
+    data,
+    message: "Organization user updated successfully!",
+  }
+}
 
 /**
  * Deletes an organization based on the provided context.
@@ -179,9 +195,9 @@ export const deleteOrg = async (context: AuthenticatedContext) => {
     }
   }
 
-  await orgService.deleteOrg(orgParam);
+  await orgService.removeOrg(orgParam);
 
   return {
-    message: "Organization deleted successfully.",
+    message: "Organization deleted successfully!",
   };
 };

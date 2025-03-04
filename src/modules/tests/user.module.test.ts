@@ -28,7 +28,7 @@ import {
   linkSteam,
   me,
   putUser,
-} from "./user";
+} from "../user";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {

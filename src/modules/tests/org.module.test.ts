@@ -14,7 +14,7 @@ import {
   postOrgUser,
   putOrg,
   putOrgUser,
-} from "./org";
+} from "../org";
 
 let mockOrg = {
   id: faker.string.uuid(),

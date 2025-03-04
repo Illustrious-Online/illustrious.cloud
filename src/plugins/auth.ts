@@ -300,7 +300,6 @@ const authPlugin = (app: Elysia) =>
         const currentUser: User = findUser[0];
         const permissions: AuthPermissions = {
           superAdmin: currentUser.superAdmin,
-          resource: params.resource,
         };
 
         if (path.includes("/me") || path.includes("/user")) {

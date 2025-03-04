@@ -4,7 +4,7 @@ import ServerError from "@/domain/exceptions/ServerError";
 import * as authService from "@/services/auth";
 import type { Context } from "elysia";
 import { vi } from "vitest";
-import { oauthCallback, signInWithOAuth, signOut } from "./auth";
+import { oauthCallback, signInWithOAuth, signOut } from "../auth";
 
 const defaultContext: Context = {} as Context;
 

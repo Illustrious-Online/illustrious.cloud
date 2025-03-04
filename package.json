@@ -21,7 +21,7 @@
     "db:reset": "./src/utils/reset-db.sh",
     "check": "bunx @biomejs/biome check ./src",
     "check:fix": "bunx @biomejs/biome check --write ./src",
-    "prepare": "husky"
+    "prepare": "bunx husky"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -30,6 +30,7 @@
     "@elysiajs/swagger": "^1.0.5",
     "@sentry/bun": "^8.50.0",
     "@supabase/supabase-js": "^2.47.11",
+    "@tqman/nice-logger": "^1.1.1",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node-steam-openid": "^1.0.3",
     "dotenv": "^16.4.5",

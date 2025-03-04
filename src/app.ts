@@ -1,11 +1,11 @@
 import cors from "@elysiajs/cors";
 import swagger from "@elysiajs/swagger";
+import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
 import { createClient } from "@supabase/supabase-js";
 import config from "./config";
 import errorPlugin from "./plugins/error";
-import loggerPlugin from "./plugins/logger";
 import authRoutes from "./routes/auth";
 
 import invoiceRouter from "@/routes/invoice";
@@ -30,7 +30,12 @@ export const supabaseClient = createClient(
 
 export const app = new Elysia()
   .use(cors())
-  .use(loggerPlugin)
+  .use(
+    logger({
+      mode: "live",
+      withTimestamp: true,
+    }),
+  )
   .use(errorPlugin)
   .use(authPlugin)
   .use(

@@ -178,7 +178,7 @@ describe("Org Module", () => {
     });
   });
 
-  describe("update", () => {
+  describe("putOrg", () => {
     it("should throw UnauthorizedError if user does not have permission", async () => {
       const context = mockContext({
         body: { id: mockOrg.id, name: "Updated Org" },

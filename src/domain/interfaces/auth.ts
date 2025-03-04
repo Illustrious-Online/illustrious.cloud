@@ -16,7 +16,7 @@ export interface AuthPermissions {
   superAdmin: boolean;
   org?: {
     id: string;
-    role: UserRole;
+    role?: UserRole;
     create?: boolean;
     managed?: boolean;
   };
@@ -46,7 +46,6 @@ export interface AuthParams {
   user?: string;
   invoice?: string;
   report?: string;
-  resource?: string;
   org?: string;
 }
 
@@ -62,5 +61,6 @@ export interface AuthPluginParams {
     | unknown;
   path: string;
   params: AuthParams;
+  query: Record<string, string>;
   request: Request;
 }

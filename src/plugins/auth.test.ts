@@ -1,20 +1,20 @@
-import { beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import { supabaseClient } from "@/app";
 import config from "@/config";
-import BadRequestError from "@/domain/exceptions/BadRequestError";
-import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
-import { UserRole } from "@/domain/types/UserRole";
-import type { User as IllustriousUser, Org } from "@/drizzle/schema";
-import authPlugin from "@/plugins/auth"; // Adjust the import path as necessary
+import type { User as IllustriousUser, Org, Report } from "@/drizzle/schema";
+import * as orgService from "@/services/org";
+import * as reportService from "@/services/report";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
-import { AuthError, type Provider, type User } from "@supabase/auth-js";
-import axios, { type AxiosError } from "axios";
-import { type Context, Elysia } from "elysia";
+import type { User } from "@supabase/auth-js";
+import type { Context } from "elysia";
 import { vi } from "vitest";
 
 const defaultContext: Context = {} as Context;
-const mockUser: IllustriousUser = {
+const headers = {
+  Authorization: `Bearer ${faker.internet.jwt()}`,
+};
+const authUser: IllustriousUser = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
   email: faker.internet.email(),
@@ -37,42 +37,35 @@ const supaUser: User = {
   aud: "",
   created_at: "",
 };
+const authOrg: Org = {
+  id: faker.string.uuid(),
+  name: faker.company.name(),
+  contact: faker.internet.email(),
+};
+const authReport: Report = {
+  id: faker.string.uuid(),
+  createdAt: new Date(),
+  rating: 5,
+  notes: "Report 1 notes",
+};
 
 describe("Auth Plugin", () => {
-  describe("Basic Scenarios", () => {
-    it("should return immediately for auth and / paths", async () => {
-      const result = await axios.get(config.app.url);
-      expect(result.status).toBe(200);
-      expect(result.data.name).toBe(config.app.name);
-      expect(result.data.version).toBe(config.app.version);
-    });
-
+  describe("Error Scenarios", () => {
     it("should throw UnauthorizedError if no bearer is included", async () => {
-      try {
-        await axios.post(`${config.app.url}/org`);
-      } catch (error) {
-        const res = (error as AxiosError).response;
-        const errData = res?.data as { code: number; message: string };
-        expect(errData?.code).toBe(401);
-        expect(errData?.message).toBe("Access token is missing.");
-      }
+      const response = await fetch(`${config.app.url}/me`);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.code).toBe(401);
+      expect(data.message).toBe("Access token is missing.");
     });
 
     it("should throw UnauthorizedError if bearer is invalid", async () => {
-      try {
-        await axios.get(`${config.app.url}/org`, {
-          headers: {
-            Authorization: "Bearer invalid",
-          },
-        });
-      } catch (error) {
-        const res = (error as AxiosError).response;
-        const errData = res?.data as { code: number; message: string };
-        expect(errData?.code).toBe(401);
-        expect(errData?.message).toInclude(
-          "invalid JWT: unable to parse or verify signature",
-        );
-      }
+      const response = await fetch(`${config.app.url}/me`, { headers });
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.code).toBe(401);
     });
 
     it("should throw UnauthorizedError if bearer does not fetch Illustrious User", async () => {
@@ -82,47 +75,106 @@ describe("Auth Plugin", () => {
         error: null,
       });
 
-      try {
-        await axios.get(`${config.app.url}/org`, {
-          headers: {
-            Authorization: "Bearer faked",
-          },
-        });
-      } catch (error) {
-        const res = (error as AxiosError).response;
-        const errData = res?.data as { code: number; message: string };
-        expect(errData?.code).toBe(401);
-        expect(errData?.message).toBe("User was not found.");
-      }
+      const response = await fetch(`${config.app.url}/me`, { headers });
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.code).toBe(401);
+      expect(data.message).toBe("User was not found.");
+    });
+  });
+
+  describe("GET (/me) Scenarios", () => {
+    it("should return immediately for base paths", async () => {
+      const response = await fetch(config.app.url);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.name).toBe(config.app.name);
+      expect(data.version).toBe(config.app.version);
     });
 
-    it("should create a new user on POST ", async () => {
-      await userService.updateOrCreate(mockUser);
-
+    it("should retrieve the user using /me", async () => {
       vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
         ...defaultContext,
         data: {
           user: {
             ...supaUser,
-            id: mockUser.id,
+            id: authUser.id,
           },
         },
         error: null,
       });
 
-      const result = await axios.get(`${config.app.url}/me`, {
-        headers: {
-          Authorization: "Bearer faked",
+      await userService.updateOrCreate(authUser);
+
+      const response = await fetch(`${config.app.url}/me`, { headers });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.data).toEqual({ user: authUser });
+      expect(data.message).toBe("User details fetched successfully!");
+    });
+
+    it("should retrieve the user & resources using /me", async () => {
+      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+        ...defaultContext,
+        data: {
+          user: {
+            ...supaUser,
+            id: authUser.id,
+          },
         },
+        error: null,
       });
 
-      expect(result.status).toBe(200);
-      expect(result.data).toEqual({
-        data: {
-          user: mockUser,
-        },
-        message: "User details fetched successfully!",
+      await reportService.createReport({
+        report: authReport,
+        // TODOD: FINISHI THIS
+        user: authUser.id,
+        org: authOrg.id,
       });
+
+      const response = await fetch(`${config.app.url}/me?include=reports&org=${authOrg.id}`, { headers });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.data).toEqual({ user: authUser });
+      expect(data.message).toBe("User details fetched successfully!");
     });
+  });
+
+  describe("POST Scenarios", () => {
+    it("should create an organization successfully", async () => {
+      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+        ...defaultContext,
+        data: {
+          user: {
+            ...supaUser,
+            id: authUser.id,
+          },
+        },
+        error: null,
+      });
+
+      const response = await fetch(`${config.app.url}/org`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${faker.internet.jwt()}`,
+        },
+        body: JSON.stringify(authOrg),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.data).toEqual(authOrg);
+      expect(data.message).toBe("Organization created successfully!");
+    });
+  });
+
+  afterAll(async () => {
+    await orgService.removeOrg(authOrg.id);
+    await userService.removeUser(authUser.id, authUser.identifier);
   });
 });

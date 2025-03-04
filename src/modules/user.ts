@@ -34,7 +34,7 @@ export const me = async (
 
   if (query.include) {
     const resources = query.include.split(",");
-    const foundResources = await userService.fetchResources(user.id, resources);
+    const foundResources = await userService.fetchResources(user.id, resources, query.org);
     result = { ...result, ...foundResources };
   }
 

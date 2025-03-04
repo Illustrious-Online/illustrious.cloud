@@ -105,7 +105,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
 
   let result: OrgDetails | undefined;
 
-  if (superAdmin || org.role > UserRole.EMPLOYEE) {
+  if ((superAdmin || org.role > UserRole.EMPLOYEE)) {
     const data = await orgService.fetchOrgResources(
       orgId,
       query.include?.split(","),
@@ -145,7 +145,7 @@ export const putOrg = async (context: AuthenticatedContext) => {
   const { permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if (!superAdmin && org && org.role < UserRole.ADMIN) {
+  if (!superAdmin && org?.role && org.role < UserRole.ADMIN) {
     throw new UnauthorizedError(
       "User does not have permission to update organization details.",
     );

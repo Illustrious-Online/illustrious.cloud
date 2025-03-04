@@ -49,9 +49,9 @@ export default (app: Elysia) =>
   app
     .error({ BadRequestError, ConflictError, ResponseError, UnauthorizedError })
     .onError((handler): ErrorResponse<number> => {
-      if (config.app.env !== "test") {
-        console.error((handler.error as Error)?.stack);
-      }
+      // if (config.app.env !== "test") {
+      //   console.error((handler.error as Error)?.stack);
+      // }
 
       if (
         handler.error instanceof BadRequestError ||

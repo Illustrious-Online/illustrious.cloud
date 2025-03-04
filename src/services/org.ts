@@ -102,15 +102,13 @@ export async function fetchOrgResources(
         ),
       );
 
-    const result = orgsReports
+    resources.reports = orgsReports
       .filter((r) => !userId || r.UserReport.userId === userId)
       .map((r) => ({
         report: r.Report,
         userId: r.UserReport.userId,
         role: r.OrgUser.role,
       }));
-
-    resources.reports = result;
   }
 
   if (resource.includes("invoices")) {
@@ -128,16 +126,14 @@ export async function fetchOrgResources(
         ),
       );
 
-    const result = orgsInvoices
+    resources.invoices = orgsInvoices
       .filter((i) => !userId || i.UserInvoice.userId === userId)
       .map((i) => ({
         invoice: i.Invoice,
         userId: i.UserInvoice.userId,
         role: i.OrgUser.role,
       }));
-
-    resources.invoices = result;
-  }
+    }
 
   if (resource.includes("users")) {
     const orgsUsers = await db
@@ -146,12 +142,10 @@ export async function fetchOrgResources(
       .innerJoin(user, eq(orgUser.userId, user.id))
       .where(eq(orgUser.orgId, id));
 
-    const result = orgsUsers.map((u) => ({
+    resources.users = orgsUsers.map((u) => ({
       orgUser: u.User,
       role: u.OrgUser.role,
     }));
-
-    resources.users = result;
   }
 
   return resources;

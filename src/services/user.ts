@@ -12,6 +12,8 @@ import {
   type Report,
   invoice,
   org,
+  orgInvoice,
+  orgReport,
   orgUser,
   report,
   user,
@@ -93,33 +95,60 @@ export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
 export async function fetchResources(
   id: string,
   resources: string[],
+  orgId?: string,
 ): Promise<{
+  orgId?: string;
   reports?: Report[];
   invoices?: Invoice[];
   orgs?: Org[];
 }> {
   const result: {
+    orgId?: string;
     reports?: Report[];
     invoices?: Invoice[];
     orgs?: Org[];
   } = {};
 
+  if (orgId) {
+    result.orgId = orgId;
+  }
+
   if (resources.includes("reports")) {
     const usersReports = await db
       .select()
-      .from(report)
-      .innerJoin(userReport, eq(userReport.userId, id));
+      .from(userReport)
+      .innerJoin(orgReport, eq(orgReport.reportId, userReport.reportId))
+      .innerJoin(report, eq(userReport.reportId, report.id))
+      .where(
+        and(
+          eq(userReport.userId, id),
+          eq(userReport.reportId, orgReport.reportId),
+          eq(report.id, userReport.reportId),
+        ),
+      );
 
-    result.reports = usersReports.map((result) => result.Report);
+    result.reports = usersReports
+      .filter((r) => !orgId || r.OrgReport.orgId === orgId)
+      .map((result) => result.Report);
   }
 
   if (resources.includes("invoices")) {
     const usersInvoices = await db
       .select()
-      .from(invoice)
-      .innerJoin(userInvoice, eq(userInvoice.userId, id));
+      .from(userInvoice)
+      .innerJoin(orgInvoice, eq(orgInvoice.invoiceId, userInvoice.invoiceId))
+      .innerJoin(invoice, eq(userInvoice.invoiceId, report.id))
+      .where(
+        and(
+          eq(userInvoice.userId, id),
+          eq(userInvoice.invoiceId, orgInvoice.invoiceId),
+          eq(invoice.id, userInvoice.invoiceId),
+        ),
+      );
 
-    result.invoices = usersInvoices.map((result) => result.Invoice);
+    result.invoices = usersInvoices
+      .filter((i) => !orgId || i.OrgInvoice.orgId === orgId)
+      .map((result) => result.Invoice);
   }
 
   if (resources.includes("orgs")) {

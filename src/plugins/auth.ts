@@ -16,6 +16,7 @@ import type { Elysia } from "elysia";
 import { supabaseClient } from "../app";
 import { db } from "../drizzle/db";
 import {
+  type Org,
   type User,
   orgInvoice,
   orgReport,
@@ -44,13 +45,10 @@ export const executePostChecks = async (
   let orgId: string | undefined;
   const permissions: AuthPermissions = {
     superAdmin: currentUser.superAdmin,
-    resource: params.resource,
   };
 
   if (path.includes("/org")) {
-    const {
-      org: { id },
-    }: CreateOrg = body as CreateOrg;
+    const { id }: Org = body as Org;
 
     if (!path.includes("/user")) {
       const findOrgUsers = await db
@@ -61,8 +59,7 @@ export const executePostChecks = async (
       permissions.org = {
         id,
         role:
-          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role ??
-          UserRole.CLIENT,
+          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
         create: findOrgUsers.length === 0,
       };
     } else {
@@ -82,8 +79,7 @@ export const executePostChecks = async (
       permissions.org = {
         id,
         role:
-          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role ??
-          UserRole.CLIENT,
+          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
       };
     }
 
@@ -109,8 +105,7 @@ export const executePostChecks = async (
   permissions.org = {
     id: orgId,
     role:
-      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role ??
-      UserRole.CLIENT,
+      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role,
     create: findOrgUsers.length === 0,
   };
 
@@ -141,8 +136,7 @@ export const executeOrgChecks = async (
   const permissions: { id: string; role: UserRole; managed?: boolean } = {
     id: orgId,
     role:
-      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role ??
-      UserRole.CLIENT,
+      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role as UserRole,
   };
 
   if (userId) {
@@ -273,7 +267,7 @@ const authPlugin = (app: Elysia) =>
   app
     .use(bearer())
     .derive(
-      async ({ bearer, body, path, params, request }: AuthPluginParams) => {
+      async ({ bearer, body, path, params, query, request }: AuthPluginParams) => {
         if (path === "/auth" || path === "/" || path === "/favicon.ico") {
           return;
         }
@@ -302,7 +296,34 @@ const authPlugin = (app: Elysia) =>
           superAdmin: currentUser.superAdmin,
         };
 
-        if (path.includes("/me") || path.includes("/user")) {
+        if (path.includes("/me")) {
+          if (query?.org && query?.include) {
+            const findMyOrgUser = await db
+              .select()
+              .from(orgUser)
+              .where(eq(orgUser.userId, currentUser.id));
+
+            if (!findMyOrgUser.length) {
+              throw new UnauthorizedError(
+                "User does not have permission to this organization.",
+              );
+            }
+
+            permissions.org = {
+              id: query.org,
+              role:
+                findMyOrgUser.find((orgUser) => orgUser.orgId === query.org)
+                  ?.role,
+            };
+          }
+
+          return {
+            user: currentUser,
+            permissions,
+          };
+        }
+
+        if (path.includes("/user")) {
           return {
             user: currentUser,
             permissions,

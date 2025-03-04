@@ -28,6 +28,7 @@ import {
   me,
   putUser,
 } from "./user";
+import { UserRole } from "@/domain/types/UserRole";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {
@@ -192,6 +193,7 @@ describe("User Module", () => {
             superAdmin: false,
             org: {
               id: mockOrg.id,
+              role: UserRole.CLIENT,
               allowed: false,
             }
           },

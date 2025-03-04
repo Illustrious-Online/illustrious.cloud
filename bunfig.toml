@@ -2,3 +2,4 @@
 coverage = true
 coverageSkipTestFiles = true
 coverageThreshold = { lines = 0.80, functions = 0.90 }
+coverageReporter = ["lcov"]

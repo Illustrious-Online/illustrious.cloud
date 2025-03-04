@@ -83,10 +83,10 @@ describe("Org Module", () => {
     });
   });
 
-  describe("putOrgUser", () => {
+  describe("postOrgUser", () => {
     it("should create an organization user successfully", async () => {
       const context = mockContext({
-        body: { id: managedUser.id, org: mockOrg.id },
+        body: managedUser,
       });
       const response = await postOrgUser(context as AuthenticatedContext);
 
@@ -98,10 +98,10 @@ describe("Org Module", () => {
 
     it("should throw UnauthorizedError if user does not have permission", async () => {
       const context = mockContext({
-        user: mockClient,
+        body: managedUser,
         permissions: {
           superAdmin: false,
-          org: { id: mockOrg.id, role: UserRole.CLIENT },
+          org: { id: mockOrg.id, role: UserRole.EMPLOYEE },
         },
       });
 
@@ -211,6 +211,11 @@ describe("Org Module", () => {
           superAdmin: false,
           org: { id: mockOrg.id, role: UserRole.CLIENT, managed: false },
         },
+        body: {
+          ...managedUser,
+          firstName: "Managed",
+          lastName: "User",
+        },
       }); 
 
       await expect(putOrgUser(context as AuthenticatedContext)).rejects.toThrow(
@@ -220,10 +225,10 @@ describe("Org Module", () => {
 
     it("should update organization users successfully", async () => {
       const context = mockContext({
-        user: mockClient,
+        user: mockUser,
         permissions: {
           superAdmin: false,
-          org: { id: mockOrg.id, role: UserRole.CLIENT, managed: false },
+          org: { id: mockOrg.id, role: UserRole.OWNER, managed: true },
         },
         body: {
           ...mockUser,
@@ -240,7 +245,7 @@ describe("Org Module", () => {
           firstName: "Updated",
           lastName: "User",
         },
-        message: "Organization users updated successfully!",
+        message: "Organization user updated successfully!",
       });
     });
   });

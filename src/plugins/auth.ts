@@ -25,7 +25,17 @@ import {
   userReport,
 } from "../drizzle/schema";
 
-const executePostChecks = async (
+/**
+ * Executes post-authentication checks and returns the current user along with their permissions.
+ *
+ * @param currentUser - The current authenticated user.
+ * @param params - The authentication parameters.
+ * @param body - The request body.
+ * @param path - The request path.
+ * @returns A promise that resolves to an object containing the user and their permissions.
+ * @throws {BadRequestError} If the required organization ID is missing.
+ */
+export const executePostChecks = async (
   currentUser: User,
   params: AuthParams,
   body: unknown,
@@ -113,7 +123,15 @@ const executePostChecks = async (
   };
 }
 
-const executeOrgChecks = async (
+/**
+ * Executes organization checks for the current user and optionally for another user.
+ *
+ * @param currentUser - The current user performing the checks.
+ * @param orgId - The ID of the organization.
+ * @param userId - (Optional) The ID of another user to check within the organization.
+ * @returns A promise that resolves to an object containing the organization ID, the role of the current user within the organization, and optionally whether the other user is managed.
+ */
+export const executeOrgChecks = async (
   currentUser: User,
   orgId: string,
   userId?: string
@@ -152,7 +170,14 @@ const executeOrgChecks = async (
   return permissions;
 }
 
-const executeInvoiceChecks = async (
+/**
+ * Executes checks on an invoice to determine the current user's access, edit, and delete permissions.
+ *
+ * @param currentUser - The user object representing the current user.
+ * @param invoiceId - The ID of the invoice to check permissions for.
+ * @returns A promise that resolves to an object containing the invoice ID and the user's permissions (access, edit, delete).
+ */
+export const executeInvoiceChecks = async (
   currentUser: User,
   invoiceId: string
 ): Promise<{ id: string; access: boolean; edit: boolean; delete: boolean }> => {
@@ -185,7 +210,14 @@ const executeInvoiceChecks = async (
   };
 }
 
-const executeReportChecks = async (
+/**
+ * Executes report checks for the current user and a specified report.
+ *
+ * @param currentUser - The current user object.
+ * @param reportId - The ID of the report to check.
+ * @returns A promise that resolves to an object containing the report ID and the user's access, edit, and delete permissions.
+ */
+export const executeReportChecks = async (
   currentUser: User,
   reportId: string
 ): Promise<{ id: string; access: boolean; edit: boolean; delete: boolean }> => {
@@ -215,6 +247,42 @@ const executeReportChecks = async (
   };
 }
 
+/**
+ * Authenticates and authorizes requests to the application.
+ *
+ * This plugin integrates with the Elysia framework to provide authentication
+ * and authorization capabilities using bearer tokens. It performs various
+ * checks to ensure that the user is authenticated and has the necessary
+ * permissions to access the requested resources.
+ *
+ * @param {Elysia} app - The Elysia application instance.
+ * @returns {Elysia} The Elysia application instance with the authentication plugin applied.
+ *
+ * @throws {UnauthorizedError} If the bearer token is missing, invalid, or the user is not found.
+ *
+ * @example
+ * // Usage in an Elysia application
+ * const app = new Elysia();
+ * app.use(authPlugin);
+ *
+ * @typedef {Object} AuthPluginParams
+ * @property {string} bearer - The bearer token from the request.
+ * @property {Object} body - The request body.
+ * @property {string} path - The request path.
+ * @property {Object} params - The request parameters.
+ * @property {Request} request - The request object.
+ *
+ * @typedef {Object} AuthPermissions
+ * @property {boolean} superAdmin - Indicates if the user is a super admin.
+ * @property {string} [resource] - The resource being accessed.
+ * @property {string} [org] - The organization being accessed.
+ * @property {string} [invoice] - The invoice being accessed.
+ * @property {string} [report] - The report being accessed.
+ *
+ * @typedef {Object} User
+ * @property {string} id - The user ID.
+ * @property {boolean} superAdmin - Indicates if the user is a super admin.
+ */
 const authPlugin = (app: Elysia) =>
   app
     .use(bearer())
@@ -225,7 +293,7 @@ const authPlugin = (app: Elysia) =>
         }
 
         if (!bearer) {
-          throw new UnauthorizedError("Unauthorized: Access token is missing!");
+          throw new UnauthorizedError("Access token is missing.");
         }
 
         const { data, error } = await supabaseClient.auth.getUser(bearer);

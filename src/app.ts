@@ -7,7 +7,6 @@ import config from "./config";
 import errorPlugin from "./plugins/error";
 import loggerPlugin from "./plugins/logger";
 import authRoutes from "./routes/auth";
-import protectedRoutes from "./routes/protected";
 
 import invoiceRouter from "@/routes/invoice";
 import orgRoutes from "@/routes/org";

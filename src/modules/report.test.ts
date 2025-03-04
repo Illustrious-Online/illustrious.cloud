@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User as IllustriousUser, Org, Report } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { postReport, deleteReport, getReport, putReport } from "./report";
+import { deleteReport, getReport, postReport, putReport } from "./report";
 
 const defaultContext: Context = {} as Context;
 const mockUser: IllustriousUser = {
@@ -197,9 +197,9 @@ describe("Report Module", () => {
         params: { report: mockReport.id },
       });
 
-      await expect(deleteReport(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        deleteReport(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 });

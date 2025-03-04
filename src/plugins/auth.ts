@@ -1,9 +1,9 @@
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
+  AuthParams,
   AuthPermissions,
   AuthPluginParams,
-  AuthParams,
 } from "@/domain/interfaces/auth";
 import type { CreateInvoice } from "@/domain/interfaces/invoices";
 import type { CreateOrg } from "@/domain/interfaces/orgs";
@@ -60,33 +60,30 @@ export const executePostChecks = async (
 
       permissions.org = {
         id,
-        role: findOrgUsers.find((orgUser) => orgUser.orgId === id)
-          ?.role ?? UserRole.CLIENT,
+        role:
+          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role ??
+          UserRole.CLIENT,
         create: findOrgUsers.length === 0,
       };
     } else {
       const orgId = params.org ?? (body as CreateUser).org;
 
       if (!orgId) {
-        throw new BadRequestError(
-          "Required Organization ID is missing.",
-        );
+        throw new BadRequestError("Required Organization ID is missing.");
       }
 
       const findOrgUsers = await db
         .select()
         .from(orgUser)
         .where(
-          and(
-            eq(orgUser.userId, currentUser.id),
-            eq(orgUser.orgId, orgId),
-          ),
+          and(eq(orgUser.userId, currentUser.id), eq(orgUser.orgId, orgId)),
         );
 
       permissions.org = {
         id,
-        role: findOrgUsers.find((orgUser) => orgUser.orgId === id)
-          ?.role ?? UserRole.CLIENT,
+        role:
+          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role ??
+          UserRole.CLIENT,
       };
     }
 
@@ -107,13 +104,13 @@ export const executePostChecks = async (
   const findOrgUsers = await db
     .select()
     .from(orgUser)
-    .where(
-      and(eq(orgUser.userId, currentUser.id), eq(orgUser.orgId, orgId)),
-    );
+    .where(and(eq(orgUser.userId, currentUser.id), eq(orgUser.orgId, orgId)));
 
   permissions.org = {
     id: orgId,
-    role: findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role ?? UserRole.CLIENT,
+    role:
+      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role ??
+      UserRole.CLIENT,
     create: findOrgUsers.length === 0,
   };
 
@@ -121,7 +118,7 @@ export const executePostChecks = async (
     user: currentUser,
     permissions,
   };
-}
+};
 
 /**
  * Executes organization checks for the current user and optionally for another user.
@@ -134,22 +131,18 @@ export const executePostChecks = async (
 export const executeOrgChecks = async (
   currentUser: User,
   orgId: string,
-  userId?: string
-): Promise<{ id: string, role: UserRole, managed?: boolean }> => {
+  userId?: string,
+): Promise<{ id: string; role: UserRole; managed?: boolean }> => {
   const findOrgUsers = await db
     .select()
     .from(orgUser)
-    .where(
-      and(
-        eq(orgUser.userId, currentUser.id),
-        eq(orgUser.orgId, orgId),
-      ),
-    );
+    .where(and(eq(orgUser.userId, currentUser.id), eq(orgUser.orgId, orgId)));
 
-  const permissions: { id: string; role: UserRole; managed?: boolean} = {
+  const permissions: { id: string; role: UserRole; managed?: boolean } = {
     id: orgId,
-    role: findOrgUsers.find((orgUser) => orgUser.orgId === orgId)
-      ?.role ?? UserRole.CLIENT,
+    role:
+      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role ??
+      UserRole.CLIENT,
   };
 
   if (userId) {
@@ -157,18 +150,14 @@ export const executeOrgChecks = async (
       .select()
       .from(orgUser)
       .innerJoin(user, eq(orgUser.userId, user.id))
-      .where(
-        and(
-          eq(orgUser.userId, userId),
-          eq(orgUser.orgId, orgId),
-        ),
-      );
+      .where(and(eq(orgUser.userId, userId), eq(orgUser.orgId, orgId)));
 
-    permissions.managed = findUserOrg.length === 1 && findUserOrg[0].User.managed;
+    permissions.managed =
+      findUserOrg.length === 1 && findUserOrg[0].User.managed;
   }
 
   return permissions;
-}
+};
 
 /**
  * Executes checks on an invoice to determine the current user's access, edit, and delete permissions.
@@ -179,16 +168,13 @@ export const executeOrgChecks = async (
  */
 export const executeInvoiceChecks = async (
   currentUser: User,
-  invoiceId: string
+  invoiceId: string,
 ): Promise<{ id: string; access: boolean; edit: boolean; delete: boolean }> => {
   const findInvoiceUser = await db
     .select()
     .from(userInvoice)
     .innerJoin(orgUser, eq(userInvoice.userId, orgUser.userId))
-    .innerJoin(
-      orgInvoice,
-      eq(userInvoice.invoiceId, orgInvoice.invoiceId),
-    )
+    .innerJoin(orgInvoice, eq(userInvoice.invoiceId, orgInvoice.invoiceId))
     .where(
       and(
         eq(userInvoice.invoiceId, invoiceId),
@@ -208,7 +194,7 @@ export const executeInvoiceChecks = async (
     edit: !!UserInvoice && role ? role > UserRole.CLIENT : false,
     delete: !!UserInvoice && role ? role > UserRole.EMPLOYEE : false,
   };
-}
+};
 
 /**
  * Executes report checks for the current user and a specified report.
@@ -219,7 +205,7 @@ export const executeInvoiceChecks = async (
  */
 export const executeReportChecks = async (
   currentUser: User,
-  reportId: string
+  reportId: string,
 ): Promise<{ id: string; access: boolean; edit: boolean; delete: boolean }> => {
   const findReportUser = await db
     .select()
@@ -245,7 +231,7 @@ export const executeReportChecks = async (
     edit: !!UserReport && role ? role > UserRole.CLIENT : false,
     delete: !!UserReport && role ? role > UserRole.EMPLOYEE : false,
   };
-}
+};
 
 /**
  * Authenticates and authorizes requests to the application.
@@ -328,16 +314,26 @@ const authPlugin = (app: Elysia) =>
           return await executePostChecks(currentUser, params, body, path);
         }
 
-        if (params.org) { 
-          permissions.org = await executeOrgChecks(currentUser, params.org, params.user);
+        if (params.org) {
+          permissions.org = await executeOrgChecks(
+            currentUser,
+            params.org,
+            params.user,
+          );
         }
 
         if (params.invoice) {
-          permissions.invoice = await executeInvoiceChecks(currentUser, params.invoice);
+          permissions.invoice = await executeInvoiceChecks(
+            currentUser,
+            params.invoice,
+          );
         }
 
         if (params.report) {
-          permissions.report = await executeReportChecks(currentUser, params.report);
+          permissions.report = await executeReportChecks(
+            currentUser,
+            params.report,
+          );
         }
 
         return {

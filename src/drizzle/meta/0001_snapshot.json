@@ -150,12 +150,8 @@
           "name": "OrgInvoice_invoiceId_Invoice_id_fk",
           "tableFrom": "OrgInvoice",
           "tableTo": "Invoice",
-          "columnsFrom": [
-            "invoiceId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invoiceId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -163,12 +159,8 @@
           "name": "OrgInvoice_orgId_Org_id_fk",
           "tableFrom": "OrgInvoice",
           "tableTo": "Org",
-          "columnsFrom": [
-            "orgId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["orgId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -176,10 +168,7 @@
       "compositePrimaryKeys": {
         "OrgInvoice_pkey": {
           "name": "OrgInvoice_pkey",
-          "columns": [
-            "orgId",
-            "invoiceId"
-          ]
+          "columns": ["orgId", "invoiceId"]
         }
       },
       "uniqueConstraints": {},
@@ -210,12 +199,8 @@
           "name": "OrgReport_orgId_Org_id_fk",
           "tableFrom": "OrgReport",
           "tableTo": "Org",
-          "columnsFrom": [
-            "orgId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["orgId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -223,12 +208,8 @@
           "name": "OrgReport_reportId_Report_id_fk",
           "tableFrom": "OrgReport",
           "tableTo": "Report",
-          "columnsFrom": [
-            "reportId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reportId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -236,10 +217,7 @@
       "compositePrimaryKeys": {
         "OrgReport_pkey": {
           "name": "OrgReport_pkey",
-          "columns": [
-            "orgId",
-            "reportId"
-          ]
+          "columns": ["orgId", "reportId"]
         }
       },
       "uniqueConstraints": {},
@@ -277,12 +255,8 @@
           "name": "OrgUser_orgId_Org_id_fk",
           "tableFrom": "OrgUser",
           "tableTo": "Org",
-          "columnsFrom": [
-            "orgId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["orgId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -290,12 +264,8 @@
           "name": "OrgUser_userId_User_id_fk",
           "tableFrom": "OrgUser",
           "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -303,10 +273,7 @@
       "compositePrimaryKeys": {
         "OrgUser_pkey": {
           "name": "OrgUser_pkey",
-          "columns": [
-            "userId",
-            "orgId"
-          ]
+          "columns": ["userId", "orgId"]
         }
       },
       "uniqueConstraints": {},
@@ -460,12 +427,8 @@
           "name": "UserInvoice_invoiceId_Invoice_id_fk",
           "tableFrom": "UserInvoice",
           "tableTo": "Invoice",
-          "columnsFrom": [
-            "invoiceId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invoiceId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -473,12 +436,8 @@
           "name": "UserInvoice_userId_User_id_fk",
           "tableFrom": "UserInvoice",
           "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -486,10 +445,7 @@
       "compositePrimaryKeys": {
         "UserInvoice_pkey": {
           "name": "UserInvoice_pkey",
-          "columns": [
-            "userId",
-            "invoiceId"
-          ]
+          "columns": ["userId", "invoiceId"]
         }
       },
       "uniqueConstraints": {},
@@ -520,12 +476,8 @@
           "name": "UserReport_reportId_Report_id_fk",
           "tableFrom": "UserReport",
           "tableTo": "Report",
-          "columnsFrom": [
-            "reportId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reportId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -533,12 +485,8 @@
           "name": "UserReport_userId_User_id_fk",
           "tableFrom": "UserReport",
           "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -546,10 +494,7 @@
       "compositePrimaryKeys": {
         "UserReport_pkey": {
           "name": "UserReport_pkey",
-          "columns": [
-            "userId",
-            "reportId"
-          ]
+          "columns": ["userId", "reportId"]
         }
       },
       "uniqueConstraints": {},

@@ -1,12 +1,20 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { postOrg, postOrgUser, getOrg, putOrg, putOrgUser, deleteOrg, getOrgResources } from "./org";
+import {
+  deleteOrg,
+  getOrg,
+  getOrgResources,
+  postOrg,
+  postOrgUser,
+  putOrg,
+  putOrgUser,
+} from "./org";
 
 let mockOrg = {
   id: faker.string.uuid(),
@@ -105,9 +113,9 @@ describe("Org Module", () => {
         },
       });
 
-      await expect(postOrgUser(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        postOrgUser(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 
@@ -164,8 +172,9 @@ describe("Org Module", () => {
         },
       });
 
-      await expect(getOrgResources(context as AuthenticatedContext))
-        .rejects.toThrow(UnauthorizedError);
+      await expect(
+        getOrgResources(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 
@@ -216,7 +225,7 @@ describe("Org Module", () => {
           firstName: "Managed",
           lastName: "User",
         },
-      }); 
+      });
 
       await expect(putOrgUser(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
@@ -235,7 +244,7 @@ describe("Org Module", () => {
           firstName: "Updated",
           lastName: "User",
         },
-      }); 
+      });
 
       const response = await putOrgUser(context as AuthenticatedContext);
 

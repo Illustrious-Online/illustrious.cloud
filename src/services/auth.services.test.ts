@@ -1,15 +1,11 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import config from "@/config"; // Adjust the import path as necessary
 import { supabaseClient } from "@/app";
+import config from "@/config"; // Adjust the import path as necessary
 import ServerError from "@/domain/exceptions/ServerError";
 import type { User as IllustriousUser } from "@/drizzle/schema";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
-import {
-  AuthError,
-  type Provider,
-  type User,
-} from "@supabase/auth-js";
+import { AuthError, type Provider, type User } from "@supabase/auth-js";
 import type { Context } from "elysia";
 import { vi } from "vitest";
 import { oauthCallback, signInWithOAuth, signOut } from "./auth";
@@ -38,7 +34,7 @@ describe("auth service", () => {
 
       expect(result).toEqual({
         provider,
-        url: mockUrl
+        url: mockUrl,
       });
       expect(supabaseClient.auth.signInWithOAuth).toHaveBeenCalledWith({
         provider,
@@ -93,23 +89,19 @@ describe("auth service", () => {
         managed: false,
         superAdmin: false,
       };
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue(
-        {
-          ...defaultContext,
-          data: {
-            user: mockUser,
-          },
-          error: null,
+      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+        ...defaultContext,
+        data: {
+          user: mockUser,
         },
-      );
+        error: null,
+      });
       vi.spyOn(userService, "fetchUser").mockResolvedValue(mockFetchedUser);
 
       const result = await oauthCallback(code);
 
       expect(result).toBe(mockFetchedUser);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(
-        code,
-      );
+      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });
     });
 
@@ -139,13 +131,11 @@ describe("auth service", () => {
         managed: false,
         superAdmin: false,
       };
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue(
-        {
-          ...defaultContext,
-          data: { user: mockUser },
-          error: null,
-        },
-      );
+      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+        ...defaultContext,
+        data: { user: mockUser },
+        error: null,
+      });
       vi.spyOn(userService, "fetchUser").mockRejectedValue(
         new Error("User not found"),
       );
@@ -154,9 +144,7 @@ describe("auth service", () => {
       const result = await oauthCallback(code);
 
       expect(result).toBe(mockNewUser);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(
-        code,
-      );
+      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });
       expect(userService.updateOrCreate).toHaveBeenCalled();
     });
@@ -164,20 +152,16 @@ describe("auth service", () => {
     it("should throw ServerError if code exchange fails", async () => {
       const code = "auth_code";
       const mockError = new AuthError("Code exchange failed");
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue(
-        {
-          ...defaultContext,
-          data: {
-            user: null,
-          },
-          error: mockError,
+      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+        ...defaultContext,
+        data: {
+          user: null,
         },
-      );
+        error: mockError,
+      });
 
       await expect(oauthCallback(code)).rejects.toThrow(ServerError);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(
-        code,
-      );
+      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
     });
   });
 

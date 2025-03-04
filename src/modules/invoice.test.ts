@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type { Invoice, Org, User } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { postInvoice, deleteInvoice, getInvoice, putInvoice } from "./invoice";
+import { deleteInvoice, getInvoice, postInvoice, putInvoice } from "./invoice";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {
@@ -100,9 +100,9 @@ describe("Invoice Module", () => {
         body: { client: mockUser.id, org: mockOrg.id, invoice: mockInvoice },
       });
 
-      await expect(postInvoice(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        postInvoice(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 
@@ -208,9 +208,9 @@ describe("Invoice Module", () => {
         params: { invoice: mockInvoice.id },
       });
 
-      await expect(deleteInvoice(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        deleteInvoice(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 });

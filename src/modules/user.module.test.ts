@@ -9,6 +9,8 @@ import {
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as invoiceService from "@/services/invoice";
@@ -19,7 +21,6 @@ import { faker } from "@faker-js/faker";
 import axios from "axios";
 import type { Context } from "elysia";
 import { vi } from "vitest";
-import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import {
   type UserDetails,
   deleteUser,
@@ -28,7 +29,6 @@ import {
   me,
   putUser,
 } from "./user";
-import { UserRole } from "@/domain/types/UserRole";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {
@@ -153,7 +153,7 @@ describe("User Module", () => {
           },
           params: {
             by: "id",
-          }
+          },
         } as AuthenticatedContext),
       ).rejects.toThrow(BadRequestError);
     });
@@ -186,7 +186,8 @@ describe("User Module", () => {
     });
 
     it("should throw UnauthorizedError if user does not have permission", async () => {
-      await expect(putUser({
+      await expect(
+        putUser({
           ...defaultContext,
           user: secondUser,
           permissions: {
@@ -195,7 +196,7 @@ describe("User Module", () => {
               id: mockOrg.id,
               role: UserRole.CLIENT,
               allowed: false,
-            }
+            },
           },
           body: {
             ...mockUser,
@@ -219,7 +220,8 @@ describe("User Module", () => {
     });
 
     it("should throw UnauthorizedError if user does not have permission", async () => {
-      await expect(deleteUser({
+      await expect(
+        deleteUser({
           ...defaultContext,
           user: secondUser,
           permissions: {

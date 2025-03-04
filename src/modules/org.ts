@@ -94,7 +94,7 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
   const {
     params: { org: orgId, user: userId },
     permissions: { superAdmin, org },
-    query
+    query,
   } = context;
 
   if (!org?.role) {
@@ -161,7 +161,10 @@ export const putOrgUser = async (context: AuthenticatedContext) => {
   const { body, permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if ((!superAdmin && org?.role && org?.role < UserRole.ADMIN) || !org?.managed) {
+  if (
+    (!superAdmin && org?.role && org?.role < UserRole.ADMIN) ||
+    !org?.managed
+  ) {
     throw new UnauthorizedError(
       "User does not have permission to update organization users.",
     );
@@ -172,8 +175,8 @@ export const putOrgUser = async (context: AuthenticatedContext) => {
   return {
     data,
     message: "Organization user updated successfully!",
-  }
-}
+  };
+};
 
 /**
  * Deletes an organization based on the provided context.

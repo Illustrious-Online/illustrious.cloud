@@ -80,9 +80,7 @@ jobs:
           export CURRENT_VERSION=$(jq -r '.version' package.json)
           echo "CURRENT_VERSION=${CURRENT_VERSION}" >> $GITHUB_ENV
           export NEXT_VERSION=$(bunx semantic-release --dry-run | grep 'The next release version is' | awk '{print $NF}')
-          echo $NEXT_VERSION
           echo "NEXT_VERSION=${NEXT_VERSION}" >> $GITHUB_ENV
-          bunx semantic-release --dry-run
       ### Push new versioned Docker image to registry
       - name: Push versioned Docker image to registry, if updated
         if: env.NEXT_VERSION != env.CURRENT_VERSION

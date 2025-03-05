@@ -16,12 +16,15 @@
   "scripts": {
     "dev": "bun run --watch ./src/app.ts",
     "build": "bun build ./src/app.ts --target node --outdir ./dist",
-    "start": "NODE_ENV=production bun ./src/app.ts",
-    "db:docker": "docker compose -f docker-compose.db.yml up",
+    "start": "concurrently \"bun run dev\" \"bun run db:start\"",
+    "db:start": "docker compose -f docker-compose.db.yml up -d && bun run db:migrate",
+    "db:stop": "docker stop illustriouscloud-postgres-1",
+    "db:migrate": "bunx drizzle-kit migrate",
     "db:reset": "./src/utils/reset-db.sh",
     "check": "bunx @biomejs/biome check ./src",
     "check:fix": "bunx @biomejs/biome check --write ./src",
-    "prepare": "bunx husky"
+    "prepare": "bunx husky",
+    "test:local": "bun run db:stop && bun run db:start && bun test"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -33,6 +36,7 @@
     "@tqman/nice-logger": "^1.1.1",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node-steam-openid": "^1.0.3",
+    "concurrently": "^9.1.2",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.39.2",
     "elysia": "latest",

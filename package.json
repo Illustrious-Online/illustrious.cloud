@@ -34,7 +34,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node-steam-openid": "^1.0.3",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.38.4",
+    "drizzle-orm": "^0.39.2",
     "elysia": "latest",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",

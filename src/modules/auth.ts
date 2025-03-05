@@ -6,6 +6,13 @@ import * as authService from "@/services/auth";
 import type { Provider } from "@supabase/supabase-js";
 import type { Context } from "elysia";
 
+/**
+ * Signs in a user using OAuth authentication.
+ *
+ * @param context - The context object containing parameters and redirect function.
+ * @throws {ConflictError} If the provider is not specified in the parameters.
+ * @throws {ServerError} If the authentication URL is not found.
+ */
 export const signInWithOAuth = async (context: Context) => {
   const { params, redirect } = context;
   const { provider } = params;
@@ -26,6 +33,13 @@ export const signInWithOAuth = async (context: Context) => {
   redirect(data.url);
 };
 
+/**
+ * Handles the OAuth callback by processing the authorization code received from the OAuth provider.
+ *
+ * @param context - The context object containing the query parameters.
+ * @returns A promise that resolves to a success response containing the authenticated user.
+ * @throws {ServerError} If the authorization code is not received from the OAuth provider.
+ */
 export const oauthCallback = async (
   context: Context,
 ): Promise<SuccessResponse<User>> => {
@@ -45,6 +59,12 @@ export const oauthCallback = async (
   };
 };
 
+/**
+ * Signs the user out by calling the authService's signOut method and then redirects to the home page.
+ *
+ * @param context - The context object which contains information about the current request and response.
+ * @returns A promise that resolves when the sign-out process and redirection are complete.
+ */
 export const signOut = async (context: Context) => {
   await authService.signOut();
   return context.redirect("/");

@@ -5,6 +5,13 @@ import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Report } from "@/drizzle/schema";
 import * as reportService from "@/services/report";
 
+/**
+ * Creates a new report for the organization.
+ *
+ * @param context - The authenticated context containing user and permissions information.
+ * @returns A promise that resolves to a success response containing the created report.
+ * @throws {UnauthorizedError} If the user does not have permission to create a report.
+ */
 export const postReport = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {
@@ -31,6 +38,13 @@ export const postReport = async (
   };
 };
 
+/**
+ * Fetches a report based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters and permissions.
+ * @returns A promise that resolves to a success response containing the report.
+ * @throws UnauthorizedError - If the user does not have permission to access the report.
+ */
 export const getReport = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {
@@ -50,6 +64,13 @@ export const getReport = async (
   };
 };
 
+/**
+ * Updates a report based on the provided context.
+ *
+ * @param context - The authenticated context containing the report data and user permissions.
+ * @returns A promise that resolves to a success response containing the updated report.
+ * @throws {UnauthorizedError} If the user does not have permission to update the report.
+ */
 export const putReport = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {
@@ -69,6 +90,13 @@ export const putReport = async (
   };
 };
 
+/**
+ * Deletes a report based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters and permissions.
+ * @returns A promise that resolves to a success response containing a message.
+ * @throws UnauthorizedError - If the user does not have permission to delete the report.
+ */
 export const deleteReport = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Report>> => {

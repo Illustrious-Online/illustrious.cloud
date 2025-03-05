@@ -1,6 +1,7 @@
 import { NotFoundError } from "elysia";
 
 import ConflictError from "@/domain/exceptions/ConflictError";
+import ServerError from "@/domain/exceptions/ServerError";
 import type { CreateInvoice } from "@/domain/interfaces/invoices";
 import { db } from "@/drizzle/db";
 import {
@@ -12,12 +13,15 @@ import {
 import { and, eq } from "drizzle-orm";
 
 /**
- * Creates a new Invoice.
+ * Creates a new invoice in the database.
  *
- * @param payload - The Invoice data to be created.
- * @returns {Promise<Invoice>} A promise that resolves to the created Invoice.
- * @throws {ConflictError} If an Invoice with the same data already exists.
- * @throws {Error} If an error occurs while creating the Invoice.
+ * @param payload - The payload containing the invoice details and associated entities.
+ * @param payload.client - The client associated with the invoice.
+ * @param payload.creator - The creator of the invoice.
+ * @param payload.org - The organization associated with the invoice.
+ * @param payload.invoice - The invoice details.
+ * @returns A promise that resolves to the created invoice.
+ * @throws {ConflictError} If an invoice with the same ID already exists.
  */
 export async function createInvoice(payload: CreateInvoice): Promise<Invoice> {
   const { client, creator, org, invoice: payloadInvoice } = payload;
@@ -30,6 +34,12 @@ export async function createInvoice(payload: CreateInvoice): Promise<Invoice> {
     throw new ConflictError("The invoice already exists.");
   }
 
+  payloadInvoice.createdAt = payloadInvoice.createdAt
+    ? new Date(payloadInvoice.createdAt)
+    : new Date();
+  payloadInvoice.start = new Date(payloadInvoice.start);
+  payloadInvoice.end = new Date(payloadInvoice.end);
+  payloadInvoice.due = new Date(payloadInvoice.due);
   const result = await db.insert(invoice).values(payloadInvoice).returning();
 
   for (const role of [client, creator]) {
@@ -48,10 +58,11 @@ export async function createInvoice(payload: CreateInvoice): Promise<Invoice> {
 }
 
 /**
- * Fetches an Invoice by id.
+ * Fetches an invoice by its ID.
  *
- * @param payload - The id of the Invoice to fetch; optional userId to validate relationship.
- * @returns {Promise<Invoice>} A promise that resolves the Invoice object.
+ * @param id - The unique identifier of the invoice to fetch.
+ * @returns A promise that resolves to the fetched invoice.
+ * @throws NotFoundError if the invoice is not found.
  */
 export async function fetchInvoice(id: string): Promise<Invoice> {
   const data = await db.select().from(invoice).where(eq(invoice.id, id));
@@ -64,10 +75,12 @@ export async function fetchInvoice(id: string): Promise<Invoice> {
 }
 
 /**
- * Updates an invoice.
+ * Updates an existing invoice in the database.
  *
- * @param payload - The new Invoice data to update.
- * @returns {Promise<Invoice>} A promise that resolves to an Invoice object.
+ * @param payload - The invoice data to update.
+ * @returns A promise that resolves to the updated invoice.
+ * @throws {NotFoundError} If the invoice with the given ID is not found.
+ * @throws {ServerError} If the database update operation fails.
  */
 export async function updateInvoice(payload: Invoice): Promise<Invoice> {
   const { id, paid, price, start, end, due, updatedAt } = payload;
@@ -77,7 +90,7 @@ export async function updateInvoice(payload: Invoice): Promise<Invoice> {
     .where(eq(invoice.id, id));
 
   if (!foundInvoice) {
-    throw new ConflictError("Could not find the report.");
+    throw new NotFoundError("Could not find the invoice.");
   }
 
   const result = await db
@@ -94,17 +107,22 @@ export async function updateInvoice(payload: Invoice): Promise<Invoice> {
     .returning();
 
   if (result.length === 0) {
-    throw new ConflictError("Failed to return response on update.");
+    throw new ServerError("Failed to update the database.", 503);
   }
 
   return result[0];
 }
 
 /**
- * Removes an invoice and relationships.
+ * Removes an invoice from the database by its ID.
  *
- * @param invoiceId - The Invoice ID to be removed.
- * @throws {ConflictError} If a user with the same data already exists.
+ * This function deletes the invoice from three different tables:
+ * - `userInvoice`
+ * - `orgInvoice`
+ * - `invoice`
+ *
+ * @param invoiceId - The ID of the invoice to be removed.
+ * @returns A promise that resolves when the invoice has been removed.
  */
 export async function removeInvoice(invoiceId: string): Promise<void> {
   await db.delete(userInvoice).where(eq(userInvoice.invoiceId, invoiceId));

@@ -66,12 +66,10 @@ export async function updateOrCreate(
 /**
  * Fetches a user from the database based on the provided payload.
  *
- * @param payload - An object containing user identification details. It must have at least one of the following properties:
- * - `id`: The unique identifier of the user.
- * - `email`: The email address of the user.
- * - `identifier`: Another unique identifier for the user.
- *
+ * @param payload - An object containing the key-value pair to search for the user.
  * @returns A promise that resolves to an `IllustriousUser` object.
+ *
+ * @throws Will throw an error if the database query fails.
  */
 export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
   const key = Object.keys(payload)[0] as keyof FetchUser;
@@ -82,15 +80,18 @@ export async function fetchUser(payload: FetchUser): Promise<IllustriousUser> {
 }
 
 /**
- * Fetches specified resources for a given user.
+ * Fetches resources associated with a user.
  *
- * @param id - The ID of the user whose resources are to be fetched.
+ * @param id - The ID of the user.
  * @param resources - An array of resource types to fetch (e.g., "reports", "invoices", "orgs").
+ * @param orgId - (Optional) The ID of the organization to filter the resources by.
  * @returns A promise that resolves to an object containing the requested resources.
- *          The object may contain the following properties:
- *          - `reports`: An array of `Report` objects if "reports" is included in the resources.
- *          - `invoices`: An array of `Invoice` objects if "invoices" is included in the resources.
- *          - `orgs`: An array of `Org` objects if "orgs" is included in the resources.
+ *
+ * The returned object may contain the following properties:
+ * - `orgId` (optional): The ID of the organization.
+ * - `reports` (optional): An array of `Report` objects associated with the user.
+ * - `invoices` (optional): An array of `Invoice` objects associated with the user.
+ * - `orgs` (optional): An array of `Org` objects associated with the user.
  */
 export async function fetchResources(
   id: string,
@@ -115,40 +116,34 @@ export async function fetchResources(
 
   if (resources.includes("reports")) {
     const usersReports = await db
-      .select()
-      .from(userReport)
-      .innerJoin(orgReport, eq(orgReport.reportId, userReport.reportId))
-      .innerJoin(report, eq(userReport.reportId, report.id))
-      .where(
-        and(
-          eq(userReport.userId, id),
-          eq(userReport.reportId, orgReport.reportId),
-          eq(report.id, userReport.reportId),
-        ),
-      );
+      .select({
+        report: report,
+        orgReport: orgReport,
+      })
+      .from(report)
+      .innerJoin(userReport, eq(report.id, userReport.reportId))
+      .leftJoin(orgReport, eq(orgReport.reportId, userReport.reportId))
+      .where(eq(userReport.userId, id));
 
     result.reports = usersReports
-      .filter((r) => !orgId || r.OrgReport.orgId === orgId)
-      .map((result) => result.Report);
+      .filter((r) => !orgId || r.orgReport?.orgId === orgId)
+      .map((result) => result.report);
   }
 
   if (resources.includes("invoices")) {
     const usersInvoices = await db
-      .select()
-      .from(userInvoice)
-      .innerJoin(orgInvoice, eq(orgInvoice.invoiceId, userInvoice.invoiceId))
-      .innerJoin(invoice, eq(userInvoice.invoiceId, report.id))
-      .where(
-        and(
-          eq(userInvoice.userId, id),
-          eq(userInvoice.invoiceId, orgInvoice.invoiceId),
-          eq(invoice.id, userInvoice.invoiceId),
-        ),
-      );
+      .select({
+        invoice: invoice,
+        orgInvoice: orgInvoice,
+      })
+      .from(invoice)
+      .innerJoin(userInvoice, eq(invoice.id, userInvoice.invoiceId))
+      .leftJoin(orgInvoice, eq(orgInvoice.invoiceId, userInvoice.invoiceId))
+      .where(eq(userInvoice.userId, id));
 
     result.invoices = usersInvoices
-      .filter((i) => !orgId || i.OrgInvoice.orgId === orgId)
-      .map((result) => result.Invoice);
+      .filter((i) => !orgId || i.orgInvoice?.orgId === orgId)
+      .map((result) => result.invoice);
   }
 
   if (resources.includes("orgs")) {
@@ -166,14 +161,20 @@ export async function fetchResources(
 /**
  * Updates a user in the database with the provided payload.
  *
- * @param payload - An object containing the user details to be updated.
- * @param payload.id - The unique identifier of the user.
- * @param payload.email - The email address of the user.
- * @param payload.firstName - The first name of the user.
- * @param payload.lastName - The last name of the user.
- * @param payload.picture - The URL of the user's profile picture.
- * @param payload.phone - The phone number of the user.
+ * @param payload - An object containing the user's updated information.
  * @returns A promise that resolves to the updated user object.
+ *
+ * @example
+ * ```typescript
+ * const updatedUser = await updateUser({
+ *   id: '123',
+ *   email: 'newemail@example.com',
+ *   firstName: 'John',
+ *   lastName: 'Doe',
+ *   picture: 'newpictureurl',
+ *   phone: '123-456-7890'
+ * });
+ * ```
  */
 export async function updateUser(
   payload: IllustriousUser,
@@ -195,19 +196,14 @@ export async function updateUser(
 }
 
 /**
- * Removes a user from the database.
- *
- * This function performs several checks before removing the user:
- * 1. Verifies if the user exists.
- * 2. Checks if the user has any unpaid invoices.
- * 3. Ensures the user is not an owner of any organization.
- *
- * If any of these checks fail, a `ConflictError` is thrown.
- * If the environment is not "test", an additional request is made to an external service to delete the user.
+ * Removes a user from the database and performs necessary checks before deletion.
  *
  * @param userId - The ID of the user to be removed.
- * @param identifier - An identifier for the user, used in the external service request.
- * @throws {ConflictError} If the user does not exist, has unpaid invoices, or is an owner of an organization.
+ * @param identifier - The identifier of the user to be used in the external request.
+ * @throws {ConflictError} If the user could not be found with the provided details.
+ * @throws {ConflictError} If the user has existing reports.
+ * @throws {ConflictError} If the user has unpaid invoices.
+ * @throws {ConflictError} If the user is an owner of an organization.
  * @returns {Promise<void>} A promise that resolves when the user is successfully removed.
  */
 export async function removeUser(
@@ -220,6 +216,15 @@ export async function removeUser(
     throw new ConflictError(
       "User could not be found with the provided details",
     );
+  }
+
+  const existingReports = await db
+    .select()
+    .from(report)
+    .innerJoin(userReport, eq(userReport.userId, userId));
+
+  if (existingReports.length > 0) {
+    throw new ConflictError("User has existing reports");
   }
 
   const unpaidInvoices = await db
@@ -257,9 +262,9 @@ export async function removeUser(
 /**
  * Links a Steam account to the user's profile.
  *
- * @param {boolean} [authenticate] - If true, the function will authenticate the user with Steam.
- * @returns {Promise<{ url?: string; message?: string }>} A promise that resolves to an object containing the URL for Steam authentication or a message.
- * @throws {ServerError} Throws an error if the server responds with a status of 500.
+ * @param {boolean} [authenticate] - Optional flag to indicate if authentication is required.
+ * @returns {Promise<{ url?: string; message?: string }>} - A promise that resolves to an object containing the URL or a message.
+ * @throws {ServerError} - Throws an error if the server responds with a status of 500.
  */
 export async function linkSteam(
   authenticate?: boolean,

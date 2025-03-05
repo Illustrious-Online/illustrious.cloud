@@ -46,6 +46,7 @@ export const app = new Elysia()
           title: "Illustrious Cloud API Docs",
           version: config.app.version,
         },
+        security: [{ bearerAuth: [] }],
         components: {
           securitySchemes: {
             bearerAuth: {

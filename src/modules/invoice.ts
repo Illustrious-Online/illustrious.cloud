@@ -10,7 +10,7 @@ import * as invoiceService from "@/services/invoice";
  *
  * @param context - The authenticated context containing user and permissions information.
  * @returns A promise that resolves to a success response containing the created invoice.
- * @throws UnauthorizedError - If the user does not have permission to create an invoice.
+ * @throws {UnauthorizedError} If the user does not have permission to create an invoice.
  */
 export const postInvoice = async (
   context: AuthenticatedContext,
@@ -39,11 +39,11 @@ export const postInvoice = async (
 };
 
 /**
- * Fetches a single invoice based on the provided context.
+ * Fetches an invoice based on the provided context.
  *
- * @param {AuthenticatedContext} context - The context containing authentication and authorization information.
- * @returns {Promise<{ data: any; message: string }>} The fetched invoice data and a success message.
- * @throws {UnauthorizedError} If the user does not have permission to access the invoice.
+ * @param context - The authenticated context containing parameters and permissions.
+ * @returns A promise that resolves to a success response containing the invoice.
+ * @throws UnauthorizedError - If the user does not have permission to access the invoice.
  */
 export const getInvoice = async (
   context: AuthenticatedContext,
@@ -65,10 +65,10 @@ export const getInvoice = async (
 };
 
 /**
- * Updates an invoice based on the provided context.
+ * Updates an invoice.
  *
- * @param context - The authenticated context containing the invoice data and user permissions.
- * @returns An object containing the updated invoice data and a success message.
+ * @param context - The authenticated context containing the request body and user permissions.
+ * @returns A promise that resolves to a success response containing the updated invoice.
  * @throws {UnauthorizedError} If the user does not have permission to update the invoice.
  */
 export const putInvoice = async (
@@ -91,11 +91,11 @@ export const putInvoice = async (
 };
 
 /**
- * Deletes a single invoice based on the provided context.
+ * Deletes an invoice based on the provided context.
  *
- * @param {AuthenticatedContext} context - The context containing authentication and authorization information.
- * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a success message.
- * @throws {UnauthorizedError} If the user does not have permission to delete the invoice.
+ * @param context - The authenticated context containing parameters and permissions.
+ * @returns A promise that resolves to a success response with a message indicating the invoice was deleted successfully.
+ * @throws UnauthorizedError - If the user does not have permission to delete the invoice.
  */
 export const deleteInvoice = async (
   context: AuthenticatedContext,

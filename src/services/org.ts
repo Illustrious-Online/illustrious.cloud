@@ -20,12 +20,11 @@ import {
 import { and, eq } from "drizzle-orm";
 
 /**
- * Creates a new Organization.
+ * Creates a new organization.
  *
- * @param payload - The Organization data to be created.
- * @returns {Promise<Org>} A promise that resolves to the created Organization.
- * @throws {ConflictError} If an Organization with the same data already exists.
- * @throws {Error} If an error occurs while creating the Organization.
+ * @param payload - The payload containing the user and organization details.
+ * @returns A promise that resolves to the newly created organization.
+ * @throws {ConflictError} If the organization already exists or if the creation fails.
  */
 export async function createOrg(payload: CreateOrg): Promise<Org> {
   const { user, org: payloadOrg } = payload;
@@ -51,10 +50,11 @@ export async function createOrg(payload: CreateOrg): Promise<Org> {
 }
 
 /**
- * Fetches an Organization by id.
+ * Fetches an organization by its ID.
  *
- * @param payload - The id of the Organization to fetch.
- * @returns {Promise<Org>} A promise that resolves the Organization object.
+ * @param id - The ID of the organization to fetch.
+ * @returns A promise that resolves to the organization object.
+ * @throws NotFoundError - If no organization is found with the given ID.
  */
 export async function fetchOrg(id: string): Promise<Org> {
   const result = await db.select().from(org).where(eq(org.id, id));
@@ -67,7 +67,7 @@ export async function fetchOrg(id: string): Promise<Org> {
 }
 
 /**
- * Fetches organization resources based on the provided resource types.
+ * Fetches organization resources based on the provided resource types and optional user ID.
  *
  * @param id - The ID of the organization.
  * @param resource - An array of resource types to fetch (e.g., "reports", "invoices", "users").
@@ -85,7 +85,7 @@ export async function fetchOrgResources(
   resource: string[],
   userId?: string,
 ): Promise<OrgDetails> {
-  const resources: OrgDetails = { id };
+  const resources: OrgDetails = {};
 
   if (resource.includes("reports")) {
     const orgsReports = await db
@@ -133,7 +133,7 @@ export async function fetchOrgResources(
         userId: i.UserInvoice.userId,
         role: i.OrgUser.role,
       }));
-    }
+  }
 
   if (resource.includes("users")) {
     const orgsUsers = await db
@@ -152,10 +152,10 @@ export async function fetchOrgResources(
 }
 
 /**
- * Updates an Organization.
+ * Updates an organization with the given payload.
  *
- * @param payload - The new Organization data to update.
- * @returns {Promise<Org>} A promise that resolves to an Organization object.
+ * @param payload - The organization data to update.
+ * @returns A promise that resolves to the updated organization.
  */
 export async function updateOrg(payload: Org): Promise<Org> {
   const { id, name, contact } = payload;
@@ -172,11 +172,19 @@ export async function updateOrg(payload: Org): Promise<Org> {
 }
 
 /**
- * Removes an Organization and all related resources.
+ * Removes an organization and its associated data from the database.
  *
- * @param userId - The User ID for current user.
- * @param id - The Organization ID to be removed.
- * @throws {ConflictError} If an Organization is not allowed to be removed.
+ * This function performs the following steps:
+ * 1. Retrieves the organization by its ID.
+ * 2. Throws a `ConflictError` if the organization is not found.
+ * 3. Retrieves and deletes all invoices associated with the organization.
+ * 4. Retrieves and deletes all reports associated with the organization.
+ * 5. Deletes all user associations with the organization.
+ * 6. Deletes the organization itself.
+ *
+ * @param id - The ID of the organization to be removed.
+ * @throws {ConflictError} If the organization is not found.
+ * @returns A promise that resolves when the organization and its associated data are removed.
  */
 export async function removeOrg(id: string): Promise<void> {
   const orgsList = await db.select().from(org).where(eq(org.id, id));

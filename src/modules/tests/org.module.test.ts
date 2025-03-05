@@ -9,7 +9,6 @@ import type { Context } from "elysia";
 import {
   deleteOrg,
   getOrg,
-  getOrgResources,
   postOrg,
   postOrgUser,
   putOrg,
@@ -123,12 +122,24 @@ describe("Org Module", () => {
     it("should fetch organization details successfully", async () => {
       const context = mockContext({
         params: { org: mockOrg.id },
-        query: { include: "invoices=true, reports=true, users=true" },
+        query: { include: "invoices,reports,users" },
       });
       const response = await getOrg(context as AuthenticatedContext);
 
       expect(response).toEqual({
-        data: mockOrg,
+        data: {
+          org: mockOrg,
+          details: {
+            invoices: [],
+            reports: [],
+            users: [
+              {
+                orgUser: mockUser,
+                role: UserRole.OWNER,
+              },
+            ],
+          },
+        },
         message: "Organization & details fetched successfully!",
       });
     });
@@ -138,43 +149,13 @@ describe("Org Module", () => {
         user: mockClient,
         permissions: {
           superAdmin: false,
-          org: { id: mockOrg.id, role: UserRole.CLIENT },
+          org: { id: mockOrg.id, role: null },
         },
       });
 
       await expect(getOrg(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
-    });
-  });
-
-  describe("fetchResources", () => {
-    it("should fetch organization resources successfully", async () => {
-      const context = mockContext({
-        params: { org: mockOrg.id, resource: "invoices" },
-        query: { include: "invoices" },
-      });
-
-      const response = await getOrgResources(context as AuthenticatedContext);
-
-      expect(response).toEqual({
-        data: { id: mockOrg.id, invoices: [] },
-        message: "Organization resources fetched successfully!",
-      });
-    });
-
-    it("should throw UnauthorizedError if user does not have permission", async () => {
-      const context = mockContext({
-        user: mockClient,
-        permissions: {
-          superAdmin: false,
-          org: { org: mockOrg.id, role: UserRole.CLIENT },
-        },
-      });
-
-      await expect(
-        getOrgResources(context as AuthenticatedContext),
-      ).rejects.toThrow(UnauthorizedError);
     });
   });
 

@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from "uuid";
  * Signs in a user using OAuth with the specified provider.
  *
  * @param {Provider} provider - The OAuth provider to use for sign-in.
- * @returns {Promise<{ provider: Provider; url: string; }>} A promise that resolves to an object containing the provider and the URL for the OAuth sign-in.
+ * @returns {Promise<{ provider: Provider; url: string }>} A promise that resolves to an object containing the provider and the URL for redirection.
  * @throws {ServerError} If there is an error during the sign-in process.
  */
 export async function signInWithOAuth(provider: Provider): Promise<{
@@ -32,11 +32,12 @@ export async function signInWithOAuth(provider: Provider): Promise<{
 }
 
 /**
- * Handles the OAuth callback by exchanging the provided code for a session and fetching or creating a user.
+ * Handles the OAuth callback by retrieving the user information using the provided bearer token.
+ * If the user does not exist, it creates a new user with the provided information.
  *
- * @param {string} code - The authorization code received from the OAuth provider.
- * @returns {Promise<User>} - A promise that resolves to the authenticated user.
- * @throws {ServerError} - Throws an error if the code exchange fails.
+ * @param {string} bearer - The bearer token used to authenticate and retrieve the user information.
+ * @returns {Promise<User>} - A promise that resolves to the user object.
+ * @throws {ServerError} - Throws a ServerError if there is an error retrieving the user information.
  */
 export async function oauthCallback(bearer: string): Promise<User> {
   const { data, error } = await supabaseClient.auth.getUser(bearer);
@@ -69,9 +70,8 @@ export async function oauthCallback(bearer: string): Promise<User> {
 /**
  * Signs the user out from the application.
  *
- * This function uses the Supabase client to sign the user out. If an error occurs
- * during the sign-out process, a `ServerError` is thrown with the error message
- * and a status code of 500.
+ * This function uses the Supabase client to sign the user out. If an error occurs during the sign-out process,
+ * a `ServerError` is thrown with the error message and a status code of 500.
  *
  * @throws {ServerError} If there is an error during the sign-out process.
  * @returns {Promise<void>} A promise that resolves when the sign-out process is complete.

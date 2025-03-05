@@ -33,7 +33,7 @@ export const postOrg = async (
  *
  * @param context - The authenticated context containing the request body and user permissions.
  * @returns A promise that resolves to a success response containing the created or updated user.
- * @throws {UnauthorizedError} If the user does not have permission to create organization users.
+ * @throws UnauthorizedError - If the user does not have permission to create organization users.
  */
 export const postOrgUser = async (
   context: AuthenticatedContext,
@@ -56,80 +56,43 @@ export const postOrgUser = async (
 };
 
 /**
- * Fetches the organization details based on the provided context.
+ * Fetches the organization and its details based on the provided context.
  *
- * @param context - The authenticated context containing parameters and permissions.
- * @returns A promise that resolves to a success response containing the organization details.
+ * @param context - The authenticated context containing parameters, permissions, and query information.
+ * @returns A promise that resolves to a success response containing the organization and optional details.
  * @throws UnauthorizedError - If the user does not have permission to fetch the organization.
  */
 export const getOrg = async (
   context: AuthenticatedContext,
-): Promise<SuccessResponse<Org>> => {
+): Promise<SuccessResponse<{ org: Org; details?: OrgDetails }>> => {
   const { org: orgParam } = context.params;
-  const { permissions } = context;
+  const { permissions, query } = context;
   const { superAdmin, org } = permissions;
 
-  if (!superAdmin && org?.id !== orgParam && org?.role === UserRole.CLIENT) {
+  if (!org?.role && !superAdmin) {
     throw new UnauthorizedError(
       "User does not have permission to fetch this organization.",
     );
   }
 
-  const data = await orgService.fetchOrg(orgParam);
-
-  return {
-    data,
-    message: "Organization & details fetched successfully!",
+  const result: { org: Org; details?: OrgDetails } = {
+    org: await orgService.fetchOrg(orgParam),
   };
-};
 
-/**
- * Fetches the resources for a given organization based on the user's context.
- *
- * @param context - The authenticated context containing user and organization details.
- * @returns An object containing the organization resources and a success message.
- * @throws {UnauthorizedError} If the user does not have permission to fetch organization resources.
- */
-export const getOrgResources = async (context: AuthenticatedContext) => {
-  const {
-    params: { org: orgId, user: userId },
-    permissions: { superAdmin, org },
-    query,
-  } = context;
-
-  if (!org?.role) {
-    throw new UnauthorizedError(
-      "User does not have permission to fetch organization resources.",
-    );
-  }
-
-  let result: OrgDetails | undefined;
-
-  if ((superAdmin || org.role > UserRole.EMPLOYEE)) {
-    const data = await orgService.fetchOrgResources(
-      orgId,
-      query.include?.split(","),
-      userId,
+  if (query.include) {
+    const resources = query.include.split(",");
+    const foundResources = await orgService.fetchOrgResources(
+      orgParam,
+      resources,
+      query.user,
     );
 
-    if (data) {
-      result = data;
-    }
-  }
-
-  if (!superAdmin && org?.role < UserRole.ADMIN) {
-    const data = await orgService.fetchOrgResources(
-      orgId,
-      query.include?.split(","),
-      userId,
-    );
-
-    result = data;
+    result.details = foundResources;
   }
 
   return {
     data: result,
-    message: "Organization resources fetched successfully!",
+    message: "Organization & details fetched successfully!",
   };
 };
 
@@ -137,8 +100,8 @@ export const getOrgResources = async (context: AuthenticatedContext) => {
  * Updates the organization details.
  *
  * @param context - The authenticated context containing the request body and permissions.
- * @returns An object containing the updated organization data and a success message.
  * @throws {UnauthorizedError} If the user does not have permission to update organization details.
+ * @returns An object containing the updated organization data and a success message.
  */
 export const putOrg = async (context: AuthenticatedContext) => {
   const body = context.body as Org;
@@ -157,6 +120,13 @@ export const putOrg = async (context: AuthenticatedContext) => {
   };
 };
 
+/**
+ * Updates or creates an organization user.
+ *
+ * @param {AuthenticatedContext} context - The authenticated context containing the request body and user permissions.
+ * @throws {UnauthorizedError} If the user does not have permission to update organization users.
+ * @returns {Promise<{ data: User, message: string }>} The updated or created user data and a success message.
+ */
 export const putOrgUser = async (context: AuthenticatedContext) => {
   const { body, permissions } = context;
   const { superAdmin, org } = permissions;

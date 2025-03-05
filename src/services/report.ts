@@ -7,12 +7,11 @@ import { db } from "@/drizzle/db";
 import { type Report, orgReport, report, userReport } from "@/drizzle/schema";
 
 /**
- * Creates a new Report.
+ * Creates a new report in the database.
  *
- * @param payload - The Report data to be created.
- * @returns {Promise<Report>} A promise that resolves to the created Report.
- * @throws {ConflictError} If an Report with the same data already exists.
- * @throws {Error} If an error occurs while creating the Report.
+ * @param payload - The data required to create a report, including client, creator, organization, and report details.
+ * @returns A promise that resolves to the created report.
+ * @throws ConflictError - If a report with the same ID already exists.
  */
 export async function createReport(payload: CreateReport): Promise<Report> {
   const { client, creator, org, report: payloadReport } = payload;
@@ -25,6 +24,7 @@ export async function createReport(payload: CreateReport): Promise<Report> {
     throw new ConflictError("The report already exists.");
   }
 
+  payloadReport.createdAt = new Date(payloadReport.createdAt);
   const result = await db.insert(report).values(payloadReport).returning();
 
   for (const role of [client, creator]) {
@@ -43,10 +43,11 @@ export async function createReport(payload: CreateReport): Promise<Report> {
 }
 
 /**
- * Fetches an Report by id.
+ * Fetches a report by its ID.
  *
- * @param payload - The id of the Report to fetch; optional userId to validate relationship.
- * @returns {Promise<Report>} A promise that resolves the Report object.
+ * @param id - The unique identifier of the report to fetch.
+ * @returns A promise that resolves to the fetched report.
+ * @throws NotFoundError - If no report is found with the given ID.
  */
 export async function fetchReport(id: string): Promise<Report> {
   const data = await db.select().from(report).where(eq(report.id, id));
@@ -59,10 +60,11 @@ export async function fetchReport(id: string): Promise<Report> {
 }
 
 /**
- * Updates a Report.
+ * Updates an existing report in the database.
  *
- * @param payload - The new Report object to update.
- * @returns {Promise<Report>} A promise that resolves to an Report object.
+ * @param payload - The report data to update, including the report ID, rating, and notes.
+ * @returns A promise that resolves to the updated report.
+ * @throws {ConflictError} If the report could not be found or if the update operation fails.
  */
 export async function updateReport(payload: Report): Promise<Report> {
   const { id, rating, notes } = payload;
@@ -89,13 +91,13 @@ export async function updateReport(payload: Report): Promise<Report> {
 }
 
 /**
- * Removes a Report and relationships.
+ * Removes a report and its associated user and organization reports from the database.
  *
- * @param invoiceId - The Report ID to be removed.
- * @throws {ConflictError} If a user with the same data already exists.
+ * @param reportId - The unique identifier of the report to be removed.
+ * @returns A promise that resolves when the report and its associations have been deleted.
  */
 export async function removeReport(reportId: string): Promise<void> {
-  db.delete(userReport).where(eq(userReport.reportId, reportId));
-  db.delete(orgReport).where(eq(orgReport.reportId, reportId));
-  db.delete(report).where(eq(report.id, reportId));
+  await db.delete(userReport).where(eq(userReport.reportId, reportId));
+  await db.delete(orgReport).where(eq(orgReport.reportId, reportId));
+  await db.delete(report).where(eq(report.id, reportId));
 }

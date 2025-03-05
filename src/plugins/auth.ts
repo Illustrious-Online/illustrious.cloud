@@ -1,14 +1,11 @@
-import BadRequestError from "@/domain/exceptions/BadRequestError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
   AuthParams,
   AuthPermissions,
   AuthPluginParams,
 } from "@/domain/interfaces/auth";
-import type { CreateInvoice } from "@/domain/interfaces/invoices";
-import type { CreateOrg } from "@/domain/interfaces/orgs";
-import type { CreateReport } from "@/domain/interfaces/reports";
-import type { CreateUser } from "@/domain/interfaces/users";
+import type { SubmitInvoice } from "@/domain/interfaces/invoices";
+import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
 import bearer from "@elysiajs/bearer";
 import { and, eq } from "drizzle-orm";
@@ -27,14 +24,13 @@ import {
 } from "../drizzle/schema";
 
 /**
- * Executes post-authentication checks and returns the current user along with their permissions.
+ * Executes post-authentication checks to determine user permissions based on the request path and body.
  *
  * @param currentUser - The current authenticated user.
- * @param params - The authentication parameters.
- * @param body - The request body.
- * @param path - The request path.
+ * @param params - Additional authentication parameters.
+ * @param body - The request body containing relevant data.
+ * @param path - The request path to determine the context of the check.
  * @returns A promise that resolves to an object containing the user and their permissions.
- * @throws {BadRequestError} If the required organization ID is missing.
  */
 export const executePostChecks = async (
   currentUser: User,
@@ -49,39 +45,16 @@ export const executePostChecks = async (
 
   if (path.includes("/org")) {
     const { id }: Org = body as Org;
+    const findOrgUsers = await db
+      .select()
+      .from(orgUser)
+      .where(eq(orgUser.userId, currentUser.id));
 
-    if (!path.includes("/user")) {
-      const findOrgUsers = await db
-        .select()
-        .from(orgUser)
-        .where(eq(orgUser.userId, currentUser.id));
-
-      permissions.org = {
-        id,
-        role:
-          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
-        create: findOrgUsers.length === 0,
-      };
-    } else {
-      const orgId = params.org ?? (body as CreateUser).org;
-
-      if (!orgId) {
-        throw new BadRequestError("Required Organization ID is missing.");
-      }
-
-      const findOrgUsers = await db
-        .select()
-        .from(orgUser)
-        .where(
-          and(eq(orgUser.userId, currentUser.id), eq(orgUser.orgId, orgId)),
-        );
-
-      permissions.org = {
-        id,
-        role:
-          findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
-      };
-    }
+    permissions.org = {
+      id,
+      role: findOrgUsers.find((orgUser) => orgUser.orgId === id)?.role,
+      create: findOrgUsers.length === 0,
+    };
 
     return {
       user: currentUser,
@@ -90,10 +63,10 @@ export const executePostChecks = async (
   }
 
   if (path.includes("/invoice")) {
-    const { org }: CreateInvoice = body as CreateInvoice;
+    const { org }: SubmitInvoice = body as SubmitInvoice;
     orgId = org;
   } else {
-    const { org }: CreateReport = body as CreateReport;
+    const { org }: SubmitReport = body as SubmitReport;
     orgId = org;
   }
 
@@ -104,8 +77,7 @@ export const executePostChecks = async (
 
   permissions.org = {
     id: orgId,
-    role:
-      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role,
+    role: findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role,
     create: findOrgUsers.length === 0,
   };
 
@@ -135,8 +107,8 @@ export const executeOrgChecks = async (
 
   const permissions: { id: string; role: UserRole; managed?: boolean } = {
     id: orgId,
-    role:
-      findOrgUsers.find((orgUser) => orgUser.orgId === orgId)?.role as UserRole,
+    role: findOrgUsers.find((orgUser) => orgUser.orgId === orgId)
+      ?.role as UserRole,
   };
 
   if (userId) {
@@ -191,10 +163,10 @@ export const executeInvoiceChecks = async (
 };
 
 /**
- * Executes report checks for the current user and a specified report.
+ * Executes checks on a report to determine the current user's permissions.
  *
- * @param currentUser - The current user object.
- * @param reportId - The ID of the report to check.
+ * @param currentUser - The user object representing the current user.
+ * @param reportId - The ID of the report to check permissions for.
  * @returns A promise that resolves to an object containing the report ID and the user's access, edit, and delete permissions.
  */
 export const executeReportChecks = async (
@@ -228,21 +200,18 @@ export const executeReportChecks = async (
 };
 
 /**
- * Authenticates and authorizes requests to the application.
+ * Auth plugin for the Elysia application.
  *
- * This plugin integrates with the Elysia framework to provide authentication
- * and authorization capabilities using bearer tokens. It performs various
- * checks to ensure that the user is authenticated and has the necessary
- * permissions to access the requested resources.
+ * This plugin handles authentication and authorization for incoming requests.
+ * It uses bearer token authentication and performs various checks to ensure
+ * that the user has the necessary permissions to access the requested resources.
  *
  * @param {Elysia} app - The Elysia application instance.
- * @returns {Elysia} The Elysia application instance with the authentication plugin applied.
+ * @returns {Elysia} - The Elysia application instance with the auth plugin applied.
  *
- * @throws {UnauthorizedError} If the bearer token is missing, invalid, or the user is not found.
+ * @throws {UnauthorizedError} If the access token is missing, invalid, or the user is not found.
  *
  * @example
- * // Usage in an Elysia application
- * const app = new Elysia();
  * app.use(authPlugin);
  *
  * @typedef {Object} AuthPluginParams
@@ -250,25 +219,40 @@ export const executeReportChecks = async (
  * @property {Object} body - The request body.
  * @property {string} path - The request path.
  * @property {Object} params - The request parameters.
- * @property {Request} request - The request object.
- *
- * @typedef {Object} AuthPermissions
- * @property {boolean} superAdmin - Indicates if the user is a super admin.
- * @property {string} [resource] - The resource being accessed.
- * @property {string} [org] - The organization being accessed.
- * @property {string} [invoice] - The invoice being accessed.
- * @property {string} [report] - The report being accessed.
+ * @property {Object} query - The request query parameters.
+ * @property {Object} request - The request object.
  *
  * @typedef {Object} User
  * @property {string} id - The user ID.
- * @property {boolean} superAdmin - Indicates if the user is a super admin.
+ * @property {boolean} superAdmin - Whether the user is a super admin.
+ *
+ * @typedef {Object} AuthPermissions
+ * @property {boolean} superAdmin - Whether the user is a super admin.
+ * @property {Object} [org] - Organization-specific permissions.
+ * @property {Object} [invoice] - Invoice-specific permissions.
+ * @property {Object} [report] - Report-specific permissions.
  */
 const authPlugin = (app: Elysia) =>
   app
     .use(bearer())
     .derive(
-      async ({ bearer, body, path, params, query, request }: AuthPluginParams) => {
-        if (path === "/auth" || path === "/" || path === "/favicon.ico") {
+      async ({
+        bearer,
+        body,
+        path,
+        params,
+        query,
+        request,
+      }: AuthPluginParams) => {
+        const firstPart = path.split("/")[1];
+        const allowedPaths = [
+          "auth",
+          "favicon.ico",
+          "docs",
+          "health",
+          "healthz",
+        ];
+        if (path === "/" || allowedPaths.includes(firstPart)) {
           return;
         }
 
@@ -296,34 +280,7 @@ const authPlugin = (app: Elysia) =>
           superAdmin: currentUser.superAdmin,
         };
 
-        if (path.includes("/me")) {
-          if (query?.org && query?.include) {
-            const findMyOrgUser = await db
-              .select()
-              .from(orgUser)
-              .where(eq(orgUser.userId, currentUser.id));
-
-            if (!findMyOrgUser.length) {
-              throw new UnauthorizedError(
-                "User does not have permission to this organization.",
-              );
-            }
-
-            permissions.org = {
-              id: query.org,
-              role:
-                findMyOrgUser.find((orgUser) => orgUser.orgId === query.org)
-                  ?.role,
-            };
-          }
-
-          return {
-            user: currentUser,
-            permissions,
-          };
-        }
-
-        if (path.includes("/user")) {
+        if (path.includes("/me") || path.includes("/user")) {
           return {
             user: currentUser,
             permissions,
@@ -338,7 +295,7 @@ const authPlugin = (app: Elysia) =>
           permissions.org = await executeOrgChecks(
             currentUser,
             params.org,
-            params.user,
+            query.user,
           );
         }
 

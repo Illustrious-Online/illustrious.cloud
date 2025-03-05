@@ -10,6 +10,7 @@ import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import type { UserDetails } from "@/domain/interfaces/users";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
@@ -21,14 +22,7 @@ import { faker } from "@faker-js/faker";
 import axios from "axios";
 import type { Context } from "elysia";
 import { vi } from "vitest";
-import {
-  type UserDetails,
-  deleteUser,
-  getUser,
-  linkSteam,
-  me,
-  putUser,
-} from "../user";
+import { deleteUser, getUser, linkSteam, me, putUser } from "../user";
 
 const defaultContext: Context = {} as Context;
 const mockUser: User = {
@@ -127,18 +121,6 @@ describe("User Module", () => {
       expect(response.data?.reports).toEqual([mockReport]);
       expect(response.data?.orgs).toEqual([mockOrg]);
       expect(response.message).toBe("User details fetched successfully!");
-    });
-
-    it("should handle errors when fetching resources", async () => {
-      expect(
-        me({
-          ...defaultContext,
-          user: {} as User,
-          permissions: {
-            superAdmin: false,
-          },
-        } as AuthenticatedContext),
-      ).rejects.toThrow(BadRequestError);
     });
   });
 

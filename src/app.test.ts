@@ -5,6 +5,7 @@ const url = `http://${config.app.host}:${config.app.port}`;
 
 beforeAll(async () => {
   await import("./app");
+  console.log("Starting server for app tests...");
   await new Promise((resolve) => setTimeout(resolve, 1500));
 });
 

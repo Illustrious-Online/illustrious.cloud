@@ -1,16 +1,20 @@
-import bearer from "@elysiajs/bearer";
 import cors from "@elysiajs/cors";
 import swagger from "@elysiajs/swagger";
+import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
 import { createClient } from "@supabase/supabase-js";
 import config from "./config";
 import errorPlugin from "./plugins/error";
-import loggerPlugin from "./plugins/logger";
 import authRoutes from "./routes/auth";
-import protectedRoutes from "./routes/protected";
+
+import invoiceRouter from "@/routes/invoice";
+import orgRoutes from "@/routes/org";
+import reportRouter from "@/routes/report";
+import userRoutes from "@/routes/user";
 
 import * as Sentry from "@sentry/bun";
+import authPlugin from "./plugins/auth";
 
 if (config.app.env === "production") {
   Sentry.init({
@@ -25,6 +29,15 @@ export const supabaseClient = createClient(
 );
 
 export const app = new Elysia()
+  .use(cors())
+  .use(
+    logger({
+      mode: "live",
+      withTimestamp: true,
+    }),
+  )
+  .use(errorPlugin)
+  .use(authPlugin)
   .use(
     swagger({
       path: "/docs",
@@ -33,7 +46,7 @@ export const app = new Elysia()
           title: "Illustrious Cloud API Docs",
           version: config.app.version,
         },
-        security: [{ JwtAuth: [] }],
+        security: [{ bearerAuth: [] }],
         components: {
           securitySchemes: {
             bearerAuth: {
@@ -49,16 +62,15 @@ export const app = new Elysia()
       },
     }),
   )
-  .use(cors())
-  .use(bearer())
-  .use(loggerPlugin)
-  .use(errorPlugin)
   .get("/", () => ({
     name: config.app.name,
     version: config.app.version,
   }))
   .use(authRoutes)
-  .use(protectedRoutes)
+  .use(userRoutes)
+  .use(orgRoutes)
+  .use(reportRouter)
+  .use(invoiceRouter)
   .listen(config.app.port, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(

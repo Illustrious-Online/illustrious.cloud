@@ -1,16 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
-import type { User as IllustriousUser, Org, Report } from "@/drizzle/schema";
-import type { AuthenticatedContext } from "@/plugins/auth";
+import type { Invoice, Org, User } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import type { Context } from "elysia";
-import { create, deleteOne, fetchOne, update } from "./report";
+import { deleteInvoice, getInvoice, postInvoice, putInvoice } from "../invoice";
 
 const defaultContext: Context = {} as Context;
-const mockUser: IllustriousUser = {
+const mockUser: User = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
   email: faker.internet.email(),
@@ -18,9 +18,10 @@ const mockUser: IllustriousUser = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
   superAdmin: true,
 };
-const secondUser: IllustriousUser = {
+const secondUser: User = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
   email: faker.internet.email(),
@@ -28,6 +29,7 @@ const secondUser: IllustriousUser = {
   lastName: null,
   picture: null,
   phone: null,
+  managed: false,
   superAdmin: false,
 };
 const mockOrg: Org = {
@@ -35,11 +37,21 @@ const mockOrg: Org = {
   name: faker.company.name(),
   contact: faker.internet.email(),
 };
-const mockReport: Report = {
+
+const date = new Date();
+const endDate = new Date();
+endDate.setDate(endDate.getDate() + 30);
+
+const mockInvoice: Invoice = {
   id: faker.string.uuid(),
-  createdAt: new Date(),
-  rating: 5,
-  notes: "Report 1 notes",
+  price: "100.23",
+  paid: false,
+  start: date,
+  end: endDate,
+  due: endDate,
+  createdAt: date,
+  updatedAt: null,
+  deletedAt: null,
 };
 const mockContext = (overrides = {}) => ({
   body: {},
@@ -53,28 +65,28 @@ const mockContext = (overrides = {}) => ({
   ...overrides,
 });
 
-describe("Report Module", () => {
+describe("Invoice Module", () => {
   beforeAll(async () => {
     await userService.updateOrCreate(mockUser);
     await userService.updateOrCreate(secondUser);
-    await orgService.create({ user: mockUser.id, org: mockOrg });
+    await orgService.createOrg({ user: mockUser.id, org: mockOrg });
   });
 
   afterAll(async () => {
-    await orgService.deleteOne(mockOrg.id);
-    await userService.deleteOne(mockUser.id, mockUser.identifier);
+    await orgService.removeOrg(mockOrg.id);
+    await userService.removeUser(mockUser.id, mockUser.identifier);
   });
 
   describe("create", () => {
-    it("should create a report if user has permission", async () => {
+    it("should create an invoice if user has permission", async () => {
       const context = mockContext({
-        body: { client: secondUser.id, org: mockOrg.id, report: mockReport },
+        body: { client: secondUser.id, org: mockOrg.id, invoice: mockInvoice },
       });
-      const result = await create(context as AuthenticatedContext);
+      const result = await postInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
-        data: mockReport,
-        message: "Report created successfully.",
+        data: mockInvoice,
+        message: "Invoice created successfully!",
       });
     });
 
@@ -85,27 +97,27 @@ describe("Report Module", () => {
           org: { id: mockOrg.id, role: UserRole.CLIENT },
         },
         user: secondUser,
-        body: { client: mockUser.id, org: mockOrg.id, report: mockReport },
+        body: { client: mockUser.id, org: mockOrg.id, invoice: mockInvoice },
       });
 
-      await expect(create(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        postInvoice(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 
   describe("fetchOne", () => {
-    it("should fetch a report if user has permission", async () => {
+    it("should fetch an invoice if user has permission", async () => {
       const context = mockContext({
         user: mockUser,
-        params: { report: mockReport.id },
+        params: { invoice: mockInvoice.id },
       });
 
-      const result = await fetchOne(context as AuthenticatedContext);
+      const result = await getInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
-        data: mockReport,
-        message: "Report fetched successfully.",
+        data: mockInvoice,
+        message: "Invoice fetched successfully!",
       });
     });
 
@@ -116,37 +128,39 @@ describe("Report Module", () => {
           org: { id: mockOrg.id, role: UserRole.CLIENT },
         },
         user: secondUser,
-        params: { report: mockReport.id },
+        params: { invoice: mockInvoice.id },
       });
 
-      await expect(fetchOne(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(getInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
   });
 
   describe("update", () => {
-    it("should update a report if user has permission", async () => {
+    it("should update an invoice if user has permission", async () => {
       const updatedAt = new Date();
       const context = mockContext({
         body: {
           client: secondUser.id,
           org: mockOrg.id,
-          report: {
-            ...mockReport,
-            rating: 4,
+          invoice: {
+            ...mockInvoice,
+            paid: true,
+            updatedAt,
           },
         },
       });
 
-      const result = await update(context as AuthenticatedContext);
+      const result = await putInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
         data: {
-          ...mockReport,
-          rating: 4,
+          ...mockInvoice,
+          paid: true,
+          updatedAt,
         },
-        message: "Report updated successfully.",
+        message: "Invoice updated successfully!",
       });
     });
 
@@ -160,28 +174,27 @@ describe("Report Module", () => {
         body: {
           client: mockUser.id,
           org: mockOrg.id,
-          report: {
-            ...mockReport,
-            rating: 4,
+          invoice: {
+            paid: true,
           },
         },
       });
 
-      await expect(update(context as AuthenticatedContext)).rejects.toThrow(
+      await expect(putInvoice(context as AuthenticatedContext)).rejects.toThrow(
         UnauthorizedError,
       );
     });
   });
 
   describe("deleteOne", () => {
-    it("should delete a report if user has permission", async () => {
+    it("should delete an invoice if user has permission", async () => {
       const context = mockContext({
-        params: { report: mockReport.id },
+        params: { invoice: mockInvoice.id },
       });
-      const result = await deleteOne(context as AuthenticatedContext);
+      const result = await deleteInvoice(context as AuthenticatedContext);
 
       expect(result).toEqual({
-        message: "Report deleted successfully.",
+        message: "Invoice deleted successfully!",
       });
     });
 
@@ -192,12 +205,12 @@ describe("Report Module", () => {
           org: { id: mockOrg.id, role: UserRole.CLIENT },
         },
         user: secondUser,
-        params: { report: mockReport.id },
+        params: { invoice: mockInvoice.id },
       });
 
-      await expect(deleteOne(context as AuthenticatedContext)).rejects.toThrow(
-        UnauthorizedError,
-      );
+      await expect(
+        deleteInvoice(context as AuthenticatedContext),
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 });

@@ -1,123 +1,161 @@
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import type { OrgDetails } from "@/domain/interfaces/orgs";
 import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { Org, User } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
-import type { Invoice, Org, Report, User } from "../drizzle/schema";
-import type { AuthenticatedContext } from "../plugins/auth";
+import * as userService from "@/services/user";
 
-export interface OrgDetails {
-  org: Org;
-  reports?: Report[];
-  invoices?: Invoice[];
-  users?: User[];
-}
-
-export const create = async (
+/**
+ * Creates a new organization.
+ *
+ * @param context - The authenticated context containing the request body and user information.
+ * @returns A promise that resolves to a success response containing the created organization.
+ */
+export const postOrg = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<Org>> => {
   const { body, user } = context;
-  const data = await orgService.create({
+  const data = await orgService.createOrg({
     user: user.id,
     org: body as Org,
   });
 
   return {
     data,
-    message: "Organization created successfully.",
+    message: "Organization created successfully!",
   };
 };
 
-export const fetchOne = async (
+/**
+ * Creates or updates an organization user.
+ *
+ * @param context - The authenticated context containing the request body and user permissions.
+ * @returns A promise that resolves to a success response containing the created or updated user.
+ * @throws UnauthorizedError - If the user does not have permission to create organization users.
+ */
+export const postOrgUser = async (
   context: AuthenticatedContext,
-): Promise<SuccessResponse<OrgDetails>> => {
-  const { org: orgParam } = context.params;
-  const { include } = context.query;
-  const { permissions } = context;
+): Promise<SuccessResponse<User>> => {
+  const { body, permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if (!superAdmin && !org?.role) {
+  if (!superAdmin && org?.role && org?.role < UserRole.ADMIN) {
     throw new UnauthorizedError(
-      "User does not have permission to fetch organization details.",
+      "User does not have permission to create organization users.",
     );
   }
 
-  const data = await orgService.fetchOne(orgParam);
-  const result: OrgDetails = { org: data };
-  const notClient = org?.id && org?.role && org?.role > UserRole.CLIENT;
+  const data = await userService.updateOrCreate(body as User);
 
-  if ((superAdmin || notClient) && org?.id) {
-    if (include?.includes("invoices")) {
-      const orgInvoices = (await orgService.fetchResources(
-        org.id,
-        "invoices",
-      )) as Invoice[];
-      result.invoices = orgInvoices;
-    }
+  return {
+    data,
+    message: "Organization user created successfully!",
+  };
+};
 
-    if (include?.includes("reports")) {
-      const orgReports = (await orgService.fetchResources(
-        org.id,
-        "reports",
-      )) as Report[];
-      result.reports = orgReports;
-    }
+/**
+ * Fetches the organization and its details based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters, permissions, and query information.
+ * @returns A promise that resolves to a success response containing the organization and optional details.
+ * @throws UnauthorizedError - If the user does not have permission to fetch the organization.
+ */
+export const getOrg = async (
+  context: AuthenticatedContext,
+): Promise<SuccessResponse<{ org: Org; details?: OrgDetails }>> => {
+  const { org: orgParam } = context.params;
+  const { permissions, query } = context;
+  const { superAdmin, org } = permissions;
 
-    if (include?.includes("users")) {
-      const orgUsers = (await orgService.fetchResources(
-        org.id,
-        "users",
-      )) as User[];
-      result.users = orgUsers;
-    }
+  if (!org?.role && !superAdmin) {
+    throw new UnauthorizedError(
+      "User does not have permission to fetch this organization.",
+    );
+  }
+
+  const result: { org: Org; details?: OrgDetails } = {
+    org: await orgService.fetchOrg(orgParam),
+  };
+
+  if (query.include) {
+    const resources = query.include.split(",");
+    const foundResources = await orgService.fetchOrgResources(
+      orgParam,
+      resources,
+      query.user,
+    );
+
+    result.details = foundResources;
   }
 
   return {
     data: result,
-    message: "Organization & details fetched successfully",
+    message: "Organization & details fetched successfully!",
   };
 };
 
-export const fetchResources = async (context: AuthenticatedContext) => {
-  const { id, resource } = context.params;
-  const { permissions } = context;
-  const { superAdmin, org } = permissions;
-
-  if (!superAdmin && org?.role === UserRole.CLIENT) {
-    throw new UnauthorizedError(
-      "User does not have permission to fetch this organization's resources.",
-    );
-  }
-
-  const data = await orgService.fetchResources(id, resource);
-
-  return {
-    data: {
-      [resource]: data,
-    },
-    message: "Organization resources fetched successfully.",
-  };
-};
-
-export const update = async (context: AuthenticatedContext) => {
+/**
+ * Updates the organization details.
+ *
+ * @param context - The authenticated context containing the request body and permissions.
+ * @throws {UnauthorizedError} If the user does not have permission to update organization details.
+ * @returns An object containing the updated organization data and a success message.
+ */
+export const putOrg = async (context: AuthenticatedContext) => {
   const body = context.body as Org;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
 
-  if (org?.role !== undefined) {
-    if (!superAdmin && org.role < UserRole.OWNER) {
-      throw new UnauthorizedError(
-        "User does not have permission to update organization details.",
-      );
-    }
+  if (!superAdmin && org?.role && org.role < UserRole.ADMIN) {
+    throw new UnauthorizedError(
+      "User does not have permission to update organization details.",
+    );
   }
 
   return {
-    data: await orgService.update(body),
-    message: "Organization updated successfully.",
+    data: await orgService.updateOrg(body),
+    message: "Organization updated successfully!",
   };
 };
 
-export const deleteOne = async (context: AuthenticatedContext) => {
+/**
+ * Updates or creates an organization user.
+ *
+ * @param {AuthenticatedContext} context - The authenticated context containing the request body and user permissions.
+ * @throws {UnauthorizedError} If the user does not have permission to update organization users.
+ * @returns {Promise<{ data: User, message: string }>} The updated or created user data and a success message.
+ */
+export const putOrgUser = async (context: AuthenticatedContext) => {
+  const { body, permissions } = context;
+  const { superAdmin, org } = permissions;
+
+  if (
+    (!superAdmin && org?.role && org?.role < UserRole.ADMIN) ||
+    !org?.managed
+  ) {
+    throw new UnauthorizedError(
+      "User does not have permission to update organization users.",
+    );
+  }
+
+  const data = await userService.updateOrCreate(body as User);
+
+  return {
+    data,
+    message: "Organization user updated successfully!",
+  };
+};
+
+/**
+ * Deletes an organization based on the provided context.
+ *
+ * @param context - The authenticated context containing parameters and permissions.
+ * @throws {UnauthorizedError} If the user does not have permission to delete the organization.
+ * @returns An object containing a success message.
+ */
+export const deleteOrg = async (context: AuthenticatedContext) => {
   const { org: orgParam } = context.params;
   const { permissions } = context;
   const { superAdmin, org } = permissions;
@@ -130,9 +168,9 @@ export const deleteOne = async (context: AuthenticatedContext) => {
     }
   }
 
-  await orgService.deleteOne(orgParam);
+  await orgService.removeOrg(orgParam);
 
   return {
-    message: "Organization deleted successfully.",
+    message: "Organization deleted successfully!",
   };
 };

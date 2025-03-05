@@ -1,6 +1,6 @@
 import "dotenv/config"; // make sure to install dotenv package
 import type { Config } from "drizzle-kit";
-import fs from "fs";
+import fs from "node:fs";
 
 export default {
   dialect: "postgresql",

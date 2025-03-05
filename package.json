@@ -20,7 +20,8 @@
     "db:docker": "docker compose -f docker-compose.db.yml up",
     "db:reset": "./src/utils/reset-db.sh",
     "check": "bunx @biomejs/biome check ./src",
-    "check:fix": "bunx @biomejs/biome check --write ./src"
+    "check:fix": "bunx @biomejs/biome check --write ./src",
+    "prepare": "bunx husky"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -29,10 +30,11 @@
     "@elysiajs/swagger": "^1.0.5",
     "@sentry/bun": "^8.50.0",
     "@supabase/supabase-js": "^2.47.11",
+    "@tqman/nice-logger": "^1.1.1",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node-steam-openid": "^1.0.3",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.38.4",
+    "drizzle-orm": "^0.39.2",
     "elysia": "latest",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",

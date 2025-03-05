@@ -13,12 +13,6 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@config/*": ["./src/config/*"],
-      "@domain/*": ["./src/domain/*"],
-      "@modules/*": ["./src/modules/*"],
-      "@plugins/*": ["./src/plugins/*"],
-      "@routes/*": ["./src/routes/*"],
-      "@services/*": ["./src/services/*"]
     },
     "resolveJsonModule": true,
     "lib": ["esnext", "dom"]

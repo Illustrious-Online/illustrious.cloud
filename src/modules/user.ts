@@ -1,108 +1,108 @@
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { AuthenticatedContext } from "@/domain/interfaces/auth";
+import type { UserDetails } from "@/domain/interfaces/users";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import type { User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { Invoice, Org, Report, User } from "../drizzle/schema";
-import type { AuthenticatedContext } from "../plugins/auth";
-
-export interface UserDetails {
-  user: User;
-  reports?: Report[];
-  invoices?: Invoice[];
-  orgs?: Org[];
-}
 
 /**
- * Fetches the details of the authenticated user including invoices, reports, and organizations.
+ * Fetches the details of the authenticated user.
  *
- * @param context - The authenticated context containing the user information.
+ * @param context - The authenticated context containing the user and query information.
  * @returns A promise that resolves to a success response containing the user details.
+ *
+ * The function retrieves the user details from the context and optionally includes additional resources
+ * if specified in the query parameters. The resources are fetched using the userService.
+ *
+ * @example
+ * ```typescript
+ * const context = {
+ *   query: { include: "posts,comments", org: "exampleOrg" },
+ *   user: { id: "user123", name: "John Doe" }
+ * };
+ * const response = await me(context);
+ * console.log(response.data); // { user: { id: "user123", name: "John Doe" }, posts: [...], comments: [...] }
+ * ```
  */
 export const me = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<UserDetails>> => {
-  const { user } = context;
+  const { query, user } = context;
+  let result = { user };
 
-  if (!user || !user.id) {
-    throw new BadRequestError("Required user information is missing.");
+  if (query?.include) {
+    const resources = query.include.split(",");
+    const foundResources = await userService.fetchResources(
+      user.id,
+      resources,
+      query.org,
+    );
+    result = { ...result, ...foundResources };
   }
 
-  const result: UserDetails = { user };
-  const myResources = await userService.fetchResources(user.id);
-
   return {
-    data: {
-      ...result,
-      invoices: myResources.invoices,
-      reports: myResources.reports,
-      orgs: myResources.orgs,
-    },
+    data: result,
     message: "User details fetched successfully!",
   };
 };
 
 /**
- * Fetches the details of the authenticated user.
+ * Fetches user details based on the provided context.
  *
- * @param context - The authenticated context containing user information and query parameters.
- * @returns A promise that resolves to a success response containing user details.
- *
- * The function fetches additional resources (invoices, reports, orgs) if the `include` query parameter is present
- * and the user is a super admin. The additional resources are fetched using the `userService.fetchResources` method.
- *
- * @example
- * const context = {
- *   user: { id: '123', superAdmin: true },
- *   query: { include: ['invoices', 'reports'] }
- * };
- * const response = await fetchUser(context);
- * console.log(response.data); // { user: { id: '123', superAdmin: true }, invoices: [...], reports: [...] }
+ * @param context - The authenticated context containing user identification details.
+ * @returns A promise that resolves to a success response containing the user details.
+ * @throws {BadRequestError} If the required user identification details are missing.
  */
-export const fetchUser = async (
+export const getUser = async (
   context: AuthenticatedContext,
-): Promise<SuccessResponse<UserDetails>> => {
-  const { user } = context;
-  const { include } = context.query;
-  const result: UserDetails = { user };
+): Promise<SuccessResponse<User>> => {
+  const { params, query } = context;
 
-  if (include && user.superAdmin) {
-    const userResources = (await userService.fetchResources(user.id, {
-      invoices: include.includes("invoices"),
-      reports: include.includes("reports"),
-      orgs: include.includes("orgs"),
-    })) as UserDetails;
-
-    result.invoices = userResources.invoices;
-    result.reports = userResources.reports;
-    result.orgs = userResources.orgs;
+  if (!params.user) {
+    throw new BadRequestError(
+      "Required user identification details are missing",
+    );
   }
 
+  const { user: id } = params;
+  const fetchedUser = await userService.fetchUser({ [query.by ?? "id"]: id });
+
+  fetchedUser.phone = null;
+  fetchedUser.lastName = null;
+  fetchedUser.superAdmin = false;
+
   return {
-    data: result,
-    message: `User details fetched successfully${include && !user.superAdmin ? " ('include' details restricted)" : ""}`,
+    data: fetchedUser,
+    message: "User details fetched successfully!",
   };
 };
 
 /**
- * Updates the user information.
+ * Updates a user in the system.
  *
- * @param {AuthenticatedContext} context - The authenticated context containing user information, request body, and parameters.
- * @throws {UnauthorizedError} If the token does not match the user to be updated.
- * @returns {Promise<{ data: User, message: string }>} The updated user data and a success message.
+ * @param context - The authenticated context containing user and permissions information.
+ * @returns A promise that resolves to a success response containing the updated user.
+ * @throws {UnauthorizedError} If the user does not have permission to update the specified user.
  */
-export const update = async (
+export const putUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
-  const { user } = context;
+  const {
+    params: { user: id },
+    permissions: { org, superAdmin },
+    user,
+  } = context;
   const body = context.body as User;
-  const { id } = context.params;
 
-  if (!user.superAdmin && user.id !== id) {
-    throw new UnauthorizedError("Token does not match user to be updated.");
+  if (!superAdmin && id !== user.id && !org?.managed) {
+    throw new UnauthorizedError(
+      "You do not have permission to update this user.",
+    );
   }
 
-  const data = await userService.update(body);
+  const data = await userService.updateUser(body);
 
   return {
     data,
@@ -111,13 +111,13 @@ export const update = async (
 };
 
 /**
- * Deletes a user based on the provided authenticated context.
+ * Deletes a user account based on the provided context.
  *
  * @param context - The authenticated context containing user information and parameters.
- * @throws {UnauthorizedError} If the provided user ID does not match the authenticated user ID.
- * @returns An object containing a success message.
+ * @returns A promise that resolves to a success response with a message indicating the user was deleted successfully.
+ * @throws UnauthorizedError - If the user is not a super admin and tries to delete an account that is not their own.
  */
-export const deleteOne = async (
+export const deleteUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<string>> => {
   const { user } = context;
@@ -129,11 +129,7 @@ export const deleteOne = async (
     );
   }
 
-  if (!user.identifier) {
-    throw new ServerError("User identifier is missing.", 500);
-  }
-
-  await userService.deleteOne(id, user.identifier);
+  await userService.removeUser(id, user.identifier);
 
   return {
     message: "User deleted successfully.",
@@ -143,9 +139,12 @@ export const deleteOne = async (
 /**
  * Links a Steam account to the authenticated user's account.
  *
- * @param {AuthenticatedContext} context - The authenticated context of the user.
- * @returns {Promise<void>} A promise that resolves when the user is redirected to the Steam link URL.
- * @throws {ServerError} If the Steam link URL could not be generated.
+ * This function calls the userService to generate a Steam link URL and redirects
+ * the user to that URL. If the URL generation fails, it throws a ServerError.
+ *
+ * @param context - The authenticated context containing user information and methods.
+ * @throws {ServerError} If the Steam link URL generation fails.
+ * @returns {Promise<void>} A promise that resolves when the redirection is complete.
  */
 export const linkSteam = async (
   context: AuthenticatedContext,
@@ -162,11 +161,10 @@ export const linkSteam = async (
 /**
  * Handles the callback for linking a Steam account.
  *
- * This function calls the `linkSteam` method from the `userService` with a
- * parameter indicating whether the linking is successful. It then returns
- * an object containing a message from the response data.
+ * This function calls the `linkSteam` method from the `userService` to link a Steam account.
+ * If the linking is successful, it returns a message indicating the success.
  *
- * @returns {Promise<{ message: string }>} An object containing a message from the response data.
+ * @returns {Promise<{ message: string }>} A promise that resolves to an object containing a success message.
  */
 export const steamCallback = async (): Promise<{ message: string }> => {
   const data = await userService.linkSteam(true);

@@ -1,6 +1,6 @@
 bun check:fix
 echo "////.....////.....////.....////.....////.....////.....////.....////"
 echo "Be sure to add any changes fixed from biome to your commit!"
-echo "It is recommended to run `bun test` eventually to ensure all tests pass."
+echo "It is recommended to run tests eventually to ensure PR success."
 echo "If you have any questions, please reach out to the team."
 echo "////.....////.....////.....////.....////.....////.....////.....////"

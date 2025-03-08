@@ -247,10 +247,11 @@ const authPlugin = (app: Elysia) =>
         const firstPart = path.split("/")[1];
         const allowedPaths = [
           "auth",
-          "favicon.ico",
+          "favicon",
           "docs",
           "health",
           "healthz",
+          "auth/",
         ];
         if (path === "/" || allowedPaths.includes(firstPart)) {
           return;

@@ -30,7 +30,7 @@ export const signInWithOAuth = async (context: Context) => {
     );
   }
 
-  redirect(data.url);
+  return redirect(data.url);
 };
 
 /**

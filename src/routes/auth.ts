@@ -1,5 +1,5 @@
 import * as authController from "@/modules/auth";
-import { type Elysia, t } from "elysia";
+import { type Context, type Elysia, t } from "elysia";
 
 /**
  * Sets up authentication routes for the application.
@@ -28,10 +28,21 @@ export default (app: Elysia): Elysia =>
         }),
       }),
     })
-    .get("/auth/callback", authController.oauthCallback, {
-      query: t.Object({
-        code: t.String(),
-      }),
+    .get("/auth/callback", (context: Context, req: Request) => {
+      console.log('Full URL:', context.query.fragment);
+      console.log('idk', req.query.fragment);
+      return authController.oauthCallback(req, context)
+    })
+    .get("/auth/session", authController.getSession, {
+      response: {
+        201: t.Object({
+          message: t.String(),
+          cookie: t.Object({
+            access_token: t.String(),
+            refresh_token: t.Optional(t.String()),
+          }),
+        }),
+      },
     })
     .get("/signout", authController.signOut, {
       response: {

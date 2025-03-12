@@ -1,9 +1,10 @@
 import { supabaseClient } from "@/app";
 import config from "@/config";
 import ServerError from "@/domain/exceptions/ServerError";
-import type { User } from "@/drizzle/schema";
+import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
+import type { User as IllustriousUser } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { Provider } from "@supabase/auth-js";
+import type { Provider, User } from "@supabase/auth-js";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -21,6 +22,9 @@ export async function signInWithOAuth(provider: Provider): Promise<{
     provider: provider,
     options: {
       redirectTo: `${config.app.url}/auth/callback`,
+      queryParams: {
+        use_query_params: 'true'
+      }
     },
   });
 
@@ -35,18 +39,22 @@ export async function signInWithOAuth(provider: Provider): Promise<{
  * Handles the OAuth callback by retrieving the user information using the provided bearer token.
  * If the user does not exist, it creates a new user with the provided information.
  *
- * @param {string} bearer - The bearer token used to authenticate and retrieve the user information.
+ * @param {string} accessToken - The access token used to authenticate and retrieve the user information.
  * @returns {Promise<User>} - A promise that resolves to the user object.
  * @throws {ServerError} - Throws a ServerError if there is an error retrieving the user information.
  */
-export async function oauthCallback(bearer: string): Promise<User> {
-  const { data, error } = await supabaseClient.auth.getUser(bearer);
+export async function oauthCallback(accessToken: string): Promise<{
+  user: IllustriousUser;
+  accessToken: string;
+  refreshToken?: string;
+}> {
+  const { data, error } = await supabaseClient.auth.getUser(accessToken);
 
   if (error) {
     throw new ServerError(error.message, 500);
   }
 
-  let user: User | null;
+  let user: IllustriousUser | null;
 
   try {
     user = await userService.fetchUser({ id: data?.user.id });
@@ -64,7 +72,63 @@ export async function oauthCallback(bearer: string): Promise<User> {
     });
   }
 
-  return user;
+  const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession()
+
+  if (refreshError || !session) {
+    throw new ServerError(refreshError?.message ?? "Unable to initiate or refresh session", 500)
+  }
+
+  return {
+    user,
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token,
+  };
+}
+
+/**
+ * Retrieves a user's session information using an access token and optional refresh token.
+ *
+ * @param {string} accessToken - The access token for the user's session.
+ * @param {string} refreshToken - The refresh token for the user's session.
+ * @returns {Promise<{ user: User; accessToken: string; refreshToken?: string }>} A promise that resolves to an object containing the user, access token, and refresh token.
+ * @throws {ServerError} - Throws a ServerError if there is an error retrieving the user information.
+ */
+export async function getSession(accessToken: string, refreshToken?: string): Promise<{
+  user: User;
+  accessToken: string;
+  refreshToken?: string;
+}> {
+  const { data, error } = await supabaseClient.auth.getUser(accessToken)
+
+  if (error) {
+    if (refreshToken) {
+      const { data: refreshed, error: refreshError } = await supabaseClient.auth.refreshSession({
+        refresh_token: refreshToken,
+      })
+
+      if (refreshError) {
+        throw new ServerError(refreshError.message, 500)
+      }
+
+      if (refreshed.session) {
+        return {
+          user: refreshed.session.user,
+          accessToken: refreshed.session.access_token,
+          refreshToken: refreshed.session.refresh_token,
+        }
+      }
+    }
+
+    throw new UnauthorizedError("Unable to authenticate user, please log in again.");
+  }
+
+  // Valid user session!
+  return {
+    user: data.user,
+    accessToken: accessToken,
+    refreshToken: refreshToken,
+  }
+  
 }
 
 /**

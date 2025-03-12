@@ -30,8 +30,33 @@ export const signInWithOAuth = async (context: Context) => {
     );
   }
 
+  console.log('Module signInWithOAuth redirect to: ', data.url)
   return redirect(data.url);
 };
+
+const setCookies = (context: Context, accessToken: string, refreshToken?: string) => {
+  const { cookie: { access_token, refresh_token } } = context;
+
+  access_token?.set({
+    value: accessToken,
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 60 * 60,
+    path: '/',
+  })
+
+  if (refreshToken) {
+    refresh_token?.set({
+      value: refreshToken,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    })
+  }
+}
 
 /**
  * Handles the OAuth callback by processing the authorization code received from the OAuth provider.
@@ -41,21 +66,46 @@ export const signInWithOAuth = async (context: Context) => {
  * @throws {ServerError} If the authorization code is not received from the OAuth provider.
  */
 export const oauthCallback = async (
-  context: Context,
+  request: Request,
+  context: Context
 ): Promise<SuccessResponse<User>> => {
-  const { code } = context.query;
-
-  if (!code) {
+  console.log('request', request);
+  
+  if (!request) {
     throw new ServerError(
-      "Authorization code was not received from the OAuth provider.",
+      "Authorization token was not received from the OAuth provider.",
       500,
     );
   }
 
-  const data = await authService.oauthCallback(code);
+  const { user, accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.oauthCallback(access_token);
+  setCookies(context, newAccessToken, newRefreshToken);
+  
   return {
-    data: data,
+    data: user,
     message: "User authenticated successfully.",
+  };
+};
+
+export const getSession = async (context: Context) => {
+  const { cookie: { access_token, refresh_token } } = context;
+  const accessToken = access_token?.value
+  const refreshToken = refresh_token?.value
+
+  if (!accessToken) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
+  const { user, accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.getSession(accessToken, refreshToken);
+  setCookies(context, newAccessToken, newRefreshToken);
+
+  return {
+    data: {
+      user,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    },
+    message: "Session retrieved successfully.",
   };
 };
 

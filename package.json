@@ -16,8 +16,8 @@
   "scripts": {
     "dev": "bun run --watch ./src/app.ts",
     "build": "bun build ./src/app.ts --target node --outdir ./dist",
-    "start": "concurrently \"bun run dev\" \"bun run db:start\"",
-    "db:start": "docker compose -f docker-compose.db.yml up -d && bun run db:migrate",
+    "start": "bun run db:start && bun run dev",
+    "db:start": "docker compose -f docker-compose.db.yml up -d",
     "db:stop": "docker stop illustriouscloud-postgres-1",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:reset": "./src/utils/reset-db.sh",

@@ -7,10 +7,8 @@ import type {
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
-import bearer from "@elysiajs/bearer";
 import { and, eq } from "drizzle-orm";
 import type { Elysia } from "elysia";
-import { supabaseClient } from "../app";
 import { db } from "../drizzle/db";
 import {
   type Org,
@@ -22,6 +20,19 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
+import { createSupabaseServerClient, isRequestFromBrowser } from "@/libs/supabaseClient";
+
+// Define a type for the Supabase user data
+interface SupabaseUserData {
+  user: {
+    id: string;
+    email?: string;
+    phone?: string;
+    app_metadata: Record<string, unknown>;
+    user_metadata: Record<string, unknown>;
+    aud: string;
+  } | null;
+}
 
 /**
  * Executes post-authentication checks to determine user permissions based on the request path and body.
@@ -234,7 +245,6 @@ export const executeReportChecks = async (
  */
 const authPlugin = (app: Elysia) =>
   app
-    .use(bearer())
     .derive(
       async ({
         bearer,
@@ -242,9 +252,9 @@ const authPlugin = (app: Elysia) =>
         path,
         params,
         query,
+        redirect,
         request,
       }: AuthPluginParams) => {
-        const firstPart = path.split("/")[1];
         const allowedPaths = [
           "auth",
           "favicon",
@@ -253,24 +263,54 @@ const authPlugin = (app: Elysia) =>
           "healthz",
           "auth/",
         ];
-        if (path === "/" || allowedPaths.includes(firstPart)) {
+
+        if (path === "/" || allowedPaths.includes(path.split("/")[1])) {
           return;
         }
 
-        if (!bearer) {
-          throw new UnauthorizedError("Access token is missing.");
+        const isBrowser = isRequestFromBrowser(request);
+        console.log(`Request from ${isBrowser ? 'browser' : 'non-browser client'}`);
+        
+        const supabaseClient = createSupabaseServerClient(request);
+        
+        // Variable to store user data from authentication
+        let userData: SupabaseUserData | null = null;
+        
+        // Different authentication strategies based on client type
+        if (isBrowser) {
+          // For browser clients, rely on cookies for authentication
+          const { data, error: authError } = await supabaseClient.auth.getUser();
+          userData = data;
+          
+          if (authError || !userData || !userData.user) {
+            // For browsers, redirect to login page instead of throwing an error
+            if (path !== '/auth/login') {
+              console.log('Browser client not authenticated, should redirect to login');
+              return redirect('/auth/login');
+            }
+            throw new UnauthorizedError(`${authError?.message || "Authentication required"}`);
+          }
+        } else {
+          // For API clients, check for bearer token in headers
+          const authHeader = request.headers.get('authorization');
+          if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new UnauthorizedError("API access requires a valid bearer token");
+          }
+          
+          const token = authHeader.split(' ')[1];
+          const { data, error: authError } = await supabaseClient.auth.getUser(token);
+          userData = data;
+          
+          if (authError || !userData || !userData.user) {
+            throw new UnauthorizedError(`${authError?.message || "Invalid API token"}`);
+          }
         }
-
-        const { data, error } = await supabaseClient.auth.getUser(bearer);
-
-        if (error || !data) {
-          throw new UnauthorizedError(`${error?.message || "Unknown error!"}`);
-        }
-
+        
+        // Common code for both browser and API clients
         const findUser = await db
           .select()
           .from(user)
-          .where(eq(user.id, data.user.id));
+          .where(eq(user.id, userData.user.id));
 
         if (!findUser.length) {
           throw new UnauthorizedError("User was not found.");

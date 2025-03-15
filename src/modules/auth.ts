@@ -30,33 +30,39 @@ export const signInWithOAuth = async (context: Context) => {
     );
   }
 
-  console.log('Module signInWithOAuth redirect to: ', data.url)
+  console.log("Module signInWithOAuth redirect to: ", data.url);
   return redirect(data.url);
 };
 
-const setCookies = (context: Context, accessToken: string, refreshToken?: string) => {
-  const { cookie: { access_token, refresh_token } } = context;
+const setCookies = (
+  context: Context,
+  accessToken: string,
+  refreshToken?: string,
+) => {
+  const {
+    cookie: { access_token, refresh_token },
+  } = context;
 
   access_token?.set({
     value: accessToken,
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: "none",
     maxAge: 60 * 60,
-    path: '/',
-  })
+    path: "/",
+  });
 
   if (refreshToken) {
     refresh_token?.set({
       value: refreshToken,
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
+      sameSite: "none",
       maxAge: 60 * 60 * 24 * 30,
-      path: '/',
-    })
+      path: "/",
+    });
   }
-}
+};
 
 /**
  * Handles the OAuth callback by processing the authorization code received from the OAuth provider.
@@ -67,10 +73,10 @@ const setCookies = (context: Context, accessToken: string, refreshToken?: string
  */
 export const oauthCallback = async (
   request: Request,
-  context: Context
+  context: Context,
 ): Promise<SuccessResponse<User>> => {
-  console.log('request', request);
-  
+  console.log("request", request);
+
   if (!request) {
     throw new ServerError(
       "Authorization token was not received from the OAuth provider.",
@@ -78,9 +84,13 @@ export const oauthCallback = async (
     );
   }
 
-  const { user, accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.oauthCallback(access_token);
+  const {
+    user,
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  } = await authService.oauthCallback(access_token);
   setCookies(context, newAccessToken, newRefreshToken);
-  
+
   return {
     data: user,
     message: "User authenticated successfully.",
@@ -88,15 +98,21 @@ export const oauthCallback = async (
 };
 
 export const getSession = async (context: Context) => {
-  const { cookie: { access_token, refresh_token } } = context;
-  const accessToken = access_token?.value
-  const refreshToken = refresh_token?.value
+  const {
+    cookie: { access_token, refresh_token },
+  } = context;
+  const accessToken = access_token?.value;
+  const refreshToken = refresh_token?.value;
 
   if (!accessToken) {
-    return new Response('Unauthorized', { status: 401 })
+    return new Response("Unauthorized", { status: 401 });
   }
 
-  const { user, accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.getSession(accessToken, refreshToken);
+  const {
+    user,
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  } = await authService.getSession(accessToken, refreshToken);
   setCookies(context, newAccessToken, newRefreshToken);
 
   return {

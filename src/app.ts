@@ -23,10 +23,10 @@ if (config.app.env === "production") {
   });
 }
 
-export const supabaseClient = createClient(
-  `https://${config.auth.supabaseId}.supabase.co`,
-  config.auth.supabaseServiceRoleKey ?? "test",
-);
+// export const supabaseClient = createClient(
+//   `https://${config.auth.supabaseId}.supabase.co`,
+//   config.auth.supabaseServiceRoleKey ?? "test",
+// );
 
 export const app = new Elysia()
   .use(cors())

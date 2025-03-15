@@ -29,9 +29,9 @@ export default (app: Elysia): Elysia =>
       }),
     })
     .get("/auth/callback", (context: Context, req: Request) => {
-      console.log('Full URL:', context.query.fragment);
-      console.log('idk', req.query.fragment);
-      return authController.oauthCallback(req, context)
+      console.log("Full URL:", context.query.fragment);
+      console.log("idk", req.query.fragment);
+      return authController.oauthCallback(req, context);
     })
     .get("/auth/session", authController.getSession, {
       response: {

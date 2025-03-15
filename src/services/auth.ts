@@ -23,8 +23,8 @@ export async function signInWithOAuth(provider: Provider): Promise<{
     options: {
       redirectTo: `${config.app.url}/auth/callback`,
       queryParams: {
-        use_query_params: 'true'
-      }
+        use_query_params: "true",
+      },
     },
   });
 
@@ -72,10 +72,16 @@ export async function oauthCallback(accessToken: string): Promise<{
     });
   }
 
-  const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession()
+  const {
+    data: { session },
+    error: refreshError,
+  } = await supabaseClient.auth.refreshSession();
 
   if (refreshError || !session) {
-    throw new ServerError(refreshError?.message ?? "Unable to initiate or refresh session", 500)
+    throw new ServerError(
+      refreshError?.message ?? "Unable to initiate or refresh session",
+      500,
+    );
   }
 
   return {
@@ -93,21 +99,25 @@ export async function oauthCallback(accessToken: string): Promise<{
  * @returns {Promise<{ user: User; accessToken: string; refreshToken?: string }>} A promise that resolves to an object containing the user, access token, and refresh token.
  * @throws {ServerError} - Throws a ServerError if there is an error retrieving the user information.
  */
-export async function getSession(accessToken: string, refreshToken?: string): Promise<{
+export async function getSession(
+  accessToken: string,
+  refreshToken?: string,
+): Promise<{
   user: User;
   accessToken: string;
   refreshToken?: string;
 }> {
-  const { data, error } = await supabaseClient.auth.getUser(accessToken)
+  const { data, error } = await supabaseClient.auth.getUser(accessToken);
 
   if (error) {
     if (refreshToken) {
-      const { data: refreshed, error: refreshError } = await supabaseClient.auth.refreshSession({
-        refresh_token: refreshToken,
-      })
+      const { data: refreshed, error: refreshError } =
+        await supabaseClient.auth.refreshSession({
+          refresh_token: refreshToken,
+        });
 
       if (refreshError) {
-        throw new ServerError(refreshError.message, 500)
+        throw new ServerError(refreshError.message, 500);
       }
 
       if (refreshed.session) {
@@ -115,11 +125,13 @@ export async function getSession(accessToken: string, refreshToken?: string): Pr
           user: refreshed.session.user,
           accessToken: refreshed.session.access_token,
           refreshToken: refreshed.session.refresh_token,
-        }
+        };
       }
     }
 
-    throw new UnauthorizedError("Unable to authenticate user, please log in again.");
+    throw new UnauthorizedError(
+      "Unable to authenticate user, please log in again.",
+    );
   }
 
   // Valid user session!
@@ -127,8 +139,7 @@ export async function getSession(accessToken: string, refreshToken?: string): Pr
     user: data.user,
     accessToken: accessToken,
     refreshToken: refreshToken,
-  }
-  
+  };
 }
 
 /**

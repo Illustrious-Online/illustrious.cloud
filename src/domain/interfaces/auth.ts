@@ -180,6 +180,11 @@ export interface AuthPluginParams {
    */
   query: Record<string, string>;
 
+  /** 
+   * The redirect function.
+   */
+  redirect: (url: string) => void;
+
   /**
    * The request object.
    */

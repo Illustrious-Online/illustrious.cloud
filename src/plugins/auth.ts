@@ -1,3 +1,4 @@
+import config from "@/config";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
   AuthParams,
@@ -7,6 +8,10 @@ import type {
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
+import {
+  createSupabaseClient,
+  createSupabaseServerClient,
+} from "@/libs/supabaseClient";
 import { and, eq } from "drizzle-orm";
 import type { Elysia } from "elysia";
 import { db } from "../drizzle/db";
@@ -20,8 +25,6 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
-import { createSupabaseClient, createSupabaseServerClient } from "@/libs/supabaseClient";
-import config from "@/config";
 
 // Define a type for the Supabase user data
 interface SupabaseUserData {
@@ -245,113 +248,116 @@ export const executeReportChecks = async (
  * @property {Object} [report] - Report-specific permissions.
  */
 const authPlugin = (app: Elysia) =>
-  app
-    .derive(
-      async ({
-        bearer,
-        path,
-        request,
-        body,
-        params,
-        query,
-        redirect,
-      }: AuthPluginParams) => {
-        const allowedPaths = [
-          "auth",
-          "favicon", 
-          "docs",
-          "health",
-          "healthz",
-          "auth/",
-        ];
+  app.derive(
+    async ({
+      bearer,
+      path,
+      request,
+      body,
+      params,
+      query,
+      redirect,
+    }: AuthPluginParams) => {
+      const allowedPaths = [
+        "auth",
+        "favicon",
+        "docs",
+        "health",
+        "healthz",
+        "auth/",
+      ];
 
-        if (allowedPaths.includes(path.split("/")[1])) {
-          return;
+      if (allowedPaths.includes(path.split("/")[1])) {
+        return;
+      }
+
+      // Variable to store user data from authentication
+      let userData: SupabaseUserData | null = null;
+
+      if (bearer) {
+        const supabaseClient = createSupabaseClient();
+        const { data, error } = await supabaseClient.auth.getUser(bearer);
+
+        if (error) {
+          throw new UnauthorizedError(
+            `${error?.message || "Invalid API token"}`,
+          );
         }
-        
-        // Variable to store user data from authentication
-        let userData: SupabaseUserData | null = null;
 
-        if (bearer) {
-          const supabaseClient = createSupabaseClient();
-          const { data, error } = await supabaseClient.auth.getUser(bearer);
-          
-          if (error) {
-            throw new UnauthorizedError(`${error?.message || "Invalid API token"}`);
+        userData = data;
+      } else {
+        const supabaseClient = createSupabaseServerClient(request);
+        const { data, error } = await supabaseClient.auth.getUser();
+
+        if (error) {
+          if (path !== "/auth/login") {
+            return redirect("/auth/login");
           }
 
-          userData = data;
-        } else {
-          const supabaseClient = createSupabaseServerClient(request);
-          const { data, error } = await supabaseClient.auth.getUser();
-          
-          if (error) {
-            if (path !== '/auth/login') {
-              return redirect('/auth/login');
-            }
-
-            throw new UnauthorizedError(`${error?.message || "Authentication required"}`);
-          }
-
-          userData = data;
-        }
-
-        if (!userData || !userData.user) {
-          throw new UnauthorizedError("User data was not found.");
-        }
-        
-        const findUser = await db
-          .select()
-          .from(user)
-          .where(eq(user.id, userData.user.id));
-
-        if (!findUser.length) {
-          throw new UnauthorizedError("User was not found.");
-        }
-
-        const currentUser: User = findUser[0];
-        const permissions: AuthPermissions = {
-          superAdmin: currentUser.superAdmin,
-        };
-
-        if (path.includes("/me") || path.includes("/user")) {
-          return {
-            user: currentUser,
-            permissions,
-          };
-        }
-
-        if (request.method === "POST") {
-          return await executePostChecks(currentUser, params, body, path);
-        }
-
-        if (params.org) {
-          permissions.org = await executeOrgChecks(
-            currentUser,
-            params.org,
-            query.user,
+          throw new UnauthorizedError(
+            `${error?.message || "Authentication required"}`,
           );
         }
 
-        if (params.invoice) {
-          permissions.invoice = await executeInvoiceChecks(
-            currentUser,
-            params.invoice,
-          );
-        }
+        userData = data;
+      }
 
-        if (params.report) {
-          permissions.report = await executeReportChecks(
-            currentUser,
-            params.report,
-          );
-        }
+      if (!userData || !userData.user) {
+        throw new UnauthorizedError("User data was not found.");
+      }
 
+      const findUser = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, userData.user.id));
+
+      if (!findUser.length) {
+        throw new UnauthorizedError("User was not found.");
+      }
+
+      const currentUser: User = findUser[0];
+      const permissions: AuthPermissions = {
+        superAdmin: currentUser.superAdmin,
+      };
+
+      if (path.includes("/me") || path.includes("/user")) {
         return {
           user: currentUser,
           permissions,
         };
-      },
-    );
+      }
+
+      if (request.method === "POST") {
+        return await executePostChecks(currentUser, params, body, path);
+      }
+
+      if (params.org) {
+        permissions.org = await executeOrgChecks(
+          currentUser,
+          params.org,
+          query.user,
+        );
+      }
+
+      if (params.invoice) {
+        permissions.invoice = await executeInvoiceChecks(
+          currentUser,
+          params.invoice,
+        );
+      }
+
+      if (params.report) {
+        permissions.report = await executeReportChecks(
+          currentUser,
+          params.report,
+        );
+      }
+
+      return {
+        user: currentUser,
+        permissions,
+      };
+    },
+  );
 
 export default authPlugin;

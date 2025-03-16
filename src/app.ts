@@ -3,7 +3,6 @@ import swagger from "@elysiajs/swagger";
 import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
-import { createClient } from "@supabase/supabase-js";
 import config from "./config";
 import errorPlugin from "./plugins/error";
 import authRoutes from "./routes/auth";
@@ -22,11 +21,6 @@ if (config.app.env === "production") {
     tracesSampleRate: 1.0,
   });
 }
-
-// export const supabaseClient = createClient(
-//   `https://${config.auth.supabaseId}.supabase.co`,
-//   config.auth.supabaseServiceRoleKey ?? "test",
-// );
 
 export const app = new Elysia()
   .use(cors())

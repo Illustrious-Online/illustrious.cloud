@@ -37,6 +37,7 @@ export default {
   auth: {
     supabaseId: Bun.env.SUPABASE_ID,
     supabaseServiceRoleKey: Bun.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseAnonKey: Bun.env.SUPABASE_ANON_KEY,
     edgeKey: Bun.env.SUPABASE_EDGE_KEY,
   },
   db: {

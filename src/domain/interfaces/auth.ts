@@ -151,7 +151,7 @@ export interface AuthPluginParams {
   /**
    * The bearer token for authentication.
    */
-  bearer: string;
+  bearer?: string;
 
   /**
    * The body of the request, which can be one of several types.

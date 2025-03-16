@@ -20,7 +20,8 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
-import { createSupabaseServerClient, isRequestFromBrowser } from "@/libs/supabaseClient";
+import { createSupabaseClient, createSupabaseServerClient } from "@/libs/supabaseClient";
+import config from "@/config";
 
 // Define a type for the Supabase user data
 interface SupabaseUserData {
@@ -248,65 +249,57 @@ const authPlugin = (app: Elysia) =>
     .derive(
       async ({
         bearer,
-        body,
         path,
+        request,
+        body,
         params,
         query,
         redirect,
-        request,
       }: AuthPluginParams) => {
         const allowedPaths = [
           "auth",
-          "favicon",
+          "favicon", 
           "docs",
           "health",
           "healthz",
           "auth/",
         ];
 
-        if (path === "/" || allowedPaths.includes(path.split("/")[1])) {
+        if (allowedPaths.includes(path.split("/")[1])) {
           return;
         }
-
-        const isBrowser = isRequestFromBrowser(request);
-        console.log(`Request from ${isBrowser ? 'browser' : 'non-browser client'}`);
-        
-        const supabaseClient = createSupabaseServerClient(request);
         
         // Variable to store user data from authentication
         let userData: SupabaseUserData | null = null;
-        
-        // Different authentication strategies based on client type
-        if (isBrowser) {
-          // For browser clients, rely on cookies for authentication
-          const { data, error: authError } = await supabaseClient.auth.getUser();
-          userData = data;
+
+        if (bearer) {
+          const supabaseClient = createSupabaseClient();
+          const { data, error } = await supabaseClient.auth.getUser(bearer);
           
-          if (authError || !userData || !userData.user) {
-            // For browsers, redirect to login page instead of throwing an error
+          if (error) {
+            throw new UnauthorizedError(`${error?.message || "Invalid API token"}`);
+          }
+
+          userData = data;
+        } else {
+          const supabaseClient = createSupabaseServerClient(request);
+          const { data, error } = await supabaseClient.auth.getUser();
+          
+          if (error) {
             if (path !== '/auth/login') {
-              console.log('Browser client not authenticated, should redirect to login');
               return redirect('/auth/login');
             }
-            throw new UnauthorizedError(`${authError?.message || "Authentication required"}`);
+
+            throw new UnauthorizedError(`${error?.message || "Authentication required"}`);
           }
-        } else {
-          // For API clients, check for bearer token in headers
-          const authHeader = request.headers.get('authorization');
-          if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            throw new UnauthorizedError("API access requires a valid bearer token");
-          }
-          
-          const token = authHeader.split(' ')[1];
-          const { data, error: authError } = await supabaseClient.auth.getUser(token);
+
           userData = data;
-          
-          if (authError || !userData || !userData.user) {
-            throw new UnauthorizedError(`${authError?.message || "Invalid API token"}`);
-          }
+        }
+
+        if (!userData || !userData.user) {
+          throw new UnauthorizedError("User data was not found.");
         }
         
-        // Common code for both browser and API clients
         const findUser = await db
           .select()
           .from(user)

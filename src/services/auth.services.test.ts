@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import { supabaseClient } from "@/app";
 import config from "@/config"; // Adjust the import path as necessary
 import ServerError from "@/domain/exceptions/ServerError";
 import type { User as IllustriousUser } from "@/drizzle/schema";
@@ -9,6 +8,7 @@ import { AuthError, type Provider, type User } from "@supabase/auth-js";
 import type { Context } from "elysia";
 import { vi } from "vitest";
 import { oauthCallback, signInWithOAuth, signOut } from "./auth";
+import { supabaseAdmin } from "@/libs/supabase";
 
 const defaultContext: Context = {} as Context;
 
@@ -24,7 +24,7 @@ describe("auth service", () => {
     it("should sign in with OAuth and return the URL", async () => {
       const provider: Provider = "discord";
       const mockUrl = "https://example.com/oauth";
-      vi.spyOn(supabaseClient.auth, "signInWithOAuth").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "signInWithOAuth").mockResolvedValue({
         ...defaultContext,
         data: { provider, url: mockUrl },
         error: null,
@@ -36,7 +36,7 @@ describe("auth service", () => {
         provider,
         url: mockUrl,
       });
-      expect(supabaseClient.auth.signInWithOAuth).toHaveBeenCalledWith({
+      expect(supabaseAdmin.auth.signInWithOAuth).toHaveBeenCalledWith({
         provider,
         options: {
           redirectTo: `${config.app.url}/auth/callback`,
@@ -47,14 +47,14 @@ describe("auth service", () => {
     it("should throw ServerError if sign-in fails", async () => {
       const provider: Provider = "discord";
       const mockError = new AuthError("Sign-in failed");
-      vi.spyOn(supabaseClient.auth, "signInWithOAuth").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "signInWithOAuth").mockResolvedValue({
         ...defaultContext,
         data: { provider, url: null },
         error: mockError,
       });
 
       await expect(signInWithOAuth(provider)).rejects.toThrow(ServerError);
-      expect(supabaseClient.auth.signInWithOAuth).toHaveBeenCalledWith({
+      expect(supabaseAdmin.auth.signInWithOAuth).toHaveBeenCalledWith({
         provider,
         options: {
           redirectTo: `${config.app.url}/auth/callback`,
@@ -89,7 +89,7 @@ describe("auth service", () => {
         managed: false,
         superAdmin: false,
       };
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "getUser").mockResolvedValue({
         ...defaultContext,
         data: {
           user: mockUser,
@@ -100,8 +100,12 @@ describe("auth service", () => {
 
       const result = await oauthCallback(code);
 
-      expect(result).toBe(mockFetchedUser);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
+      expect(result).toEqual({
+        user: mockFetchedUser,
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String)
+      });
+      expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });
     });
 
@@ -131,7 +135,7 @@ describe("auth service", () => {
         managed: false,
         superAdmin: false,
       };
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "getUser").mockResolvedValue({
         ...defaultContext,
         data: { user: mockUser },
         error: null,
@@ -143,8 +147,12 @@ describe("auth service", () => {
 
       const result = await oauthCallback(code);
 
-      expect(result).toBe(mockNewUser);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
+      expect(result).toEqual({
+        user: mockNewUser,
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String)
+      });
+      expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });
       expect(userService.updateOrCreate).toHaveBeenCalled();
     });
@@ -152,7 +160,7 @@ describe("auth service", () => {
     it("should throw ServerError if code exchange fails", async () => {
       const code = "auth_code";
       const mockError = new AuthError("Code exchange failed");
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "getUser").mockResolvedValue({
         ...defaultContext,
         data: {
           user: null,
@@ -161,31 +169,31 @@ describe("auth service", () => {
       });
 
       await expect(oauthCallback(code)).rejects.toThrow(ServerError);
-      expect(supabaseClient.auth.getUser).toHaveBeenCalledWith(code);
+      expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith(code);
     });
   });
 
   describe("signOut", () => {
     it("should sign out the user", async () => {
-      vi.spyOn(supabaseClient.auth, "signOut").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "signOut").mockResolvedValue({
         ...defaultContext,
         error: null,
       });
 
       await signOut();
 
-      expect(supabaseClient.auth.signOut).toHaveBeenCalled();
+      expect(supabaseAdmin.auth.signOut).toHaveBeenCalled();
     });
 
     it("should throw ServerError if sign-out fails", async () => {
       const mockError = new AuthError("Sign-out failed");
-      vi.spyOn(supabaseClient.auth, "signOut").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "signOut").mockResolvedValue({
         ...defaultContext,
         error: mockError,
       });
 
       await expect(signOut()).rejects.toThrow(ServerError);
-      expect(supabaseClient.auth.signOut).toHaveBeenCalled();
+      expect(supabaseAdmin.auth.signOut).toHaveBeenCalled();
     });
   });
 });

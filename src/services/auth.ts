@@ -1,11 +1,12 @@
-import { supabaseClient } from "@/app";
 import config from "@/config";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { User as IllustriousUser } from "@/drizzle/schema";
+import { supabaseAdmin } from "@/libs/supabase";
 import * as userService from "@/services/user";
 import type { Provider, User } from "@supabase/auth-js";
 import { v4 as uuidv4 } from "uuid";
+
 
 /**
  * Signs in a user using OAuth with the specified provider.
@@ -18,13 +19,10 @@ export async function signInWithOAuth(provider: Provider): Promise<{
   provider: Provider;
   url: string;
 }> {
-  const { data, error } = await supabaseClient.auth.signInWithOAuth({
+  const { data, error } = await supabaseAdmin.auth.signInWithOAuth({
     provider: provider,
     options: {
       redirectTo: `${config.app.url}/auth/callback`,
-      queryParams: {
-        use_query_params: "true",
-      },
     },
   });
 
@@ -48,7 +46,7 @@ export async function oauthCallback(accessToken: string): Promise<{
   accessToken: string;
   refreshToken?: string;
 }> {
-  const { data, error } = await supabaseClient.auth.getUser(accessToken);
+  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
 
   if (error) {
     throw new ServerError(error.message, 500);
@@ -75,7 +73,7 @@ export async function oauthCallback(accessToken: string): Promise<{
   const {
     data: { session },
     error: refreshError,
-  } = await supabaseClient.auth.refreshSession();
+  } = await supabaseAdmin.auth.refreshSession();
 
   if (refreshError || !session) {
     throw new ServerError(
@@ -107,12 +105,12 @@ export async function getSession(
   accessToken: string;
   refreshToken?: string;
 }> {
-  const { data, error } = await supabaseClient.auth.getUser(accessToken);
+  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
 
   if (error) {
     if (refreshToken) {
       const { data: refreshed, error: refreshError } =
-        await supabaseClient.auth.refreshSession({
+        await supabaseAdmin.auth.refreshSession({
           refresh_token: refreshToken,
         });
 
@@ -152,7 +150,7 @@ export async function getSession(
  * @returns {Promise<void>} A promise that resolves when the sign-out process is complete.
  */
 export async function signOut(): Promise<void> {
-  const { error } = await supabaseClient.auth.signOut();
+  const { error } = await supabaseAdmin.auth.signOut();
 
   if (error) {
     throw new ServerError(error.message, 500);

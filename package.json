@@ -33,7 +33,6 @@
     "@elysiajs/cors": "^1.0.2",
     "@elysiajs/swagger": "^1.0.5",
     "@sentry/bun": "^8.50.0",
-    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.11",
     "@tqman/nice-logger": "^1.1.1",
     "@types/jsonwebtoken": "^9.0.7",

@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { supabaseClient } from "@/app";
 import config from "@/config";
 import type {
   User as IllustriousUser,
@@ -15,6 +14,7 @@ import { faker } from "@faker-js/faker";
 import type { User } from "@supabase/auth-js";
 import type { Context } from "elysia";
 import { vi } from "vitest";
+import { supabaseAdmin } from "@/libs/supabase";
 
 const defaultContext: Context = {} as Context;
 const headers = {
@@ -89,7 +89,7 @@ const authInvoice: Invoice = {
 };
 
 const spyOnSupabase = (overrides = {}) =>
-  vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+  vi.spyOn(supabaseAdmin.auth, "getUser").mockResolvedValue({
     ...defaultContext,
     data: {
       user: {
@@ -125,7 +125,7 @@ describe("Auth Plugin", () => {
     });
 
     it("should throw UnauthorizedError if bearer does not fetch Illustrious User", async () => {
-      vi.spyOn(supabaseClient.auth, "getUser").mockResolvedValue({
+      vi.spyOn(supabaseAdmin.auth, "getUser").mockResolvedValue({
         ...defaultContext,
         data: { user: supaUser },
         error: null,

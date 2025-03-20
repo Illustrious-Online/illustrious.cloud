@@ -27,7 +27,7 @@ const supaConfig = {
   method: "post",
   maxBodyLength: Number.POSITIVE_INFINITY,
   headers: {
-    Authorization: `Bearer ${config.auth.edgeKey}`,
+    Authorization: `Bearer ${config.auth.supabaseAnonKey}`,
     "Content-Type": "application/x-www-form-urlencoded",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers":

@@ -1,17 +1,12 @@
-import config from "@/config";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
   AuthParams,
   AuthPermissions,
-  AuthPluginParams,
 } from "@/domain/interfaces/auth";
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
-import {
-  createSupabaseClient,
-  createSupabaseServerClient,
-} from "@/libs/supabaseClient";
+import { parse } from 'cookie'
 import { and, eq } from "drizzle-orm";
 import type { Elysia } from "elysia";
 import { db } from "../drizzle/db";
@@ -25,6 +20,8 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
+import bearer from "@elysiajs/bearer";
+import { supabaseAdmin } from '../libs/supabase'
 
 // Define a type for the Supabase user data
 interface SupabaseUserData {
@@ -248,7 +245,7 @@ export const executeReportChecks = async (
  * @property {Object} [report] - Report-specific permissions.
  */
 const authPlugin = (app: Elysia) =>
-  app.derive(
+  app.use(bearer()).derive(
     async ({
       bearer,
       path,
@@ -256,8 +253,7 @@ const authPlugin = (app: Elysia) =>
       body,
       params,
       query,
-      redirect,
-    }: AuthPluginParams) => {
+    }) => {
       const allowedPaths = [
         "auth",
         "favicon",
@@ -271,34 +267,40 @@ const authPlugin = (app: Elysia) =>
         return;
       }
 
-      // Variable to store user data from authentication
+      const authParams = params as AuthParams;
+      const cookieHeader = request.headers.get('cookie') || ''
+      const cookies = parse(cookieHeader)
+      const supabaseAccessToken = cookies['sb-access-token']
+      const supabaseRefreshToken = cookies['sb-refresh-token']
+
+      if (!supabaseAccessToken || !bearer) {
+        throw new UnauthorizedError("No token provided.");
+      }
+
       let userData: SupabaseUserData | null = null;
+      const { data, error } = await supabaseAdmin.auth.getUser(supabaseAccessToken || bearer);
 
-      if (bearer) {
-        const supabaseClient = createSupabaseClient();
-        const { data, error } = await supabaseClient.auth.getUser(bearer);
-
-        if (error) {
-          throw new UnauthorizedError(
-            `${error?.message || "Invalid API token"}`,
-          );
-        }
-
-        userData = data;
-      } else {
-        const supabaseClient = createSupabaseServerClient(request);
-        const { data, error } = await supabaseClient.auth.getUser();
-
-        if (error) {
-          if (path !== "/auth/login") {
-            return redirect("/auth/login");
+      if (error) {
+        if (supabaseRefreshToken) {
+          const { data: refreshData, error: refreshError } = await supabaseAdmin.auth.refreshSession({
+            refresh_token: supabaseRefreshToken,
+          })
+  
+          if (refreshError || !refreshData.user) {
+            throw new UnauthorizedError(
+              `${error?.message || "Invalid or expired session"}`,
+            );
           }
-
-          throw new UnauthorizedError(
-            `${error?.message || "Authentication required"}`,
-          );
+  
+          userData = refreshData;
         }
 
+        throw new UnauthorizedError(
+          `${error?.message || "Invalid or expired session"}`,
+        );
+      }
+
+      if (!userData && data) {
         userData = data;
       }
 
@@ -328,28 +330,28 @@ const authPlugin = (app: Elysia) =>
       }
 
       if (request.method === "POST") {
-        return await executePostChecks(currentUser, params, body, path);
+        return await executePostChecks(currentUser, authParams, body, path);
       }
 
-      if (params.org) {
+      if (authParams.org) {
         permissions.org = await executeOrgChecks(
           currentUser,
-          params.org,
+          authParams.org,
           query.user,
         );
       }
 
-      if (params.invoice) {
+      if (authParams.invoice) {
         permissions.invoice = await executeInvoiceChecks(
           currentUser,
-          params.invoice,
+          authParams.invoice,
         );
       }
 
-      if (params.report) {
+      if (authParams.report) {
         permissions.report = await executeReportChecks(
           currentUser,
-          params.report,
+          authParams.report,
         );
       }
 

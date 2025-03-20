@@ -75,7 +75,6 @@ export const oauthCallback = async (
   request: Request,
   context: Context,
 ): Promise<SuccessResponse<User>> => {
-  console.log("request", request);
 
   if (!request) {
     throw new ServerError(

@@ -75,7 +75,6 @@ export const oauthCallback = async (
   request: Request,
   context: Context,
 ): Promise<SuccessResponse<User>> => {
-
   if (!request) {
     throw new ServerError(
       "Authorization token was not received from the OAuth provider.",

@@ -1,12 +1,10 @@
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
-import type {
-  AuthParams,
-  AuthPermissions,
-} from "@/domain/interfaces/auth";
+import type { AuthParams, AuthPermissions } from "@/domain/interfaces/auth";
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
-import { parse } from 'cookie'
+import bearer from "@elysiajs/bearer";
+import { parse } from "cookie";
 import { and, eq } from "drizzle-orm";
 import type { Elysia } from "elysia";
 import { db } from "../drizzle/db";
@@ -20,8 +18,7 @@ import {
   userInvoice,
   userReport,
 } from "../drizzle/schema";
-import bearer from "@elysiajs/bearer";
-import { supabaseAdmin } from '../libs/supabase'
+import { supabaseAdmin } from "../libs/supabase";
 
 // Define a type for the Supabase user data
 interface SupabaseUserData {
@@ -245,15 +242,9 @@ export const executeReportChecks = async (
  * @property {Object} [report] - Report-specific permissions.
  */
 const authPlugin = (app: Elysia) =>
-  app.use(bearer()).derive(
-    async ({
-      bearer,
-      path,
-      request,
-      body,
-      params,
-      query,
-    }) => {
+  app
+    .use(bearer())
+    .derive(async ({ bearer, path, request, body, params, query }) => {
       const allowedPaths = [
         "auth",
         "favicon",
@@ -268,30 +259,33 @@ const authPlugin = (app: Elysia) =>
       }
 
       const authParams = params as AuthParams;
-      const cookieHeader = request.headers.get('cookie') || ''
-      const cookies = parse(cookieHeader)
-      const supabaseAccessToken = cookies['sb-access-token']
-      const supabaseRefreshToken = cookies['sb-refresh-token']
+      const cookieHeader = request.headers.get("cookie") || "";
+      const cookies = parse(cookieHeader);
+      const supabaseAccessToken = cookies["sb-access-token"];
+      const supabaseRefreshToken = cookies["sb-refresh-token"];
 
       if (!supabaseAccessToken || !bearer) {
         throw new UnauthorizedError("No token provided.");
       }
 
       let userData: SupabaseUserData | null = null;
-      const { data, error } = await supabaseAdmin.auth.getUser(supabaseAccessToken || bearer);
+      const { data, error } = await supabaseAdmin.auth.getUser(
+        supabaseAccessToken || bearer,
+      );
 
       if (error) {
         if (supabaseRefreshToken) {
-          const { data: refreshData, error: refreshError } = await supabaseAdmin.auth.refreshSession({
-            refresh_token: supabaseRefreshToken,
-          })
-  
+          const { data: refreshData, error: refreshError } =
+            await supabaseAdmin.auth.refreshSession({
+              refresh_token: supabaseRefreshToken,
+            });
+
           if (refreshError || !refreshData.user) {
             throw new UnauthorizedError(
               `${error?.message || "Invalid or expired session"}`,
             );
           }
-  
+
           userData = refreshData;
         }
 
@@ -359,7 +353,6 @@ const authPlugin = (app: Elysia) =>
         user: currentUser,
         permissions,
       };
-    },
-  );
+    });
 
 export default authPlugin;

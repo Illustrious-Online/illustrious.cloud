@@ -7,7 +7,6 @@ import * as userService from "@/services/user";
 import type { Provider, User } from "@supabase/auth-js";
 import { v4 as uuidv4 } from "uuid";
 
-
 /**
  * Signs in a user using OAuth with the specified provider.
  *

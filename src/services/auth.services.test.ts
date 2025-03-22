@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import config from "@/config"; // Adjust the import path as necessary
 import ServerError from "@/domain/exceptions/ServerError";
 import type { User as IllustriousUser } from "@/drizzle/schema";
+import { supabaseAdmin } from "@/libs/supabase";
 import * as userService from "@/services/user";
 import { faker } from "@faker-js/faker";
 import { AuthError, type Provider, type User } from "@supabase/auth-js";
 import type { Context } from "elysia";
 import { vi } from "vitest";
 import { oauthCallback, signInWithOAuth, signOut } from "./auth";
-import { supabaseAdmin } from "@/libs/supabase";
 
 const defaultContext: Context = {} as Context;
 
@@ -103,7 +103,7 @@ describe("auth service", () => {
       expect(result).toEqual({
         user: mockFetchedUser,
         accessToken: expect.any(String),
-        refreshToken: expect.any(String)
+        refreshToken: expect.any(String),
       });
       expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });
@@ -150,7 +150,7 @@ describe("auth service", () => {
       expect(result).toEqual({
         user: mockNewUser,
         accessToken: expect.any(String),
-        refreshToken: expect.any(String)
+        refreshToken: expect.any(String),
       });
       expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith(code);
       expect(userService.fetchUser).toHaveBeenCalledWith({ id: mockUser.id });

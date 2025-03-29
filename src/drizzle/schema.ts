@@ -116,6 +116,7 @@ export const user = pgTable(
     picture: text(),
     phone: text(),
     managed: boolean().default(false).notNull(),
+    passwordReset: boolean().default(false),
     superAdmin: boolean("super_admin").default(false).notNull(),
   },
   (table) => [

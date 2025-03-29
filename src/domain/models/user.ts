@@ -9,6 +9,7 @@ import { t } from "elysia";
  * @property {string} lastName - The last name of the user. Must be between 1 and 256 characters.
  * @property {string} picture - The URL or path to the user's picture. Can be empty but must not exceed 256 characters.
  * @property {boolean} managed - Indicates if the user is managed.
+ * @property {boolean} passwordRest - Indicates if the user has a password reset.
  * @property {boolean} superAdmin - Indicates if the user has super admin privileges.
  * @property {string | null} phone - The phone number of the user. Can be null or a string up to 256 characters.
  */
@@ -21,5 +22,6 @@ export const User = t.Object({
   picture: t.Nullable(t.String({ minLength: 0, maxLength: 256 })),
   phone: t.Nullable(t.String({ minLength: 0, maxLength: 256 })),
   managed: t.Boolean(),
+  passwordReset: t.Nullable(t.Boolean()),
   superAdmin: t.Boolean(),
 });

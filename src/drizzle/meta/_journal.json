@@ -15,6 +15,13 @@
       "when": 1740789556924,
       "tag": "0001_little_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743117300784,
+      "tag": "0002_slow_demogoblin",
+      "breakpoints": true
     }
   ]
 }

@@ -58,7 +58,10 @@ export const me = async (
 export const getUser = async (
   context: AuthenticatedContext,
 ): Promise<SuccessResponse<User>> => {
+  console.log("getUser");
   const { params, query } = context;
+  console.log("params", params);
+  console.log("query", query);
 
   if (!params.user) {
     throw new BadRequestError(

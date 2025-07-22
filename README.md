@@ -45,3 +45,51 @@ bun test
 ```
 
 Open http://localhost:3000/ with your browser to see the result.
+
+## Email (SMTP) Configuration
+
+To enable email sending (e.g., for inquiries), set the following environment variables in your deployment or `.env` file:
+
+```
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=465 # or 587, depending on your provider
+SMTP_SECURE=true # true for port 465 (SSL), false for 587 (TLS)
+SMTP_USER=nick@illustrious.online
+SMTP_PASS=your_email_password_or_app_password
+```
+
+- For best results, use an app-specific password if your provider supports it.
+- The sender address will default to `SMTP_USER`.
+
+## reCAPTCHA Configuration
+
+To enable reCAPTCHA verification for the inquiry endpoint, set the following environment variable:
+
+```
+RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
+```
+
+- Get your reCAPTCHA secret key from the [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin).
+- If not configured, reCAPTCHA verification will be skipped (not recommended for production).
+
+## Inquiry Endpoint
+
+The `/inquiry` endpoint accepts POST requests with the following security requirements:
+
+- **Service Role Key**: Must be included in the `Authorization` header as `Bearer <your_service_role_key>`
+- **reCAPTCHA Token**: Must be included in the request body
+
+Example request:
+```bash
+curl -X POST http://localhost:8000/inquiry \
+  -H "Authorization: Bearer your_supabase_service_role_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orgId": "org_id",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "subject": "General Inquiry",
+    "message": "Hello, I have a question...",
+    "recaptchaToken": "recaptcha_token_from_frontend"
+  }'
+```

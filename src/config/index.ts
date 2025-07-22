@@ -46,4 +46,7 @@ export default {
     dbPort: Bun.env.DB_PORT ?? "5432",
     dbHost: Bun.env.DB_HOST ?? "localhost",
   },
+  recaptcha: {
+    secretKey: Bun.env.RECAPTCHA_SECRET_KEY,
+  },
 };

@@ -80,6 +80,36 @@ export interface AuthPermissions {
   };
 
   /**
+   * Permissions related to inquiries.
+   */
+  inquiry?: {
+    /**
+     * The ID of the inquiry.
+     */
+    id?: string;
+
+    /**
+     * Indicates if the user has access to the inquiry.
+     */
+    access?: boolean;
+
+    /**
+     * Indicates if the user can edit the inquiry.
+     */
+    edit?: boolean;
+
+    /**
+     * Indicates if the user can create an inquiry.
+     */
+    create?: boolean;
+
+    /**
+     * Indicates if the user can delete the inquiry.
+     */
+    delete?: boolean;
+  };
+
+  /**
    * Permissions related to reports.
    */
   report?: {
@@ -133,12 +163,14 @@ export interface AuthenticatedContext extends Context {
  * Interface representing the parameters for authentication.
  *
  * @property {string} [user] - Optional user identifier.
+ * @property {string} [inquiry] - Optional inquiry identifier.
  * @property {string} [invoice] - Optional invoice identifier.
  * @property {string} [report] - Optional report identifier.
  * @property {string} [org] - Optional organization identifier.
  */
 export interface AuthParams {
   user?: string;
+  inquiry?: string;
   invoice?: string;
   report?: string;
   org?: string;

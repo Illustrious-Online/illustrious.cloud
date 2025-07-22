@@ -8,6 +8,7 @@ import config from "./config";
 import errorPlugin from "./plugins/error";
 import authRoutes from "./routes/auth";
 
+import inquiryRoutes from "@/routes/inquiry";
 import invoiceRouter from "@/routes/invoice";
 import orgRoutes from "@/routes/org";
 import reportRouter from "@/routes/report";
@@ -37,6 +38,7 @@ export const app = new Elysia()
     }),
   )
   .use(errorPlugin)
+  .use(inquiryRoutes) // Add inquiry routes before auth plugin
   .use(authPlugin)
   .use(
     swagger({

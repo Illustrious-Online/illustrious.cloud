@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
+// Choose email provider based on environment variable
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || "smtp"; // "smtp" or "resend"
+
+// SMTP transporter (for GoDaddy or other SMTP providers)
+const smtpTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
   secure: process.env.SMTP_SECURE === "true", // true for 465, false for 587
@@ -9,6 +13,20 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+
+// Resend transporter (alternative to SMTP)
+const resendTransporter = nodemailer.createTransport({
+  host: "smtp.resend.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "resend",
+    pass: process.env.RESEND_API_KEY,
+  },
+});
+
+// Use appropriate transporter based on provider
+const transporter = EMAIL_PROVIDER === "resend" ? resendTransporter : smtpTransporter;
 
 /**
  * Sends an email using the configured SMTP transporter.
@@ -40,3 +58,5 @@ export async function sendMail({
     html,
   });
 }
+
+

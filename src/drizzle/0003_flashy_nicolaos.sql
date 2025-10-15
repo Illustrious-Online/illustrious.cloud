@@ -1,0 +1,1 @@
+ALTER TABLE "Inquiry" ALTER COLUMN "phone" DROP NOT NULL;

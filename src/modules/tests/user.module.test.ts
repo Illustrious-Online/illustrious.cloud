@@ -6,22 +6,22 @@ import {
   expect,
   it,
 } from "bun:test";
+import { faker } from "@faker-js/faker";
+import axios from "axios";
+import type { Context } from "elysia";
+import { vi } from "vitest";
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ServerError from "@/domain/exceptions/ServerError";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import type { UserDetails } from "@/domain/interfaces/users";
-import { UserRole } from "@/domain/types/UserRole";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
+import { UserRole } from "@/domain/types/UserRole";
 import type { Invoice, Org, Report, User } from "@/drizzle/schema";
 import * as invoiceService from "@/services/invoice";
 import * as orgService from "@/services/org";
 import * as reportService from "@/services/report";
 import * as userService from "@/services/user";
-import { faker } from "@faker-js/faker";
-import axios from "axios";
-import type { Context } from "elysia";
-import { vi } from "vitest";
 import { deleteUser, getUser, linkSteam, me, putUser } from "../user";
 
 const defaultContext: Context = {} as Context;
@@ -196,7 +196,7 @@ describe("User Module", () => {
       try {
         await invoiceService.removeInvoice(mockInvoice.id);
         await orgService.removeOrg(mockOrg.id);
-      } catch (error) {
+      } catch (_error) {
         // Do nothing
       }
     });

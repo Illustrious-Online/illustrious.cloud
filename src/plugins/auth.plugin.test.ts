@@ -1,4 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+import type { User } from "@supabase/auth-js";
+import type { Context } from "elysia";
+import { vi } from "vitest";
 import { supabaseClient } from "@/app";
 import config from "@/config";
 import type {
@@ -11,10 +15,6 @@ import * as invoiceService from "@/services/invoice";
 import * as orgService from "@/services/org";
 import * as reportService from "@/services/report";
 import * as userService from "@/services/user";
-import { faker } from "@faker-js/faker";
-import type { User } from "@supabase/auth-js";
-import type { Context } from "elysia";
-import { vi } from "vitest";
 
 const defaultContext: Context = {} as Context;
 const headers = {
@@ -60,7 +60,7 @@ const authOrg: Org = {
   name: faker.company.name(),
   contact: faker.internet.email(),
 };
-const secondOrg: Org = {
+const _secondOrg: Org = {
   id: faker.string.uuid(),
   name: faker.company.name(),
   contact: faker.internet.email(),

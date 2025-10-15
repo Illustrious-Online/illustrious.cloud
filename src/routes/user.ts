@@ -1,9 +1,9 @@
+import { type Elysia, t } from "elysia";
 import { Invoice } from "@/domain/models/invoice";
 import { Org } from "@/domain/models/org";
 import { Report } from "@/domain/models/report";
 import { User } from "@/domain/models/user";
 import * as userController from "@/modules/user";
-import { type Elysia, t } from "elysia";
 
 /**
  * Defines the routes for user-related operations.

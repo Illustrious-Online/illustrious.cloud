@@ -1,10 +1,10 @@
+import type { Provider } from "@supabase/supabase-js";
+import type { Context } from "elysia";
 import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type SuccessResponse from "@/domain/types/generic/SuccessResponse";
 import type { User } from "@/drizzle/schema";
 import * as authService from "@/services/auth";
-import type { Provider } from "@supabase/supabase-js";
-import type { Context } from "elysia";
 
 /**
  * Signs in a user using OAuth authentication.

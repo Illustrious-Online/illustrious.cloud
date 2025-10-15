@@ -381,3 +381,83 @@ export const orgUser = pgTable(
 
 export type OrgUser = typeof orgUser.$inferSelect;
 export type InsertOrgUser = typeof orgUser.$inferInsert;
+
+/**
+ * Represents the schema for the "Inquiry" table in the database.
+ *
+ * @property {string} id - The primary key of the inquiry, must be a non-null text.
+ * @property {string} name - The name of the person making the inquiry, must be a non-null text.
+ * @property {string} email - The email address of the person making the inquiry, must be a non-null text.
+ * @property {string} phone - The phone number of the person making the inquiry, must be a non-null text.
+ * @property {string} service - The service being inquired about, must be a non-null text.
+ * @property {string} message - The message content of the inquiry, must be a non-null text.
+ * @property {string} recaptchaToken - The reCAPTCHA token for verification, must be a non-null text.
+ * @property {Date} createdAt - The timestamp when the inquiry was created, must be a non-null timestamp.
+ * @property {Date} updatedAt - The timestamp when the inquiry was last updated, can be null.
+ * @property {Date} deletedAt - The timestamp when the inquiry was deleted, can be null.
+ */
+export const inquiry = pgTable("Inquiry", {
+  id: text().primaryKey().notNull(),
+  name: text().notNull(),
+  email: text().notNull(),
+  phone: text(),
+  service: text().notNull(),
+  message: text().notNull(),
+  recaptchaToken: text().notNull(),
+  createdAt: timestamp().notNull(),
+  updatedAt: timestamp(),
+  deletedAt: timestamp(),
+});
+
+export type Inquiry = typeof inquiry.$inferSelect;
+export type InsertInquiry = typeof inquiry.$inferInsert;
+
+/**
+ * Represents the `OrgInquiry` table in the database.
+ * This table establishes a many-to-many relationship between organizations and inquiries.
+ *
+ * Columns:
+ * - `orgId`: The ID of the organization. This field is a non-nullable text.
+ * - `inquiryId`: The ID of the inquiry. This field is a non-nullable text.
+ *
+ * Foreign Keys:
+ * - `OrgInquiry_inquiryId_Inquiry_id_fk`: References the `id` column in the `Inquiry` table.
+ *   - On update: Cascade
+ *   - On delete: Restrict
+ * - `OrgInquiry_orgId_Org_id_fk`: References the `id` column in the `Org` table.
+ *   - On update: Cascade
+ *   - On delete: Restrict
+ *
+ * Primary Key:
+ * - `OrgInquiry_pkey`: Composite primary key consisting of `orgId` and `inquiryId`.
+ */
+export const orgInquiry = pgTable(
+  "OrgInquiry",
+  {
+    orgId: text().notNull(),
+    inquiryId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.inquiryId],
+      foreignColumns: [inquiry.id],
+      name: "OrgInquiry_inquiryId_Inquiry_id_fk",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    foreignKey({
+      columns: [table.orgId],
+      foreignColumns: [org.id],
+      name: "OrgInquiry_orgId_Org_id_fk",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    primaryKey({
+      columns: [table.orgId, table.inquiryId],
+      name: "OrgInquiry_pkey",
+    }),
+  ],
+);
+
+export type OrgInquiry = typeof orgInquiry.$inferSelect;
+export type InsertOrgInquiry = typeof orgInquiry.$inferInsert;

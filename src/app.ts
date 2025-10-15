@@ -1,20 +1,18 @@
 import cors from "@elysiajs/cors";
 import swagger from "@elysiajs/swagger";
+import * as Sentry from "@sentry/bun";
+import { createClient } from "@supabase/supabase-js";
 import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
-
-import { createClient } from "@supabase/supabase-js";
-import config from "./config";
-import errorPlugin from "./plugins/error";
-import authRoutes from "./routes/auth";
-
+import inquiryRoutes from "@/routes/inquiry";
 import invoiceRouter from "@/routes/invoice";
 import orgRoutes from "@/routes/org";
 import reportRouter from "@/routes/report";
 import userRoutes from "@/routes/user";
-
-import * as Sentry from "@sentry/bun";
+import config from "./config";
 import authPlugin from "./plugins/auth";
+import errorPlugin from "./plugins/error";
+import authRoutes from "./routes/auth";
 
 if (config.app.env === "production") {
   Sentry.init({
@@ -71,9 +69,15 @@ export const app = new Elysia()
   .use(orgRoutes)
   .use(reportRouter)
   .use(invoiceRouter)
-  .listen(config.app.port, () => {
-    console.log(`Environment: ${config.app.env}`);
-    console.log(
-      `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,
-    );
-  });
+  .use(inquiryRoutes);
+
+// Export the app type for Eden Treaty
+export type App = typeof app;
+
+// Start the server
+app.listen(config.app.port, () => {
+  console.log(`Environment: ${config.app.env}`);
+  console.log(
+    `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,
+  );
+});

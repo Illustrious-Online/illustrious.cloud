@@ -1,6 +1,6 @@
+import { type Elysia, t } from "elysia";
 import { Report } from "@/domain/models/report";
 import * as reportController from "@/modules/report";
-import { type Elysia, t } from "elysia";
 
 /**
  * Sets up the report routes for the application.

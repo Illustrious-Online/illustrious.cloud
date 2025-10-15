@@ -1,3 +1,6 @@
+import bearer from "@elysiajs/bearer";
+import { and, eq } from "drizzle-orm";
+import type { Elysia } from "elysia";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type {
   AuthParams,
@@ -7,17 +10,14 @@ import type {
 import type { SubmitInvoice } from "@/domain/interfaces/invoices";
 import type { SubmitReport } from "@/domain/interfaces/reports";
 import { UserRole } from "@/domain/types/UserRole";
-import bearer from "@elysiajs/bearer";
-import { and, eq } from "drizzle-orm";
-import type { Elysia } from "elysia";
 import { supabaseClient } from "../app";
 import { db } from "../drizzle/db";
 import {
   type Org,
-  type User,
   orgInvoice,
   orgReport,
   orgUser,
+  type User,
   user,
   userInvoice,
   userReport,
@@ -34,7 +34,7 @@ import {
  */
 export const executePostChecks = async (
   currentUser: User,
-  params: AuthParams,
+  _params: AuthParams,
   body: unknown,
   path: string,
 ): Promise<{ user: User; permissions: AuthPermissions }> => {
@@ -251,6 +251,7 @@ const authPlugin = (app: Elysia) =>
           "docs",
           "health",
           "healthz",
+          "inquiry",
         ];
         if (path === "/" || allowedPaths.includes(firstPart)) {
           return;

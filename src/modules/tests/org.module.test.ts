@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+import type { Context } from "elysia";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import { faker } from "@faker-js/faker";
-import type { Context } from "elysia";
 import {
   deleteOrg,
   getOrg,
@@ -20,7 +20,7 @@ let mockOrg = {
   name: faker.company.name(),
   contact: faker.internet.email(),
 };
-const defaultContext: Context = {} as Context;
+const _defaultContext: Context = {} as Context;
 const mockUser: User = {
   id: faker.string.uuid(),
   email: faker.internet.email(),

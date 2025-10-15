@@ -1,6 +1,6 @@
+import { type Elysia, t } from "elysia";
 import { Invoice } from "@/domain/models/invoice";
 import * as invoiceController from "@/modules/invoice";
-import { type Elysia, t } from "elysia";
 
 /**
  * Sets up the routes for handling invoices.

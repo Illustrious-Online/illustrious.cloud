@@ -10,12 +10,12 @@ export const client = new Client({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl:
-    process.env.DB_SSL !== "false"
+    process.env.DB_SSL !== "false" && process.env.DB_SSL !== "0"
       ? {
           rejectUnauthorized: true,
           ca: fs.readFileSync("cert.crt").toString(),
         }
-      : undefined,
+      : false,
 });
 
 await client.connect();

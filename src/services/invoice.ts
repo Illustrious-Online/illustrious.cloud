@@ -1,5 +1,5 @@
+import { eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
-
 import ConflictError from "@/domain/exceptions/ConflictError";
 import ServerError from "@/domain/exceptions/ServerError";
 import type { CreateInvoice } from "@/domain/interfaces/invoices";
@@ -10,7 +10,6 @@ import {
   orgInvoice,
   userInvoice,
 } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
 
 /**
  * Creates a new invoice in the database.

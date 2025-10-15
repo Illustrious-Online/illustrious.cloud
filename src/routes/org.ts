@@ -1,7 +1,7 @@
+import { type Elysia, t } from "elysia";
 import { Org } from "@/domain/models/org";
 import { User } from "@/domain/models/user";
 import * as orgController from "@/modules/org";
-import { type Elysia, t } from "elysia";
 
 /**
  * Defines the routes for organization-related operations.

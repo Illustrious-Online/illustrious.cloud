@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+import type { Context } from "elysia";
 import UnauthorizedError from "@/domain/exceptions/UnauthorizedError";
 import type { AuthenticatedContext } from "@/domain/interfaces/auth";
 import { UserRole } from "@/domain/types/UserRole";
 import type { User as IllustriousUser, Org, Report } from "@/drizzle/schema";
 import * as orgService from "@/services/org";
 import * as userService from "@/services/user";
-import { faker } from "@faker-js/faker";
-import type { Context } from "elysia";
 import { deleteReport, getReport, postReport, putReport } from "../report";
 
-const defaultContext: Context = {} as Context;
+const _defaultContext: Context = {} as Context;
 const mockUser: IllustriousUser = {
   id: faker.string.uuid(),
   identifier: faker.string.uuid(),
@@ -129,7 +129,7 @@ describe("Report Module", () => {
 
   describe("update", () => {
     it("should update a report if user has permission", async () => {
-      const updatedAt = new Date();
+      const _updatedAt = new Date();
       const context = mockContext({
         body: {
           client: secondUser.id,

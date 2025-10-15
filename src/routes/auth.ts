@@ -1,5 +1,5 @@
-import * as authController from "@/modules/auth";
 import { type Elysia, t } from "elysia";
+import * as authController from "@/modules/auth";
 
 /**
  * Sets up authentication routes for the application.

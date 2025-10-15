@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+import { AuthError, type Provider, type User } from "@supabase/auth-js";
+import type { Context } from "elysia";
+import { vi } from "vitest";
 import { supabaseClient } from "@/app";
 import config from "@/config"; // Adjust the import path as necessary
 import ServerError from "@/domain/exceptions/ServerError";
 import type { User as IllustriousUser } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import { faker } from "@faker-js/faker";
-import { AuthError, type Provider, type User } from "@supabase/auth-js";
-import type { Context } from "elysia";
-import { vi } from "vitest";
 import { oauthCallback, signInWithOAuth, signOut } from "./auth";
 
 const defaultContext: Context = {} as Context;

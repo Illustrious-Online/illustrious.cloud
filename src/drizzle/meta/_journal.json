@@ -15,6 +15,20 @@
       "when": 1740789556924,
       "tag": "0001_little_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760503566868,
+      "tag": "0002_cuddly_texas_twister",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760505207715,
+      "tag": "0003_flashy_nicolaos",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,12 @@
+import { and, eq } from "drizzle-orm";
 import { NotFoundError } from "elysia";
-
 import ConflictError from "@/domain/exceptions/ConflictError";
-import type { CreateOrg } from "@/domain/interfaces/orgs";
-import type { OrgDetails } from "@/domain/interfaces/orgs";
+import type { CreateOrg, OrgDetails } from "@/domain/interfaces/orgs";
 import { UserRole } from "@/domain/types/UserRole";
 import { db } from "@/drizzle/db";
 import {
-  type Org,
   invoice,
+  type Org,
   org,
   orgInvoice,
   orgReport,
@@ -17,7 +16,6 @@ import {
   userInvoice,
   userReport,
 } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
 
 /**
  * Creates a new organization.

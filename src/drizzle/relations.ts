@@ -1,7 +1,9 @@
 import { relations } from "drizzle-orm/relations";
 import {
+  inquiry,
   invoice,
   org,
+  orgInquiry,
   orgInvoice,
   orgReport,
   orgUser,
@@ -107,6 +109,7 @@ export const orgReportRelations = relations(orgReport, ({ one }) => ({
 export const orgRelations = relations(org, ({ many }) => ({
   orgReports: many(orgReport),
   orgInvoices: many(orgInvoice),
+  orgInquiries: many(orgInquiry),
   orgUser: many(orgUser),
 }));
 
@@ -191,5 +194,42 @@ export const orgUserRelations = relations(orgUser, ({ one }) => ({
   user: one(user, {
     fields: [orgUser.userId],
     references: [user.id],
+  }),
+}));
+
+/**
+ * Defines the relations for the `inquiry` entity.
+ *
+ * @param inquiry - The inquiry entity.
+ * @param many - A function to define a many-to-one or one-to-many relationships.
+ * @returns An object containing the relations for the inquiry entity.
+ *
+ * Relations:
+ * - `orgInquiries`: Represents a many-to-one relationship with the `orgInquiry` entity.
+ */
+export const inquiryRelations = relations(inquiry, ({ many }) => ({
+  orgInquiries: many(orgInquiry),
+}));
+
+/**
+ * Defines the relations for the `orgInquiry` entity.
+ *
+ * @param orgInquiry - The `orgInquiry` entity.
+ * @param one - A function to define a one-to-one relationship.
+ *
+ * @returns An object containing the relations for `orgInquiry`:
+ * - `inquiry`: A one-to-one relationship with the `inquiry` entity,
+ *   where `orgInquiry.inquiryId` references `inquiry.id`.
+ * - `org`: A one-to-one relationship with the `org` entity,
+ *   where `orgInquiry.orgId` references `org.id`.
+ */
+export const orgInquiryRelations = relations(orgInquiry, ({ one }) => ({
+  inquiry: one(inquiry, {
+    fields: [orgInquiry.inquiryId],
+    references: [inquiry.id],
+  }),
+  org: one(org, {
+    fields: [orgInquiry.orgId],
+    references: [org.id],
   }),
 }));

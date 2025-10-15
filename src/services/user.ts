@@ -1,3 +1,5 @@
+import axios from "axios";
+import { and, eq } from "drizzle-orm";
 import config from "@/config";
 import BadRequestError from "@/domain/exceptions/BadRequestError";
 import ConflictError from "@/domain/exceptions/ConflictError";
@@ -8,20 +10,18 @@ import { db } from "@/drizzle/db";
 import {
   type User as IllustriousUser,
   type Invoice,
-  type Org,
-  type Report,
   invoice,
+  type Org,
   org,
   orgInvoice,
   orgReport,
   orgUser,
+  type Report,
   report,
   user,
   userInvoice,
   userReport,
 } from "@/drizzle/schema";
-import axios from "axios";
-import { and, eq } from "drizzle-orm";
 
 const supaConfig = {
   method: "post",

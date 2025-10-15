@@ -1,10 +1,10 @@
+import type { Provider } from "@supabase/auth-js";
+import { v4 as uuidv4 } from "uuid";
 import { supabaseClient } from "@/app";
 import config from "@/config";
 import ServerError from "@/domain/exceptions/ServerError";
 import type { User } from "@/drizzle/schema";
 import * as userService from "@/services/user";
-import type { Provider } from "@supabase/auth-js";
-import { v4 as uuidv4 } from "uuid";
 
 /**
  * Signs in a user using OAuth with the specified provider.
@@ -50,7 +50,7 @@ export async function oauthCallback(bearer: string): Promise<User> {
 
   try {
     user = await userService.fetchUser({ id: data?.user.id });
-  } catch (e) {
+  } catch (_e) {
     user = await userService.updateOrCreate({
       id: uuidv4(),
       identifier: data?.user.id,

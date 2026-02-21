@@ -1,16 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { SessionData } from "@/lib/auth";
 import { UnauthorizedError } from "@/plugins/error";
+import errorPlugin from "@/plugins/error";
+import { Elysia } from "elysia";
 import { AuthMiddleware, createAuthHelpers } from "../auth/middleware";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "./utils/integration-setup";
-import { Elysia } from "elysia";
-import errorPlugin from "@/plugins/error";
 
 describe("Auth Middleware", () => {
   describe("AuthMiddleware plugin", () => {
@@ -24,7 +22,7 @@ describe("Auth Middleware", () => {
       // Create test user with session using integration testing
       const session = await createIntegrationTestUserWithSession(
         "auth-middleware-test@example.com",
-        "Auth Middleware Test User"
+        "Auth Middleware Test User",
       );
       testUserId = session.userId;
       authToken = session.token;
@@ -69,9 +67,7 @@ describe("Auth Middleware", () => {
           return { authenticated: auth !== null };
         });
 
-      const response = await app.handle(
-        new Request("http://localhost/test"),
-      );
+      const response = await app.handle(new Request("http://localhost/test"));
 
       expect([200, 500]).toContain(response.status);
       if (response.status === 200) {

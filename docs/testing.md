@@ -33,13 +33,14 @@ This will:
 ```
 src/modules/tests/
 ├── setup.ts                    # Global setup (integration DB)
-├── setup-integration.ts        # Integration test setup
 ├── utils/
 │   ├── integration-auth.ts     # createIntegrationTestUserWithSession, etc.
 │   ├── integration-setup.ts    # setupIntegrationTests, teardownIntegrationTests
 │   ├── fixtures.ts             # createTestOrg, createTestUser, etc.
+│   ├── mocks.ts                # reCAPTCHA/mailer mocks for service tests
 │   ├── requests.ts             # authenticatedRequest, unauthenticatedRequest
-│   └── test-app.ts            # createTestApp (Elysia with all routes)
+│   ├── test-app.ts             # createTestApp (Elysia with all routes)
+│   └── test-db-integration.ts  # DB connection for integration tests
 ├── *.routes.test.ts           # Route tests (use integration auth)
 ├── *.service.test.ts          # Service tests (direct DB)
 └── auth.*.test.ts             # Auth lib, middleware, permissions

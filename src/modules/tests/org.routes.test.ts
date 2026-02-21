@@ -1,21 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
 import {
+  OrgRole,
   notification,
   org,
   orgUser,
   user,
   userProfile,
-  OrgRole,
 } from "@/drizzle/schema";
-import { eq, and } from "drizzle-orm";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
-import {
-  setupIntegrationTests,
-  teardownIntegrationTests,
-} from "./utils/integration-setup";
+import { and, eq } from "drizzle-orm";
 import {
   createTestInvoice,
   createTestOrg,
@@ -24,6 +17,11 @@ import {
   createTestUser,
   createTestUserProfile,
 } from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
+import {
+  setupIntegrationTests,
+  teardownIntegrationTests,
+} from "./utils/integration-setup";
 import {
   authenticatedRequest,
   expectForbiddenResponse,
@@ -49,11 +47,11 @@ describe("Org Routes", () => {
     // Create test users with sessions using integration testing
     const session1 = await createIntegrationTestUserWithSession(
       "test-user-1@example.com",
-      "Test User 1"
+      "Test User 1",
     );
     const session2 = await createIntegrationTestUserWithSession(
       "test-user-2@example.com",
-      "Test User 2"
+      "Test User 2",
     );
 
     testUserId = session1.userId;
@@ -67,7 +65,8 @@ describe("Org Routes", () => {
       .from(user)
       .where(eq(user.id, testUserId))
       .limit(1);
-    const testUser = testUserRecord!;
+    if (!testUserRecord) throw new Error("Test user not found");
+    const testUser = testUserRecord;
 
     // Create test orgs
     testOrg = await createTestOrg({ ownerId: testUserId });
@@ -174,9 +173,11 @@ describe("Org Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;
@@ -339,7 +340,7 @@ describe("Org Routes", () => {
     it("should return 403 for non-member", async () => {
       const otherSession = await createIntegrationTestUserWithSession(
         "other-user@example.com",
-        "Other User"
+        "Other User",
       );
       await createTestUserProfile(otherSession.userId);
       const otherToken = otherSession.token;
@@ -401,9 +402,11 @@ describe("Org Routes", () => {
 
       // Cleanup
       await db.delete(notification).where(eq(notification.userId, newOwner.id));
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
-      );
+      await db
+        .delete(orgUser)
+        .where(
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
+        );
       await db
         .update(org)
         .set({ pendingOwnerId: null })
@@ -413,10 +416,14 @@ describe("Org Routes", () => {
     it("should return 403 for non-owner", async () => {
       const newOwnerSession = await createIntegrationTestUserWithSession(
         "new-owner-4@example.com",
-        "New Owner 4"
+        "New Owner 4",
       );
       await createTestUserProfile(newOwnerSession.userId);
-      await createTestOrgUser(newOwnerSession.userId, testOrg.id, OrgRole.CLIENT);
+      await createTestOrgUser(
+        newOwnerSession.userId,
+        testOrg.id,
+        OrgRole.CLIENT,
+      );
 
       const response = await authenticatedRequest(
         app,
@@ -449,10 +456,14 @@ describe("Org Routes", () => {
 
       const newOwnerSession = await createIntegrationTestUserWithSession(
         "new-owner-5@example.com",
-        "New Owner 5"
+        "New Owner 5",
       );
       await createTestUserProfile(newOwnerSession.userId);
-      await createTestOrgUser(newOwnerSession.userId, testOrg.id, OrgRole.CLIENT);
+      await createTestOrgUser(
+        newOwnerSession.userId,
+        testOrg.id,
+        OrgRole.CLIENT,
+      );
       const newOwnerToken = newOwnerSession.token;
 
       // Initiate transfer
@@ -494,10 +505,17 @@ describe("Org Routes", () => {
 
       // Cleanup
       const { notification } = await import("@/drizzle/schema");
-      await db.delete(notification).where(eq(notification.userId, newOwnerSession.userId));
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwnerSession.userId)),
-      );
+      await db
+        .delete(notification)
+        .where(eq(notification.userId, newOwnerSession.userId));
+      await db
+        .delete(orgUser)
+        .where(
+          and(
+            eq(orgUser.orgId, testOrg.id),
+            eq(orgUser.userId, newOwnerSession.userId),
+          ),
+        );
     });
 
     it("should return 403 for non-pending owner", async () => {
@@ -530,10 +548,14 @@ describe("Org Routes", () => {
 
       const newOwnerSession = await createIntegrationTestUserWithSession(
         "new-owner-6@example.com",
-        "New Owner 6"
+        "New Owner 6",
       );
       await createTestUserProfile(newOwnerSession.userId);
-      await createTestOrgUser(newOwnerSession.userId, testOrg.id, OrgRole.CLIENT);
+      await createTestOrgUser(
+        newOwnerSession.userId,
+        testOrg.id,
+        OrgRole.CLIENT,
+      );
       const newOwnerToken = newOwnerSession.token;
 
       // Initiate transfer
@@ -588,9 +610,14 @@ describe("Org Routes", () => {
       }
 
       // Cleanup
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwnerSession.userId)),
-      );
+      await db
+        .delete(orgUser)
+        .where(
+          and(
+            eq(orgUser.orgId, testOrg.id),
+            eq(orgUser.userId, newOwnerSession.userId),
+          ),
+        );
     });
 
     it("should return 403 for non-pending owner", async () => {

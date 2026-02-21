@@ -1,6 +1,6 @@
+import { captureException } from "@/utils/sentry";
 import { Elysia } from "elysia";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { captureException } from "@/utils/sentry";
 
 /**
  * Base class for application errors
@@ -128,7 +128,7 @@ const ERROR_NAME_STATUS_MAP: Record<string, number> = {
  */
 function inferStatusFromMessage(message: string): number | null {
   const lowerMessage = message.toLowerCase();
-  
+
   if (
     lowerMessage.includes("not an admin") ||
     lowerMessage.includes("not authorized") ||
@@ -136,11 +136,14 @@ function inferStatusFromMessage(message: string): number | null {
   ) {
     return StatusCodes.FORBIDDEN;
   }
-  
-  if (lowerMessage.includes("not found") || lowerMessage.includes("does not exist")) {
+
+  if (
+    lowerMessage.includes("not found") ||
+    lowerMessage.includes("does not exist")
+  ) {
     return StatusCodes.NOT_FOUND;
   }
-  
+
   return null;
 }
 
@@ -206,7 +209,7 @@ const errorPlugin = new Elysia({ name: "error-plugin" }).onError(
 
     // Handle unknown errors - log to Sentry and return generic error
     const isProduction = process.env.NODE_ENV === "production";
-    
+
     // Log unexpected errors for debugging
     if (!isProduction) {
       console.error("Unhandled error:", {
@@ -215,7 +218,7 @@ const errorPlugin = new Elysia({ name: "error-plugin" }).onError(
         stack: err?.stack,
       });
     }
-    
+
     // Capture in Sentry for production monitoring
     if (err instanceof Error) {
       captureException(err, {

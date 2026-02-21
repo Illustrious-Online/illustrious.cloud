@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
-import { invoice, org, orgUser, user, userInvoice, userProfile, OrgRole } from "@/drizzle/schema";
+import {
+  OrgRole,
+  invoice,
+  org,
+  orgUser,
+  user,
+  userInvoice,
+  userProfile,
+} from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
 import { eq } from "drizzle-orm";
 import {
@@ -36,7 +44,7 @@ describe("Invoice Service", () => {
     testOrg = await createTestOrg();
     await createTestOrgUser(testUser.id, testOrg.id, OrgRole.ADMIN);
     await createTestOrgUser(testUser2.id, testOrg.id, OrgRole.CLIENT);
-    
+
     // Create test invoice for use across tests
     testInvoice = await createTestInvoice(testOrg.id, testUser.id);
   });
@@ -81,7 +89,7 @@ describe("Invoice Service", () => {
       expect(Number.parseFloat(created.amount)).toBe(invoiceData.amount);
       expect(created.status).toBe(invoiceData.status);
       expect(created.createdBy).toBe(testUser.id);
-      
+
       // Cleanup
       await db.delete(invoice).where(eq(invoice.id, created.id));
     });
@@ -188,18 +196,20 @@ describe("Invoice Service", () => {
       await createTestUserInvoice(testUser.id, linkedInvoice.id);
 
       const invoices = await getUserInvoices(testUser.id);
-      
+
       // Should include both org invoices and userInvoice-linked invoices
       const invoiceIds = invoices.map((inv) => inv.id);
       expect(invoiceIds.includes(testInvoice.id)).toBe(true);
       expect(invoiceIds.includes(linkedInvoice.id)).toBe(true);
-      
+
       // Should deduplicate (user is both org member and has userInvoice link)
       const uniqueIds = new Set(invoiceIds);
       expect(uniqueIds.size).toBe(invoiceIds.length);
 
       // Cleanup
-      await db.delete(userInvoice).where(eq(userInvoice.invoiceId, linkedInvoice.id));
+      await db
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, linkedInvoice.id));
       await db.delete(invoice).where(eq(invoice.id, linkedInvoice.id));
     });
   });
@@ -287,7 +297,9 @@ describe("Invoice Service", () => {
       expect(userInvs[0].userId).toBe(otherUser.id);
 
       // Cleanup
-      await db.delete(userInvoice).where(eq(userInvoice.invoiceId, testInvoice.id));
+      await db
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, testInvoice.id));
       await db.delete(userProfile).where(eq(userProfile.userId, otherUser.id));
       await db.delete(user).where(eq(user.id, otherUser.id));
     });

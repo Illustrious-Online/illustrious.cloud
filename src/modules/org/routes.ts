@@ -18,9 +18,9 @@ import {
   createOrg,
   declineOwnershipTransfer,
   getOrgOwner,
+  getOrgUsers,
   getUserOrgs,
   initiateOwnershipTransfer,
-  getOrgUsers,
 } from "./service";
 
 export const orgRoutes = new Elysia({ prefix: "/orgs" })
@@ -213,9 +213,8 @@ export const orgRoutes = new Elysia({ prefix: "/orgs" })
     async ({ requireAuth, params }) => {
       const authContext = await requireAuth();
       // Check if user is org member or has site-wide read access
-      const { getUserSiteRole, getUserOrgRole, canReadAcrossOrgs } = await import(
-        "../auth/permissions"
-      );
+      const { getUserSiteRole, getUserOrgRole, canReadAcrossOrgs } =
+        await import("../auth/permissions");
       const siteRole = await getUserSiteRole(authContext.userId);
       const orgRole = await getUserOrgRole(authContext.userId, params.id);
 

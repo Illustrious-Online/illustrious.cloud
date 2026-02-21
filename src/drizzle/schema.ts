@@ -153,7 +153,9 @@ export const org = pgTable("org", {
   name: text("name").notNull(),
   contact: text("contact").notNull(),
   ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
-  pendingOwnerId: text("pending_owner_id").references(() => user.id, { onDelete: "set null" }),
+  pendingOwnerId: text("pending_owner_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
 });
 
 export type Org = typeof org.$inferSelect;

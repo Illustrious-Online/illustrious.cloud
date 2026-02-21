@@ -1,15 +1,16 @@
-import { Client } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "@/drizzle/schema";
 import * as relations from "@/drizzle/relations";
+import * as schema from "@/drizzle/schema";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Client } from "pg";
 
 /**
  * Creates a test database connection for integration tests
  * Uses a separate test database (illustrious_test) to avoid conflicts
  */
 export function createTestDb() {
-  const testDbName = process.env.TEST_DB_NAME || process.env.DB_NAME || "illustrious_test";
-  
+  const testDbName =
+    process.env.TEST_DB_NAME || process.env.DB_NAME || "illustrious_test";
+
   const client = new Client({
     host: process.env.DB_HOST ?? "localhost",
     port: Number(process.env.DB_PORT) ?? 5432,
@@ -46,11 +47,13 @@ export async function disconnectTestDb(client: Client) {
 /**
  * Cleans up all test data from the database
  * Useful for resetting state between test suites
- * 
+ *
  * Note: This uses the global db connection, so make sure DB_NAME
  * environment variable is set to the test database
  */
-export async function cleanupTestDatabase(db: ReturnType<typeof createTestDb>["db"]) {
+export async function cleanupTestDatabase(
+  db: ReturnType<typeof createTestDb>["db"],
+) {
   const {
     notification,
     userReport,

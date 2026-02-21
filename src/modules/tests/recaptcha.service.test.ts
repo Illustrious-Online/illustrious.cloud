@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import config from "@/config";
 import { BadRequestError } from "@/plugins/error";
+import axios from "axios";
+import type { AxiosError } from "axios";
 import {
   getAxiosInstance,
   setAxiosInstance,
@@ -11,9 +14,6 @@ import {
   setupMocks,
   teardownMocks,
 } from "./utils/mocks";
-import config from "@/config";
-import axios from "axios";
-import type { AxiosError } from "axios";
 
 describe("Recaptcha Service", () => {
   const originalSecretKey = config.recaptcha.secretKey;
@@ -103,7 +103,9 @@ describe("Recaptcha Service", () => {
 
       await verifyRecaptcha("token", "192.168.1.1");
       expect(typeof capturedParams).toBe("string");
-      expect((capturedParams as string).includes("remoteip=192.168.1.1")).toBe(true);
+      expect((capturedParams as string).includes("remoteip=192.168.1.1")).toBe(
+        true,
+      );
 
       config.recaptcha.secretKey = originalSecretKey;
     });
@@ -142,7 +144,9 @@ describe("Recaptcha Service", () => {
       setAxiosInstance(mockAxios);
 
       await expect(verifyRecaptcha("token")).rejects.toThrow(BadRequestError);
-      await expect(verifyRecaptcha("token")).rejects.toThrow("reCAPTCHA API error");
+      await expect(verifyRecaptcha("token")).rejects.toThrow(
+        "reCAPTCHA API error",
+      );
 
       config.recaptcha.secretKey = originalSecretKey;
     });
@@ -157,7 +161,9 @@ describe("Recaptcha Service", () => {
       };
       setAxiosInstance(mockAxios);
 
-      await expect(verifyRecaptcha("token")).rejects.toThrow("Unexpected error");
+      await expect(verifyRecaptcha("token")).rejects.toThrow(
+        "Unexpected error",
+      );
 
       config.recaptcha.secretKey = originalSecretKey;
     });

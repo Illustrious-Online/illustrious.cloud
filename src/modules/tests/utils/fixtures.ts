@@ -1,5 +1,7 @@
 import { db } from "@/drizzle/db";
 import {
+  OrgRole,
+  SiteRole,
   account,
   inquiry,
   invoice,
@@ -12,8 +14,6 @@ import {
   userInvoice,
   userProfile,
   userReport,
-  OrgRole,
-  SiteRole,
 } from "@/drizzle/schema";
 import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";

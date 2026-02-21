@@ -3,17 +3,17 @@ import { db } from "@/drizzle/db";
 import { notification, user, userProfile } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import {
+  NotificationType,
   createNotification,
-  getUserNotifications,
-  markNotificationRead,
   deleteNotification,
   getUnreadCount,
-  NotificationType,
+  getUserNotifications,
+  markNotificationRead,
 } from "../notification/service";
 import {
+  createTestNotification,
   createTestUser,
   createTestUserProfile,
-  createTestNotification,
 } from "./utils/fixtures";
 
 describe("Notification Service", () => {
@@ -88,15 +88,23 @@ describe("Notification Service", () => {
     });
 
     afterAll(async () => {
-      await db.delete(notification).where(eq(notification.id, testNotification1.id));
-      await db.delete(notification).where(eq(notification.id, testNotification2.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, testNotification1.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, testNotification2.id));
     });
 
     it("should return all notifications for a user", async () => {
       const notifications = await getUserNotifications(testUser.id);
       expect(notifications.length).toBeGreaterThanOrEqual(2);
-      expect(notifications.some((n) => n.id === testNotification1.id)).toBe(true);
-      expect(notifications.some((n) => n.id === testNotification2.id)).toBe(true);
+      expect(notifications.some((n) => n.id === testNotification1.id)).toBe(
+        true,
+      );
+      expect(notifications.some((n) => n.id === testNotification2.id)).toBe(
+        true,
+      );
     });
 
     it("should filter by unreadOnly", async () => {
@@ -104,15 +112,23 @@ describe("Notification Service", () => {
         unreadOnly: true,
       });
       expect(notifications.every((n) => !n.read)).toBe(true);
-      expect(notifications.some((n) => n.id === testNotification1.id)).toBe(true);
-      expect(notifications.some((n) => n.id === testNotification2.id)).toBe(false);
+      expect(notifications.some((n) => n.id === testNotification1.id)).toBe(
+        true,
+      );
+      expect(notifications.some((n) => n.id === testNotification2.id)).toBe(
+        false,
+      );
     });
 
     it("should filter by type", async () => {
       const notifications = await getUserNotifications(testUser.id, {
         type: NotificationType.OWNERSHIP_TRANSFER,
       });
-      expect(notifications.every((n) => n.type === NotificationType.OWNERSHIP_TRANSFER)).toBe(true);
+      expect(
+        notifications.every(
+          (n) => n.type === NotificationType.OWNERSHIP_TRANSFER,
+        ),
+      ).toBe(true);
     });
 
     it("should respect limit and offset", async () => {
@@ -126,13 +142,20 @@ describe("Notification Service", () => {
 
   describe("markNotificationRead", () => {
     it("should mark notification as read", async () => {
-      const testNotification = await createTestNotification(testUser.id, { read: false });
-      const updated = await markNotificationRead(testNotification.id, testUser.id);
+      const testNotification = await createTestNotification(testUser.id, {
+        read: false,
+      });
+      const updated = await markNotificationRead(
+        testNotification.id,
+        testUser.id,
+      );
       expect(updated.read).toBe(true);
       expect(updated.updatedAt).toBeDefined();
 
       // Cleanup
-      await db.delete(notification).where(eq(notification.id, testNotification.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, testNotification.id));
     });
 
     it("should throw NotFoundError for non-existent notification", async () => {
@@ -148,7 +171,9 @@ describe("Notification Service", () => {
       ).rejects.toThrow("Notification not found");
 
       // Cleanup
-      await db.delete(notification).where(eq(notification.id, testNotification.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, testNotification.id));
     });
   });
 
@@ -179,7 +204,9 @@ describe("Notification Service", () => {
       ).rejects.toThrow("Notification not found");
 
       // Cleanup
-      await db.delete(notification).where(eq(notification.id, testNotification.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, testNotification.id));
     });
   });
 
@@ -189,20 +216,32 @@ describe("Notification Service", () => {
     let readNotification: typeof notification.$inferSelect;
 
     beforeAll(async () => {
-      unreadNotification1 = await createTestNotification(testUser.id, { read: false });
-      unreadNotification2 = await createTestNotification(testUser.id, { read: false });
-      readNotification = await createTestNotification(testUser.id, { read: true });
+      unreadNotification1 = await createTestNotification(testUser.id, {
+        read: false,
+      });
+      unreadNotification2 = await createTestNotification(testUser.id, {
+        read: false,
+      });
+      readNotification = await createTestNotification(testUser.id, {
+        read: true,
+      });
     });
 
     afterAll(async () => {
       if (unreadNotification1) {
-        await db.delete(notification).where(eq(notification.id, unreadNotification1.id));
+        await db
+          .delete(notification)
+          .where(eq(notification.id, unreadNotification1.id));
       }
       if (unreadNotification2) {
-        await db.delete(notification).where(eq(notification.id, unreadNotification2.id));
+        await db
+          .delete(notification)
+          .where(eq(notification.id, unreadNotification2.id));
       }
       if (readNotification) {
-        await db.delete(notification).where(eq(notification.id, readNotification.id));
+        await db
+          .delete(notification)
+          .where(eq(notification.id, readNotification.id));
       }
     });
 
@@ -224,10 +263,14 @@ describe("Notification Service", () => {
       });
 
       const notifications = await getUserNotifications(testUser.id);
-      expect(notifications.some((n) => n.id === expiredNotification.id)).toBe(false);
+      expect(notifications.some((n) => n.id === expiredNotification.id)).toBe(
+        false,
+      );
 
       // Cleanup
-      await db.delete(notification).where(eq(notification.id, expiredNotification.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, expiredNotification.id));
     });
 
     it("should include non-expired notifications", async () => {
@@ -236,10 +279,14 @@ describe("Notification Service", () => {
       });
 
       const notifications = await getUserNotifications(testUser.id);
-      expect(notifications.some((n) => n.id === futureNotification.id)).toBe(true);
+      expect(notifications.some((n) => n.id === futureNotification.id)).toBe(
+        true,
+      );
 
       // Cleanup
-      await db.delete(notification).where(eq(notification.id, futureNotification.id));
+      await db
+        .delete(notification)
+        .where(eq(notification.id, futureNotification.id));
     });
   });
 });

@@ -1,6 +1,6 @@
 import { db } from "@/drizzle/db";
-import { orgUser, userProfile, SiteRole, OrgRole } from "@/drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { OrgRole, SiteRole, orgUser, userProfile } from "@/drizzle/schema";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Get user's site-wide role
@@ -220,10 +220,7 @@ export async function isResourceAssignedToUser(
     .select()
     .from(userReport)
     .where(
-      and(
-        eq(userReport.userId, userId),
-        eq(userReport.reportId, resourceId),
-      ),
+      and(eq(userReport.userId, userId), eq(userReport.reportId, resourceId)),
     )
     .limit(1);
   return !!assignment;

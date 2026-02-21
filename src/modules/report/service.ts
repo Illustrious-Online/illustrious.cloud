@@ -1,15 +1,15 @@
 import { db } from "@/drizzle/db";
-import { orgUser, report, userReport, OrgRole } from "@/drizzle/schema";
+import { OrgRole, orgUser, report, userReport } from "@/drizzle/schema";
 import type { InsertReport, Report } from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
-import { and, eq, or, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getUserSiteRole,
-  getUserOrgRole,
   canReadAcrossOrgs,
   canWriteAcrossOrgs,
   canWriteResource,
+  getUserOrgRole,
+  getUserSiteRole,
   isResourceAssignedToUser,
 } from "../auth/permissions";
 
@@ -117,11 +117,7 @@ export async function getReportById(
 
   // Client and read-only users can only read reports assigned to them
   if (orgRole === OrgRole.CLIENT || orgRole === OrgRole.READ_ONLY) {
-    const isAssigned = await isResourceAssignedToUser(
-      userId,
-      id,
-      "userReport",
-    );
+    const isAssigned = await isResourceAssignedToUser(userId, id, "userReport");
     if (isAssigned) {
       return foundReport;
     }
@@ -176,10 +172,7 @@ export async function getUserReports(userId: string): Promise<Report[]> {
         .from(report)
         .innerJoin(userReport, eq(report.id, userReport.reportId))
         .where(
-          and(
-            eq(report.orgId, userOrg.orgId),
-            eq(userReport.userId, userId),
-          ),
+          and(eq(report.orgId, userOrg.orgId), eq(userReport.userId, userId)),
         );
       for (const { report: rep } of assignedReports) {
         reportMap.set(rep.id, rep);
@@ -232,9 +225,7 @@ export async function getOrgReports(
       .select({ report })
       .from(report)
       .innerJoin(userReport, eq(report.id, userReport.reportId))
-      .where(
-        and(eq(report.orgId, orgId), eq(userReport.userId, userId)),
-      );
+      .where(and(eq(report.orgId, orgId), eq(userReport.userId, userId)));
 
     return assignedReports.map((r) => r.report);
   }
@@ -272,7 +263,9 @@ export async function updateReport(
   );
 
   if (!canWrite) {
-    throw new ForbiddenError("User does not have permission to update this report");
+    throw new ForbiddenError(
+      "User does not have permission to update this report",
+    );
   }
 
   const updateData: Partial<InsertReport> = {

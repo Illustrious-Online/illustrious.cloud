@@ -1,11 +1,14 @@
 import { db } from "@/drizzle/db";
-import { user, userProfile, orgUser, OrgRole, SiteRole } from "@/drizzle/schema";
-import type { InsertUserProfile, User, UserProfile } from "@/drizzle/schema";
-import { eq, and } from "drizzle-orm";
 import {
-  getUserSiteRole,
-  getUserOrgRole,
-} from "../auth/permissions";
+  OrgRole,
+  SiteRole,
+  orgUser,
+  user,
+  userProfile,
+} from "@/drizzle/schema";
+import type { InsertUserProfile, User, UserProfile } from "@/drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { getUserOrgRole, getUserSiteRole } from "../auth/permissions";
 
 /**
  * Combined user with profile data
@@ -195,10 +198,7 @@ export async function linkTemporaryUser(
       .select()
       .from(orgUser)
       .where(
-        and(
-          eq(orgUser.userId, userId),
-          eq(orgUser.orgId, orgUserRecord.orgId),
-        ),
+        and(eq(orgUser.userId, userId), eq(orgUser.orgId, orgUserRecord.orgId)),
       )
       .limit(1);
 
@@ -356,16 +356,16 @@ export async function acceptOrgInvitation(
   }
 
   if (orgUserRecord.role !== OrgRole.READ_ONLY) {
-    throw new Error("User does not have a pending invitation for this organization");
+    throw new Error(
+      "User does not have a pending invitation for this organization",
+    );
   }
 
   // Update role
   const [updated] = await db
     .update(orgUser)
     .set({ role: newRole })
-    .where(
-      and(eq(orgUser.userId, userId), eq(orgUser.orgId, orgId)),
-    )
+    .where(and(eq(orgUser.userId, userId), eq(orgUser.orgId, orgId)))
     .returning();
 
   return updated;

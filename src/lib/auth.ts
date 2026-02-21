@@ -136,7 +136,10 @@ export async function getSessionFromHeader(
     };
   } catch (error) {
     // Log error in test environment for debugging
-    if (process.env.NODE_ENV === "test" || process.env.DB_NAME === "illustrious_test") {
+    if (
+      process.env.NODE_ENV === "test" ||
+      process.env.DB_NAME === "illustrious_test"
+    ) {
       console.error("[getSessionFromHeader] Error validating token:", error);
     }
     // Silently return null for any errors (invalid token, network issues, etc.)

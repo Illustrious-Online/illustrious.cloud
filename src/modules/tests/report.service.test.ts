@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
-import { org, orgUser, report, user, userReport, OrgRole, userProfile } from "@/drizzle/schema";
+import {
+  OrgRole,
+  org,
+  orgUser,
+  report,
+  user,
+  userProfile,
+  userReport,
+} from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
 import { eq } from "drizzle-orm";
 import {
@@ -18,8 +26,8 @@ import {
   createTestOrgUser,
   createTestReport,
   createTestUser,
-  createTestUserReport,
   createTestUserProfile,
+  createTestUserReport,
 } from "./utils/fixtures";
 
 describe("Report Service", () => {
@@ -36,7 +44,7 @@ describe("Report Service", () => {
     testOrg = await createTestOrg();
     await createTestOrgUser(testUser.id, testOrg.id, OrgRole.ADMIN);
     await createTestOrgUser(testUser2.id, testOrg.id, OrgRole.CLIENT);
-    
+
     // Create test report for use across tests
     testReport = await createTestReport(testOrg.id, testUser.id);
   });
@@ -73,7 +81,7 @@ describe("Report Service", () => {
       expect(created.title).toBe(reportData.title);
       expect(created.status).toBe(reportData.status);
       expect(created.createdBy).toBe(testUser.id);
-      
+
       // Cleanup
       await db.delete(report).where(eq(report.id, created.id));
     });
@@ -178,18 +186,20 @@ describe("Report Service", () => {
       await createTestUserReport(testUser.id, linkedReport.id);
 
       const reports = await getUserReports(testUser.id);
-      
+
       // Should include both org reports and userReport-linked reports
       const reportIds = reports.map((r) => r.id);
       expect(reportIds.includes(testReport.id)).toBe(true);
       expect(reportIds.includes(linkedReport.id)).toBe(true);
-      
+
       // Should deduplicate (user is both org member and has userReport link)
       const uniqueIds = new Set(reportIds);
       expect(uniqueIds.size).toBe(reportIds.length);
 
       // Cleanup
-      await db.delete(userReport).where(eq(userReport.reportId, linkedReport.id));
+      await db
+        .delete(userReport)
+        .where(eq(userReport.reportId, linkedReport.id));
       await db.delete(report).where(eq(report.id, linkedReport.id));
     });
   });

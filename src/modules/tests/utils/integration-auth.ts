@@ -1,7 +1,7 @@
-import type { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
-import { createTestApp } from "./test-app";
+import type { Elysia } from "elysia";
 import { authenticatedRequest } from "./requests";
+import { createTestApp } from "./test-app";
 
 const TEST_PASSWORD = "TestPassword123!";
 
@@ -97,7 +97,9 @@ export async function authenticatedIntegrationRequest(
  * @param token - Bearer token to verify
  * @returns true if token is valid, false otherwise
  */
-export async function verifyTokenWithBetterAuth(token: string): Promise<boolean> {
+export async function verifyTokenWithBetterAuth(
+  token: string,
+): Promise<boolean> {
   try {
     const result = await auth.api.getSession({
       headers: new Headers({ authorization: `Bearer ${token}` }),

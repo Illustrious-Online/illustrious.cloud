@@ -1,12 +1,12 @@
-import { Elysia, t } from "elysia";
 import { getSessionFromHeader } from "@/lib/auth";
+import { Elysia, t } from "elysia";
 import { createAuthHelpers } from "../auth/middleware";
 import { notificationModel } from "./model";
 import {
-  getUserNotifications,
-  markNotificationRead,
   deleteNotification,
   getUnreadCount,
+  getUserNotifications,
+  markNotificationRead,
 } from "./service";
 
 export const notificationRoutes = new Elysia({ prefix: "/notifications" })

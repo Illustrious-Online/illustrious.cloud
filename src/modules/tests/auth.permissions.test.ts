@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
 import {
+  OrgRole,
+  SiteRole,
   invoice,
   org,
   orgUser,
@@ -9,19 +11,17 @@ import {
   userInvoice,
   userProfile,
   userReport,
-  SiteRole,
-  OrgRole,
 } from "@/drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
-  getUserSiteRole,
-  getUserOrgRole,
+  canAccessUserDetails,
   canReadAcrossOrgs,
-  canWriteAcrossOrgs,
   canReadOrgResource,
+  canWriteAcrossOrgs,
   canWriteOrgResource,
   canWriteResource,
-  canAccessUserDetails,
+  getUserOrgRole,
+  getUserSiteRole,
   isResourceAssignedToUser,
 } from "../auth/permissions";
 import {
@@ -53,7 +53,9 @@ describe("Auth Permissions", () => {
     // Create profiles with different site roles
     await createTestUserProfile(testUser.id, { siteRole: SiteRole.ADMIN });
     await createTestUserProfile(testUser2.id, { siteRole: SiteRole.MODERATOR });
-    await createTestUserProfile(testUser3.id, { siteRole: SiteRole.NORMAL_USER });
+    await createTestUserProfile(testUser3.id, {
+      siteRole: SiteRole.NORMAL_USER,
+    });
 
     // Create test orgs
     testOrg = await createTestOrg();
@@ -72,7 +74,9 @@ describe("Auth Permissions", () => {
   afterAll(async () => {
     // Cleanup resources
     if (testInvoice) {
-      await db.delete(userInvoice).where(eq(userInvoice.invoiceId, testInvoice.id));
+      await db
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, testInvoice.id));
       await db.delete(invoice).where(eq(invoice.id, testInvoice.id));
     }
     if (testReport) {
@@ -175,19 +179,27 @@ describe("Auth Permissions", () => {
     });
 
     it("should return true for org admin", () => {
-      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.ADMIN)).toBe(true);
+      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.ADMIN)).toBe(
+        true,
+      );
     });
 
     it("should return true for org moderator", () => {
-      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR)).toBe(true);
+      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR)).toBe(
+        true,
+      );
     });
 
     it("should return true for org client", () => {
-      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.CLIENT)).toBe(true);
+      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.CLIENT)).toBe(
+        true,
+      );
     });
 
     it("should return true for read-only user", () => {
-      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.READ_ONLY)).toBe(true);
+      expect(canReadOrgResource(SiteRole.NORMAL_USER, OrgRole.READ_ONLY)).toBe(
+        true,
+      );
     });
   });
 
@@ -205,49 +217,96 @@ describe("Auth Permissions", () => {
     });
 
     it("should return true for org admin", () => {
-      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.ADMIN)).toBe(true);
+      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.ADMIN)).toBe(
+        true,
+      );
     });
 
     it("should return true for org moderator", () => {
-      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR)).toBe(true);
+      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR)).toBe(
+        true,
+      );
     });
 
     it("should return false for org client", () => {
-      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.CLIENT)).toBe(false);
+      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.CLIENT)).toBe(
+        false,
+      );
     });
 
     it("should return false for read-only user", () => {
-      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.READ_ONLY)).toBe(false);
+      expect(canWriteOrgResource(SiteRole.NORMAL_USER, OrgRole.READ_ONLY)).toBe(
+        false,
+      );
     });
   });
 
   describe("canWriteResource", () => {
     it("should return true for site admin", () => {
-      expect(canWriteResource(SiteRole.ADMIN, null, null, testUser.id)).toBe(true);
+      expect(canWriteResource(SiteRole.ADMIN, null, null, testUser.id)).toBe(
+        true,
+      );
     });
 
     it("should return true for org admin", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, OrgRole.ADMIN, null, testUser.id)).toBe(true);
+      expect(
+        canWriteResource(
+          SiteRole.NORMAL_USER,
+          OrgRole.ADMIN,
+          null,
+          testUser.id,
+        ),
+      ).toBe(true);
     });
 
     it("should return true for org moderator writing own resource", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR, testUser2.id, testUser2.id)).toBe(true);
+      expect(
+        canWriteResource(
+          SiteRole.NORMAL_USER,
+          OrgRole.MODERATOR,
+          testUser2.id,
+          testUser2.id,
+        ),
+      ).toBe(true);
     });
 
     it("should return false for org moderator writing others' resource", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, OrgRole.MODERATOR, testUser.id, testUser2.id)).toBe(false);
+      expect(
+        canWriteResource(
+          SiteRole.NORMAL_USER,
+          OrgRole.MODERATOR,
+          testUser.id,
+          testUser2.id,
+        ),
+      ).toBe(false);
     });
 
     it("should return false for org client", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, OrgRole.CLIENT, testUser.id, testUser3.id)).toBe(false);
+      expect(
+        canWriteResource(
+          SiteRole.NORMAL_USER,
+          OrgRole.CLIENT,
+          testUser.id,
+          testUser3.id,
+        ),
+      ).toBe(false);
     });
 
     it("should return false for read-only user", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, OrgRole.READ_ONLY, testUser.id, testUser3.id)).toBe(false);
+      expect(
+        canWriteResource(
+          SiteRole.NORMAL_USER,
+          OrgRole.READ_ONLY,
+          testUser.id,
+          testUser3.id,
+        ),
+      ).toBe(false);
     });
 
     it("should return false for non-member", () => {
-      expect(canWriteResource(SiteRole.NORMAL_USER, null, testUser.id, testUser3.id)).toBe(false);
+      expect(
+        canWriteResource(SiteRole.NORMAL_USER, null, testUser.id, testUser3.id),
+      ).toBe(false);
     });
   });
 
@@ -279,24 +338,40 @@ describe("Auth Permissions", () => {
     });
 
     it("should return true for org admin accessing org member", async () => {
-      const canAccess = await canAccessUserDetails(testUser.id, testUser3.id, testOrg.id);
+      const canAccess = await canAccessUserDetails(
+        testUser.id,
+        testUser3.id,
+        testOrg.id,
+      );
       expect(canAccess).toBe(true);
     });
 
     it("should return true for org moderator accessing org member", async () => {
-      const canAccess = await canAccessUserDetails(testUser2.id, testUser3.id, testOrg.id);
+      const canAccess = await canAccessUserDetails(
+        testUser2.id,
+        testUser3.id,
+        testOrg.id,
+      );
       expect(canAccess).toBe(true);
     });
 
     it("should return false for org client accessing other org member", async () => {
-      const canAccess = await canAccessUserDetails(testUser3.id, testUser.id, testOrg.id);
+      const canAccess = await canAccessUserDetails(
+        testUser3.id,
+        testUser.id,
+        testOrg.id,
+      );
       expect(canAccess).toBe(false);
     });
 
     it("should return false when viewer is not org member", async () => {
       const outsider = await createTestUser();
       await createTestUserProfile(outsider.id);
-      const canAccess = await canAccessUserDetails(outsider.id, testUser3.id, testOrg.id);
+      const canAccess = await canAccessUserDetails(
+        outsider.id,
+        testUser3.id,
+        testOrg.id,
+      );
       expect(canAccess).toBe(false);
 
       // Cleanup
@@ -308,7 +383,11 @@ describe("Auth Permissions", () => {
       const outsider = await createTestUser();
       await createTestUserProfile(outsider.id);
       // Use testUser3 (normal user) instead of testUser (admin) to test org-level permissions
-      const canAccess = await canAccessUserDetails(testUser3.id, outsider.id, testOrg.id);
+      const canAccess = await canAccessUserDetails(
+        testUser3.id,
+        outsider.id,
+        testOrg.id,
+      );
       expect(canAccess).toBe(false);
 
       // Cleanup
@@ -320,33 +399,57 @@ describe("Auth Permissions", () => {
   describe("isResourceAssignedToUser", () => {
     it("should return true for invoice assigned to user", async () => {
       await createTestUserInvoice(testUser3.id, testInvoice.id);
-      const isAssigned = await isResourceAssignedToUser(testUser3.id, testInvoice.id, "userInvoice");
+      const isAssigned = await isResourceAssignedToUser(
+        testUser3.id,
+        testInvoice.id,
+        "userInvoice",
+      );
       expect(isAssigned).toBe(true);
 
       // Cleanup
-      await db.delete(userInvoice).where(
-        and(eq(userInvoice.userId, testUser3.id), eq(userInvoice.invoiceId, testInvoice.id))
-      );
+      await db
+        .delete(userInvoice)
+        .where(
+          and(
+            eq(userInvoice.userId, testUser3.id),
+            eq(userInvoice.invoiceId, testInvoice.id),
+          ),
+        );
     });
 
     it("should return false for invoice not assigned to user", async () => {
-      const isAssigned = await isResourceAssignedToUser(testUser3.id, testInvoice.id, "userInvoice");
+      const isAssigned = await isResourceAssignedToUser(
+        testUser3.id,
+        testInvoice.id,
+        "userInvoice",
+      );
       expect(isAssigned).toBe(false);
     });
 
     it("should return true for report assigned to user", async () => {
       await createTestUserReport(testUser3.id, testReport.id);
-      const isAssigned = await isResourceAssignedToUser(testUser3.id, testReport.id, "userReport");
+      const isAssigned = await isResourceAssignedToUser(
+        testUser3.id,
+        testReport.id,
+        "userReport",
+      );
       expect(isAssigned).toBe(true);
 
       // Cleanup
-      await db.delete(userReport).where(
-        eq(userReport.userId, testUser3.id) && eq(userReport.reportId, testReport.id)
-      );
+      await db
+        .delete(userReport)
+        .where(
+          eq(userReport.userId, testUser3.id) &&
+            eq(userReport.reportId, testReport.id),
+        );
     });
 
     it("should return false for report not assigned to user", async () => {
-      const isAssigned = await isResourceAssignedToUser(testUser3.id, testReport.id, "userReport");
+      const isAssigned = await isResourceAssignedToUser(
+        testUser3.id,
+        testReport.id,
+        "userReport",
+      );
       expect(isAssigned).toBe(false);
     });
   });

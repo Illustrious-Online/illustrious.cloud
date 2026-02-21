@@ -1,23 +1,23 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
 import {
+  OrgRole,
   notification,
   org,
   orgUser,
   user,
-  OrgRole,
   userProfile,
 } from "@/drizzle/schema";
 import { ForbiddenError } from "@/plugins/error";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
+  acceptOwnershipTransfer,
   createOrg,
+  declineOwnershipTransfer,
+  getOrgOwner,
   getOrgUsers,
   getUserOrgs,
   initiateOwnershipTransfer,
-  acceptOwnershipTransfer,
-  declineOwnershipTransfer,
-  getOrgOwner,
   isOrgOwner,
 } from "../org/service";
 import {
@@ -211,9 +211,11 @@ describe("Org Service", () => {
       ).rejects.toThrow(ForbiddenError);
 
       // Cleanup
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
-      );
+      await db
+        .delete(orgUser)
+        .where(
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
+        );
       await db.delete(userProfile).where(eq(userProfile.userId, newOwner.id));
       await db.delete(user).where(eq(user.id, newOwner.id));
     });
@@ -243,10 +245,7 @@ describe("Org Service", () => {
         .select()
         .from(orgUser)
         .where(
-          and(
-            eq(orgUser.orgId, testOrg.id),
-            eq(orgUser.userId, testUser.id),
-          ),
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, testUser.id)),
         )
         .limit(1);
       if (existingOldOwner.length === 0) {
@@ -273,10 +272,7 @@ describe("Org Service", () => {
         .select()
         .from(orgUser)
         .where(
-          and(
-            eq(orgUser.orgId, testOrg.id),
-            eq(orgUser.userId, newOwner.id),
-          ),
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
         )
         .limit(1);
       expect(orgUserRecord.role).toBe(OrgRole.ADMIN);
@@ -286,14 +282,11 @@ describe("Org Service", () => {
         .select()
         .from(orgUser)
         .where(
-          and(
-            eq(orgUser.orgId, testOrg.id),
-            eq(orgUser.userId, testUser.id),
-          ),
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, testUser.id)),
         )
         .limit(1);
       expect(oldOwnerRecord).toBeDefined();
-      expect(oldOwnerRecord!.role).toBe(OrgRole.ADMIN);
+      expect(oldOwnerRecord?.role).toBe(OrgRole.ADMIN);
 
       // Verify notification is marked as read
       const notifications = await db
@@ -326,9 +319,11 @@ describe("Org Service", () => {
 
       // Cleanup
       await db.delete(notification).where(eq(notification.userId, newOwner.id));
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
-      );
+      await db
+        .delete(orgUser)
+        .where(
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
+        );
       await db.delete(userProfile).where(eq(userProfile.userId, newOwner.id));
       await db.delete(user).where(eq(user.id, newOwner.id));
     });
@@ -389,9 +384,11 @@ describe("Org Service", () => {
       }
 
       // Cleanup
-      await db.delete(orgUser).where(
-        and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
-      );
+      await db
+        .delete(orgUser)
+        .where(
+          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, newOwner.id)),
+        );
       await db.delete(userProfile).where(eq(userProfile.userId, newOwner.id));
       await db.delete(user).where(eq(user.id, newOwner.id));
     });

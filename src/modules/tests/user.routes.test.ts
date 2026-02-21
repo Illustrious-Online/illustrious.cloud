@@ -1,17 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
-import { user, userProfile } from "@/drizzle/schema";
+import { user, type userProfile } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
+import { createTestUserProfile } from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "./utils/integration-setup";
-import {
-  createTestUserProfile,
-} from "./utils/fixtures";
 import {
   authenticatedRequest,
   expectUnauthenticatedResponse,
@@ -34,7 +30,7 @@ describe("User Routes", () => {
     // Create test user with session using integration testing
     const session = await createIntegrationTestUserWithSession(
       "test-user@example.com",
-      "Test User"
+      "Test User",
     );
     testUserId = session.userId;
     authToken = session.token;
@@ -45,7 +41,8 @@ describe("User Routes", () => {
       .from(user)
       .where(eq(user.id, testUserId))
       .limit(1);
-    testUser = testUserRecord!;
+    if (!testUserRecord) throw new Error("Test user not found");
+    testUser = testUserRecord;
 
     // Create user profile
     testProfile = await createTestUserProfile(testUserId);
@@ -83,9 +80,11 @@ describe("User Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;
@@ -115,7 +114,7 @@ describe("User Routes", () => {
       // Create user without profile using integration testing
       const sessionWithoutProfile = await createIntegrationTestUserWithSession(
         "user-without-profile@example.com",
-        "User Without Profile"
+        "User Without Profile",
       );
 
       const response = await authenticatedRequest(

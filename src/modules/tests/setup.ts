@@ -1,5 +1,8 @@
 import { afterAll, beforeAll } from "bun:test";
-import { setupIntegrationTests, teardownIntegrationTests } from "./utils/integration-setup";
+import {
+  setupIntegrationTests,
+  teardownIntegrationTests,
+} from "./utils/integration-setup";
 
 /**
  * Global test setup

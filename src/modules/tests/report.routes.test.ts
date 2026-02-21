@@ -1,26 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
-import {
-  org,
-  report,
-  userReport,
-  OrgRole,
-} from "@/drizzle/schema";
+import { OrgRole, type org, report, userReport } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
-import {
-  setupIntegrationTests,
-  teardownIntegrationTests,
-} from "./utils/integration-setup";
 import {
   createTestOrg,
   createTestOrgUser,
   createTestReport,
-  createTestUserReport,
   createTestUserProfile,
+  createTestUserReport,
 } from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
+import {
+  setupIntegrationTests,
+  teardownIntegrationTests,
+} from "./utils/integration-setup";
 import {
   authenticatedRequest,
   expectForbiddenResponse,
@@ -47,11 +40,11 @@ describe("Report Routes", () => {
     // Create test users with sessions using integration testing
     const session1 = await createIntegrationTestUserWithSession(
       "report-test-user-1@example.com",
-      "Report Test User 1"
+      "Report Test User 1",
     );
     const session2 = await createIntegrationTestUserWithSession(
       "report-test-user-2@example.com",
-      "Report Test User 2"
+      "Report Test User 2",
     );
 
     testUserId = session1.userId;
@@ -132,9 +125,11 @@ describe("Report Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;
@@ -235,9 +230,11 @@ describe("Report Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;

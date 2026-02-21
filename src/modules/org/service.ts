@@ -1,18 +1,18 @@
 import { db } from "@/drizzle/db";
-import { notification, org, orgUser, OrgRole, user } from "@/drizzle/schema";
+import { OrgRole, notification, org, orgUser, user } from "@/drizzle/schema";
 import type { Org } from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getUserSiteRole,
-  getUserOrgRole,
   canReadAcrossOrgs,
+  getUserOrgRole,
+  getUserSiteRole,
 } from "../auth/permissions";
 import {
   createOwnershipTransferNotification,
-  markNotificationRead,
   deleteNotification,
+  markNotificationRead,
 } from "../notification/service";
 
 /**
@@ -130,7 +130,10 @@ export async function getOrgOwner(orgId: string) {
  * @param orgId - Organization ID
  * @returns Promise resolving to true if user is owner
  */
-export async function isOrgOwner(userId: string, orgId: string): Promise<boolean> {
+export async function isOrgOwner(
+  userId: string,
+  orgId: string,
+): Promise<boolean> {
   const [foundOrg] = await db
     .select()
     .from(org)
@@ -155,7 +158,9 @@ export async function initiateOwnershipTransfer(
   // Validate current user is owner
   const isOwner = await isOrgOwner(currentOwnerId, orgId);
   if (!isOwner) {
-    throw new ForbiddenError("Only the organization owner can transfer ownership");
+    throw new ForbiddenError(
+      "Only the organization owner can transfer ownership",
+    );
   }
 
   // Validate org exists
@@ -173,12 +178,7 @@ export async function initiateOwnershipTransfer(
   const [orgMembership] = await db
     .select()
     .from(orgUser)
-    .where(
-      and(
-        eq(orgUser.orgId, orgId),
-        eq(orgUser.userId, newOwnerId),
-      ),
-    )
+    .where(and(eq(orgUser.orgId, orgId), eq(orgUser.userId, newOwnerId)))
     .limit(1);
 
   if (!orgMembership) {
@@ -229,7 +229,9 @@ export async function acceptOwnershipTransfer(
   }
 
   if (foundOrg.pendingOwnerId !== newOwnerId) {
-    throw new ForbiddenError("You are not the pending owner of this organization");
+    throw new ForbiddenError(
+      "You are not the pending owner of this organization",
+    );
   }
 
   // Update ownership
@@ -245,24 +247,14 @@ export async function acceptOwnershipTransfer(
   const [orgMembership] = await db
     .select()
     .from(orgUser)
-    .where(
-      and(
-        eq(orgUser.orgId, orgId),
-        eq(orgUser.userId, newOwnerId),
-      ),
-    )
+    .where(and(eq(orgUser.orgId, orgId), eq(orgUser.userId, newOwnerId)))
     .limit(1);
 
   if (orgMembership && orgMembership.role !== OrgRole.ADMIN) {
     await db
       .update(orgUser)
       .set({ role: OrgRole.ADMIN })
-      .where(
-        and(
-          eq(orgUser.orgId, orgId),
-          eq(orgUser.userId, newOwnerId),
-        ),
-      );
+      .where(and(eq(orgUser.orgId, orgId), eq(orgUser.userId, newOwnerId)));
   }
 
   // Find and mark notification as read
@@ -314,14 +306,13 @@ export async function declineOwnershipTransfer(
   }
 
   if (foundOrg.pendingOwnerId !== newOwnerId) {
-    throw new ForbiddenError("You are not the pending owner of this organization");
+    throw new ForbiddenError(
+      "You are not the pending owner of this organization",
+    );
   }
 
   // Clear pending owner
-  await db
-    .update(org)
-    .set({ pendingOwnerId: null })
-    .where(eq(org.id, orgId));
+  await db.update(org).set({ pendingOwnerId: null }).where(eq(org.id, orgId));
 
   // Find and delete notification
   const notifications = await db

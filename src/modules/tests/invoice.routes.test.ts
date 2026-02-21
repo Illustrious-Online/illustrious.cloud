@@ -1,19 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
-import {
-  invoice,
-  org,
-  userInvoice,
-  OrgRole,
-} from "@/drizzle/schema";
+import { OrgRole, invoice, org, userInvoice } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
-import {
-  setupIntegrationTests,
-  teardownIntegrationTests,
-} from "./utils/integration-setup";
 import {
   createTestInvoice,
   createTestOrg,
@@ -21,6 +9,11 @@ import {
   createTestUserInvoice,
   createTestUserProfile,
 } from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
+import {
+  setupIntegrationTests,
+  teardownIntegrationTests,
+} from "./utils/integration-setup";
 import {
   authenticatedRequest,
   expectForbiddenResponse,
@@ -47,11 +40,11 @@ describe("Invoice Routes", () => {
     // Create test users with sessions using integration testing
     const session1 = await createIntegrationTestUserWithSession(
       "invoice-test-user-1@example.com",
-      "Invoice Test User 1"
+      "Invoice Test User 1",
     );
     const session2 = await createIntegrationTestUserWithSession(
       "invoice-test-user-2@example.com",
-      "Invoice Test User 2"
+      "Invoice Test User 2",
     );
 
     testUserId = session1.userId;
@@ -134,9 +127,11 @@ describe("Invoice Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;
@@ -254,9 +249,11 @@ describe("Invoice Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;

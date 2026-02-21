@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db } from "@/drizzle/db";
 import {
+  OrgRole,
+  SiteRole,
   invoice,
   org,
   orgUser,
@@ -10,18 +12,16 @@ import {
   userInvoice,
   userProfile,
   userReport,
-  OrgRole,
-  SiteRole,
 } from "@/drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
+  acceptOrgInvitation,
   getProfileByUserId,
   getUserById,
   getUserWithProfile,
-  updateProfile,
   getUserWithRoles,
   linkTemporaryUser,
-  acceptOrgInvitation,
+  updateProfile,
 } from "../user/service";
 import {
   createTestInvoice,
@@ -174,8 +174,16 @@ describe("User Service", () => {
       expect(userWithRoles?.siteRole).toBe(SiteRole.NORMAL_USER);
       expect(userWithRoles?.orgRoles).toBeDefined();
       expect(userWithRoles?.orgRoles.length).toBeGreaterThan(0);
-      expect(userWithRoles?.orgRoles.some((r) => r.orgId === testOrg.id && r.role === OrgRole.ADMIN)).toBe(true);
-      expect(userWithRoles?.orgRoles.some((r) => r.orgId === testOrg2.id && r.role === OrgRole.CLIENT)).toBe(true);
+      expect(
+        userWithRoles?.orgRoles.some(
+          (r) => r.orgId === testOrg.id && r.role === OrgRole.ADMIN,
+        ),
+      ).toBe(true);
+      expect(
+        userWithRoles?.orgRoles.some(
+          (r) => r.orgId === testOrg2.id && r.role === OrgRole.CLIENT,
+        ),
+      ).toBe(true);
     });
 
     it("should return undefined for non-existent user", async () => {
@@ -198,7 +206,6 @@ describe("User Service", () => {
   });
 
   describe("linkTemporaryUser", () => {
-
     it("should link temporary user and transfer all relationships", async () => {
       // Create temporary user (emailVerified=false)
       const tempUser = await createTestUser({ emailVerified: false });
@@ -217,14 +224,19 @@ describe("User Service", () => {
       await createTestUserInvoice(tempUser.id, testInvoice.id);
       await createTestUserReport(tempUser.id, testReport.id);
 
-      const transferredCount = await linkTemporaryUser(tempUser.email, authUser.id);
+      const transferredCount = await linkTemporaryUser(
+        tempUser.email,
+        authUser.id,
+      );
       expect(transferredCount).toBeGreaterThan(0);
 
       // Verify org membership transferred
       const [orgMembership] = await db
         .select()
         .from(orgUser)
-        .where(and(eq(orgUser.userId, authUser.id), eq(orgUser.orgId, testOrg.id)))
+        .where(
+          and(eq(orgUser.userId, authUser.id), eq(orgUser.orgId, testOrg.id)),
+        )
         .limit(1);
       expect(orgMembership).toBeDefined();
       expect(orgMembership.role).toBe(OrgRole.READ_ONLY);
@@ -233,7 +245,12 @@ describe("User Service", () => {
       const [invoiceRel] = await db
         .select()
         .from(userInvoice)
-        .where(and(eq(userInvoice.userId, authUser.id), eq(userInvoice.invoiceId, testInvoice.id)))
+        .where(
+          and(
+            eq(userInvoice.userId, authUser.id),
+            eq(userInvoice.invoiceId, testInvoice.id),
+          ),
+        )
         .limit(1);
       expect(invoiceRel).toBeDefined();
 
@@ -241,16 +258,27 @@ describe("User Service", () => {
       const [reportRel] = await db
         .select()
         .from(userReport)
-        .where(and(eq(userReport.userId, authUser.id), eq(userReport.reportId, testReport.id)))
+        .where(
+          and(
+            eq(userReport.userId, authUser.id),
+            eq(userReport.reportId, testReport.id),
+          ),
+        )
         .limit(1);
       expect(reportRel).toBeDefined();
 
       // Verify temporary user deleted
-      const [deletedTemp] = await db.select().from(user).where(eq(user.id, tempUser.id)).limit(1);
+      const [deletedTemp] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, tempUser.id))
+        .limit(1);
       expect(deletedTemp).toBeUndefined();
 
       // Cleanup
-      await db.delete(userInvoice).where(eq(userInvoice.invoiceId, testInvoice.id));
+      await db
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, testInvoice.id));
       await db.delete(invoice).where(eq(invoice.id, testInvoice.id));
       await db.delete(userReport).where(eq(userReport.reportId, testReport.id));
       await db.delete(report).where(eq(report.id, testReport.id));
@@ -263,7 +291,10 @@ describe("User Service", () => {
     it("should return 0 when temporary user not found", async () => {
       const authUser = await createTestUser();
       await createTestUserProfile(authUser.id);
-      const transferredCount = await linkTemporaryUser("nonexistent@example.com", authUser.id);
+      const transferredCount = await linkTemporaryUser(
+        "nonexistent@example.com",
+        authUser.id,
+      );
       expect(transferredCount).toBe(0);
 
       // Cleanup
@@ -281,14 +312,19 @@ describe("User Service", () => {
       await createTestOrgUser(authUser.id, testOrg.id, OrgRole.CLIENT);
       await createTestOrgUser(tempUser.id, testOrg.id, OrgRole.READ_ONLY);
 
-      const transferredCount = await linkTemporaryUser(tempUser.email, authUser.id);
+      const transferredCount = await linkTemporaryUser(
+        tempUser.email,
+        authUser.id,
+      );
       expect(transferredCount).toBe(0); // No transfer because duplicate
 
       // Verify temp user's org membership was deleted
       const [tempOrgMembership] = await db
         .select()
         .from(orgUser)
-        .where(and(eq(orgUser.userId, tempUser.id), eq(orgUser.orgId, testOrg.id)))
+        .where(
+          and(eq(orgUser.userId, tempUser.id), eq(orgUser.orgId, testOrg.id)),
+        )
         .limit(1);
       expect(tempOrgMembership).toBeUndefined();
 
@@ -296,7 +332,9 @@ describe("User Service", () => {
       const [authOrgMembership] = await db
         .select()
         .from(orgUser)
-        .where(and(eq(orgUser.userId, authUser.id), eq(orgUser.orgId, testOrg.id)))
+        .where(
+          and(eq(orgUser.userId, authUser.id), eq(orgUser.orgId, testOrg.id)),
+        )
         .limit(1);
       expect(authOrgMembership).toBeDefined();
       expect(authOrgMembership.role).toBe(OrgRole.CLIENT);
@@ -319,19 +357,29 @@ describe("User Service", () => {
       await createTestUserInvoice(authUser.id, testInvoice.id);
       await createTestUserInvoice(tempUser.id, testInvoice.id);
 
-      const transferredCount = await linkTemporaryUser(tempUser.email, authUser.id);
+      const transferredCount = await linkTemporaryUser(
+        tempUser.email,
+        authUser.id,
+      );
       expect(transferredCount).toBe(0); // No transfer because duplicate
 
       // Verify temp user's invoice relationship was deleted
       const [tempInvoiceRel] = await db
         .select()
         .from(userInvoice)
-        .where(and(eq(userInvoice.userId, tempUser.id), eq(userInvoice.invoiceId, testInvoice.id)))
+        .where(
+          and(
+            eq(userInvoice.userId, tempUser.id),
+            eq(userInvoice.invoiceId, testInvoice.id),
+          ),
+        )
         .limit(1);
       expect(tempInvoiceRel).toBeUndefined();
 
       // Cleanup
-      await db.delete(userInvoice).where(eq(userInvoice.invoiceId, testInvoice.id));
+      await db
+        .delete(userInvoice)
+        .where(eq(userInvoice.invoiceId, testInvoice.id));
       await db.delete(invoice).where(eq(invoice.id, testInvoice.id));
       await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));
       await db.delete(org).where(eq(org.id, testOrg.id));
@@ -350,14 +398,22 @@ describe("User Service", () => {
       await createTestUserReport(authUser.id, testReport.id);
       await createTestUserReport(tempUser.id, testReport.id);
 
-      const transferredCount = await linkTemporaryUser(tempUser.email, authUser.id);
+      const transferredCount = await linkTemporaryUser(
+        tempUser.email,
+        authUser.id,
+      );
       expect(transferredCount).toBe(0); // No transfer because duplicate
 
       // Verify temp user's report relationship was deleted
       const [tempReportRel] = await db
         .select()
         .from(userReport)
-        .where(and(eq(userReport.userId, tempUser.id), eq(userReport.reportId, testReport.id)))
+        .where(
+          and(
+            eq(userReport.userId, tempUser.id),
+            eq(userReport.reportId, testReport.id),
+          ),
+        )
         .limit(1);
       expect(tempReportRel).toBeUndefined();
 
@@ -372,7 +428,6 @@ describe("User Service", () => {
   });
 
   describe("acceptOrgInvitation", () => {
-
     it("should accept invitation and update role to CLIENT", async () => {
       const testOrg = await createTestOrg();
       const invitedUser = await createTestUser();
@@ -387,7 +442,9 @@ describe("User Service", () => {
       // Cleanup
       await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));
       await db.delete(org).where(eq(org.id, testOrg.id));
-      await db.delete(userProfile).where(eq(userProfile.userId, invitedUser.id));
+      await db
+        .delete(userProfile)
+        .where(eq(userProfile.userId, invitedUser.id));
       await db.delete(user).where(eq(user.id, invitedUser.id));
     });
 
@@ -397,13 +454,19 @@ describe("User Service", () => {
       await createTestUserProfile(invitedUser.id);
       await createTestOrgUser(invitedUser.id, testOrg.id, OrgRole.READ_ONLY);
 
-      const updated = await acceptOrgInvitation(invitedUser.id, testOrg.id, OrgRole.MODERATOR);
+      const updated = await acceptOrgInvitation(
+        invitedUser.id,
+        testOrg.id,
+        OrgRole.MODERATOR,
+      );
       expect(updated.role).toBe(OrgRole.MODERATOR);
 
       // Cleanup
       await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));
       await db.delete(org).where(eq(org.id, testOrg.id));
-      await db.delete(userProfile).where(eq(userProfile.userId, invitedUser.id));
+      await db
+        .delete(userProfile)
+        .where(eq(userProfile.userId, invitedUser.id));
       await db.delete(user).where(eq(user.id, invitedUser.id));
     });
 
@@ -413,12 +476,16 @@ describe("User Service", () => {
       await createTestUserProfile(invitedUser.id);
       await createTestOrgUser(invitedUser.id, testOrg.id, OrgRole.READ_ONLY);
 
-      await expect(acceptOrgInvitation(invitedUser.id, testOrg.id, 999)).rejects.toThrow("Invalid role");
+      await expect(
+        acceptOrgInvitation(invitedUser.id, testOrg.id, 999),
+      ).rejects.toThrow("Invalid role");
 
       // Cleanup
       await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));
       await db.delete(org).where(eq(org.id, testOrg.id));
-      await db.delete(userProfile).where(eq(userProfile.userId, invitedUser.id));
+      await db
+        .delete(userProfile)
+        .where(eq(userProfile.userId, invitedUser.id));
       await db.delete(user).where(eq(user.id, invitedUser.id));
     });
 
@@ -426,7 +493,9 @@ describe("User Service", () => {
       const testOrg = await createTestOrg();
       const nonMember = await createTestUser();
       await createTestUserProfile(nonMember.id);
-      await expect(acceptOrgInvitation(nonMember.id, testOrg.id)).rejects.toThrow("not a member");
+      await expect(
+        acceptOrgInvitation(nonMember.id, testOrg.id),
+      ).rejects.toThrow("not a member");
 
       // Cleanup
       await db.delete(org).where(eq(org.id, testOrg.id));
@@ -441,12 +510,16 @@ describe("User Service", () => {
       // Add user with CLIENT role (not READ_ONLY)
       await createTestOrgUser(invitedUser.id, testOrg.id, OrgRole.CLIENT);
 
-      await expect(acceptOrgInvitation(invitedUser.id, testOrg.id)).rejects.toThrow("pending invitation");
+      await expect(
+        acceptOrgInvitation(invitedUser.id, testOrg.id),
+      ).rejects.toThrow("pending invitation");
 
       // Cleanup
       await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));
       await db.delete(org).where(eq(org.id, testOrg.id));
-      await db.delete(userProfile).where(eq(userProfile.userId, invitedUser.id));
+      await db
+        .delete(userProfile)
+        .where(eq(userProfile.userId, invitedUser.id));
       await db.delete(user).where(eq(user.id, invitedUser.id));
     });
   });

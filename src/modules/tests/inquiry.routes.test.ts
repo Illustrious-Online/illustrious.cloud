@@ -1,20 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import config from "@/config";
 import { db } from "@/drizzle/db";
-import { inquiry, org } from "@/drizzle/schema";
+import { inquiry, type org } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { setAxiosInstance } from "../recaptcha/service";
-import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
+import { createTestInquiry, createTestOrg } from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "./utils/integration-setup";
-import {
-  createTestInquiry,
-  createTestOrg,
-} from "./utils/fixtures";
 import {
   createMockAxiosInstance,
   createMockAxiosInstanceFail,
@@ -49,7 +44,7 @@ describe("Inquiry Routes", () => {
     // Create test user with session using integration testing
     const session = await createIntegrationTestUserWithSession(
       "inquiry-test-user@example.com",
-      "Inquiry Test User"
+      "Inquiry Test User",
     );
     testUserId = session.userId;
     authToken = session.token;
@@ -198,9 +193,11 @@ describe("Inquiry Routes", () => {
       const data = await parseJsonResponse(response);
       // Error plugin catches errors from routes and returns structured error responses
       if (typeof data === "object" && data !== null && "error" in data) {
-        const errorData = data as { error?: { message?: string; statusCode?: number; code?: string } };
+        const errorData = data as {
+          error?: { message?: string; statusCode?: number; code?: string };
+        };
         if (errorData.error) {
-          const hasErrorInfo = 
+          const hasErrorInfo =
             errorData.error.message !== undefined ||
             errorData.error.statusCode !== undefined ||
             errorData.error.code !== undefined;
@@ -213,7 +210,7 @@ describe("Inquiry Routes", () => {
       // Create inquiry for another user
       const otherSession = await createIntegrationTestUserWithSession(
         "other-inquiry-user@example.com",
-        "Other Inquiry User"
+        "Other Inquiry User",
       );
       const otherInquiry = await createTestInquiry(testOrg.id, {
         userId: otherSession.userId,

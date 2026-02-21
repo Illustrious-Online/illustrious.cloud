@@ -1,31 +1,38 @@
 /**
  * Integration Test Example
- * 
+ *
  * This demonstrates full integration testing using:
  * - Real database connection (illustrious_test)
  * - Better-auth token validation (via auth.api.getSession - internal method)
  * - Full request/response cycle
  * - No external API calls
- * 
+ *
  * To run:
  * 1. Setup test database: bun run test:integration:setup
  * 2. Set environment: TEST_DB_NAME=illustrious_test DB_NAME=illustrious_test
  * 3. Run: bun test org.routes.integration.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { setupIntegrationTests, teardownIntegrationTests } from "./utils/integration-setup";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { db } from "@/drizzle/db";
+import { OrgRole, org, orgUser, userProfile } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 import {
-  createIntegrationTestUserWithSession,
+  createTestOrg,
+  createTestOrgUser,
+  createTestUserProfile,
+} from "./utils/fixtures";
+import {
   authenticatedIntegrationRequest,
+  createIntegrationTestUserWithSession,
   verifyTokenWithBetterAuth,
 } from "./utils/integration-auth";
-import { createTestApp } from "./utils/test-app";
-import { createTestOrg, createTestUserProfile, createTestOrgUser } from "./utils/fixtures";
-import { db } from "@/drizzle/db";
-import { org, orgUser, userProfile, OrgRole } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import {
+  setupIntegrationTests,
+  teardownIntegrationTests,
+} from "./utils/integration-setup";
 import { parseJsonResponse } from "./utils/requests";
+import { createTestApp } from "./utils/test-app";
 
 describe("Org Routes (Integration)", () => {
   let authToken: string;
@@ -40,7 +47,7 @@ describe("Org Routes (Integration)", () => {
     // This uses auth.api.getSession() for validation (internal method, not external API)
     const session = await createIntegrationTestUserWithSession(
       "integration-test@example.com",
-      "Integration Test User"
+      "Integration Test User",
     );
     authToken = session.token;
     userId = session.userId;
@@ -66,7 +73,7 @@ describe("Org Routes (Integration)", () => {
       "POST",
       "/orgs",
       authToken,
-      { name: "Integration Test Org", contact: "contact@example.com" }
+      { name: "Integration Test Org", contact: "contact@example.com" },
     );
 
     expect(response.status).toBe(201);
@@ -99,13 +106,15 @@ describe("Org Routes (Integration)", () => {
       app,
       "GET",
       "/orgs",
-      authToken
+      authToken,
     );
 
     expect(response.status).toBe(200);
     const data = await parseJsonResponse(response);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.some((o: any) => o.id === testOrg.id)).toBe(true);
+    expect(
+      (data as Array<{ id: string }>).some((o) => o.id === testOrg.id),
+    ).toBe(true);
 
     // Cleanup
     await db.delete(orgUser).where(eq(orgUser.orgId, testOrg.id));

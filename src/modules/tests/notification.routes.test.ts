@@ -3,16 +3,14 @@ import { db } from "@/drizzle/db";
 import { notification, user, userProfile } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import {
-  createIntegrationTestUserWithSession,
-} from "./utils/integration-auth";
+  createTestNotification,
+  createTestUserProfile,
+} from "./utils/fixtures";
+import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
 } from "./utils/integration-setup";
-import {
-  createTestNotification,
-  createTestUserProfile,
-} from "./utils/fixtures";
 import {
   authenticatedRequest,
   expectUnauthenticatedResponse,
@@ -31,7 +29,7 @@ describe("Notification Routes", () => {
 
     const session = await createIntegrationTestUserWithSession(
       "notification-test@example.com",
-      "Notification Test User"
+      "Notification Test User",
     );
     testUserId = session.userId;
     authToken = session.token;

@@ -1,5 +1,5 @@
 import { db } from "@/drizzle/db";
-import { invoice, orgUser, userInvoice, OrgRole } from "@/drizzle/schema";
+import { OrgRole, invoice, orgUser, userInvoice } from "@/drizzle/schema";
 import type { InsertInvoice, Invoice } from "@/drizzle/schema";
 import {
   BadRequestError,
@@ -9,11 +9,11 @@ import {
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getUserSiteRole,
-  getUserOrgRole,
   canReadAcrossOrgs,
   canWriteAcrossOrgs,
   canWriteResource,
+  getUserOrgRole,
+  getUserSiteRole,
   isResourceAssignedToUser,
 } from "../auth/permissions";
 
@@ -180,10 +180,7 @@ export async function getUserInvoices(userId: string): Promise<Invoice[]> {
         .from(invoice)
         .innerJoin(userInvoice, eq(invoice.id, userInvoice.invoiceId))
         .where(
-          and(
-            eq(invoice.orgId, userOrg.orgId),
-            eq(userInvoice.userId, userId),
-          ),
+          and(eq(invoice.orgId, userOrg.orgId), eq(userInvoice.userId, userId)),
         );
       for (const { invoice: inv } of assignedInvoices) {
         invoiceMap.set(inv.id, inv);
@@ -236,9 +233,7 @@ export async function getOrgInvoices(
       .select({ invoice })
       .from(invoice)
       .innerJoin(userInvoice, eq(invoice.id, userInvoice.invoiceId))
-      .where(
-        and(eq(invoice.orgId, orgId), eq(userInvoice.userId, userId)),
-      );
+      .where(and(eq(invoice.orgId, orgId), eq(userInvoice.userId, userId)));
 
     return assignedInvoices.map((r) => r.invoice);
   }
@@ -276,7 +271,9 @@ export async function updateInvoice(
   );
 
   if (!canWrite) {
-    throw new ForbiddenError("User does not have permission to update this invoice");
+    throw new ForbiddenError(
+      "User does not have permission to update this invoice",
+    );
   }
 
   const updateData: Partial<InsertInvoice> = {

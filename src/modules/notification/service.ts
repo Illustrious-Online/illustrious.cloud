@@ -2,7 +2,7 @@ import { db } from "@/drizzle/db";
 import { notification, user } from "@/drizzle/schema";
 import type { InsertNotification, Notification } from "@/drizzle/schema";
 import { NotFoundError } from "@/plugins/error";
-import { and, eq, or, desc, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -87,9 +87,7 @@ export async function getUserNotifications(
 
   // Filter expired notifications in memory
   const now = new Date();
-  return notifications.filter(
-    (n) => !n.expiresAt || n.expiresAt > now,
-  );
+  return notifications.filter((n) => !n.expiresAt || n.expiresAt > now);
 }
 
 /**
@@ -107,10 +105,7 @@ export async function markNotificationRead(
     .select()
     .from(notification)
     .where(
-      and(
-        eq(notification.id, notificationId),
-        eq(notification.userId, userId),
-      ),
+      and(eq(notification.id, notificationId), eq(notification.userId, userId)),
     )
     .limit(1);
 
@@ -145,10 +140,7 @@ export async function deleteNotification(
     .select()
     .from(notification)
     .where(
-      and(
-        eq(notification.id, notificationId),
-        eq(notification.userId, userId),
-      ),
+      and(eq(notification.id, notificationId), eq(notification.userId, userId)),
     )
     .limit(1);
 
@@ -168,18 +160,11 @@ export async function getUnreadCount(userId: string): Promise<number> {
   const notifications = await db
     .select()
     .from(notification)
-    .where(
-      and(
-        eq(notification.userId, userId),
-        eq(notification.read, false),
-      ),
-    );
+    .where(and(eq(notification.userId, userId), eq(notification.read, false)));
 
   // Filter expired in memory
   const now = new Date();
-  const unread = notifications.filter(
-    (n) => !n.expiresAt || n.expiresAt > now,
-  );
+  const unread = notifications.filter((n) => !n.expiresAt || n.expiresAt > now);
 
   return unread.length;
 }

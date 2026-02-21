@@ -3,9 +3,9 @@ import { db } from "@/drizzle/db";
 import { session, user } from "@/drizzle/schema";
 import { getSessionFromHeader } from "@/lib/auth";
 import { auth } from "@/lib/auth";
+import type { SessionData } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { createTestSession, createTestUser } from "./utils/fixtures";
-import type { SessionData } from "@/lib/auth";
 
 describe("Auth Library", () => {
   describe("getSessionFromHeader", () => {
@@ -24,7 +24,9 @@ describe("Auth Library", () => {
       // This tests the successful path where better-auth returns a valid session
       try {
         const result = await auth.api.getSession({
-          headers: new Headers({ authorization: `Bearer ${testSession.token}` }),
+          headers: new Headers({
+            authorization: `Bearer ${testSession.token}`,
+          }),
         });
 
         if (result) {
@@ -96,18 +98,22 @@ describe("Auth Library", () => {
       // Even if the token is invalid, we should get past the Bearer check
       const testToken = "test-token-123";
       const result = await getSessionFromHeader(`Bearer ${testToken}`);
-      
+
       // The function should attempt to validate (may fail, but shouldn't crash)
       expect(result).toBeDefined();
-      expect(result.session === null || typeof result.session === "object").toBe(true);
-      expect(result.user === null || typeof result.user === "object").toBe(true);
+      expect(
+        result.session === null || typeof result.session === "object",
+      ).toBe(true);
+      expect(result.user === null || typeof result.user === "object").toBe(
+        true,
+      );
     });
 
     it("should handle better-auth API errors gracefully", async () => {
       // Test with a token that might cause better-auth to throw
       // This tests the catch block
       const result = await getSessionFromHeader(`Bearer ${"x".repeat(100)}`);
-      
+
       // Should catch error and return null instead of throwing
       expect(result.session).toBeNull();
       expect(result.user).toBeNull();
@@ -117,8 +123,10 @@ describe("Auth Library", () => {
       // Test the path where auth.api.getSession returns null/undefined
       // This covers line 118-120
       // We'll use an invalid but properly formatted token
-      const result = await getSessionFromHeader("Bearer invalid-but-formatted-token");
-      
+      const result = await getSessionFromHeader(
+        "Bearer invalid-but-formatted-token",
+      );
+
       // Should return null when result is falsy
       expect(result.session).toBeNull();
       expect(result.user).toBeNull();
@@ -134,18 +142,18 @@ describe("Auth Library", () => {
       }
 
       const result = await getSessionFromHeader(`Bearer ${validToken}`);
-      
+
       // Should successfully map the session and user
       expect(result.session).not.toBeNull();
       expect(result.user).not.toBeNull();
-      
+
       if (result.session && result.user) {
         // Verify session structure
         expect(result.session.id).toBeDefined();
         expect(result.session.token).toBeDefined();
         expect(result.session.expiresAt).toBeInstanceOf(Date);
         expect(result.session.userId).toBe(testUser.id);
-        
+
         // Verify user structure matches expected format
         expect(result.user.id).toBe(testUser.id);
         expect(result.user.email).toBe(testUser.email);
@@ -220,7 +228,9 @@ describe("Auth Library", () => {
       // This test covers line 118-120 (when result is falsy)
       const originalGetSession = auth.api.getSession;
       // @ts-expect-error - Intentional mock type assertion for testing
-      auth.api.getSession = mock(async () => null) as unknown as typeof auth.api.getSession;
+      auth.api.getSession = mock(
+        async () => null,
+      ) as unknown as typeof auth.api.getSession;
 
       try {
         const result = await getSessionFromHeader("Bearer some-token");
@@ -237,7 +247,7 @@ describe("Auth Library", () => {
     it("should catch errors and return null (covers catch block)", async () => {
       // This test explicitly covers the catch block (lines 135-138)
       const originalGetSession = auth.api.getSession;
-      
+
       // Mock getSession to throw an error
       // @ts-expect-error - Intentional mock type assertion for testing
       auth.api.getSession = mock(async () => {

@@ -157,7 +157,10 @@ describe("Report Service", () => {
       await db
         .delete(orgUser)
         .where(
-          and(eq(orgUser.orgId, testOrg.id), eq(orgUser.userId, readOnlyUser.id)),
+          and(
+            eq(orgUser.orgId, testOrg.id),
+            eq(orgUser.userId, readOnlyUser.id),
+          ),
         );
       await db
         .delete(userProfile)

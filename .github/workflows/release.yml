@@ -18,11 +18,11 @@ jobs:
     steps:
       ### Install server dependencies
       - name: Setup Bun
-        uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Install doctl
-        uses: digitalocean/action-doctl@135ac0aa0eed4437d547c6f12c364d3006b42824
+        uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DO_TOKEN }}
       - name: Install spaces-cli
@@ -39,8 +39,8 @@ jobs:
           git pull origin main --tags
       - name: Download test dependency files
         run: |
-          spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/ca-certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       ### Push database migrations
@@ -63,8 +63,7 @@ jobs:
       - name: Download production environment variables
         run: |
           rm -rf .env cert.crt
-          spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/certificate-vpc.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/ca-certificate.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       ### Compare versions using semantic-release
       - name: Compare versions
         id: compare

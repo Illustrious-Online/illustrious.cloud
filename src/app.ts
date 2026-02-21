@@ -3,41 +3,41 @@ import swagger from "@elysiajs/swagger";
 import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
-import { createClient } from "@supabase/supabase-js";
 import config from "./config";
+import { auth } from "./lib/auth";
+import { inquiryRoutes } from "./modules/inquiry/routes";
+import { invoiceRoutes } from "./modules/invoice/routes";
+import { notificationRoutes } from "./modules/notification/routes";
+import { orgRoutes } from "./modules/org/routes";
+import { reportRoutes } from "./modules/report/routes";
+import { userRoutes } from "./modules/user/routes";
 import errorPlugin from "./plugins/error";
-import authRoutes from "./routes/auth";
+import { initSentry } from "./utils/sentry";
 
-import invoiceRouter from "@/routes/invoice";
-import orgRoutes from "@/routes/org";
-import reportRouter from "@/routes/report";
-import userRoutes from "@/routes/user";
-
-import * as Sentry from "@sentry/bun";
-import authPlugin from "./plugins/auth";
-
-if (config.app.env === "production") {
-  Sentry.init({
-    dsn: config.app.sentryUrl,
-    tracesSampleRate: 1.0,
-  });
-}
-
-export const supabaseClient = createClient(
-  `https://${config.auth.supabaseId}.supabase.co`,
-  config.auth.supabaseServiceRoleKey ?? "test",
-);
+// Initialize Sentry before creating the app
+initSentry();
 
 export const app = new Elysia()
-  .use(cors())
+  // CORS Configuration for Cross-Domain
+  .use(
+    cors({
+      origin: config.betterAuth.trustedOrigins,
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposeHeaders: ["Set-Cookie"],
+    }),
+  )
+  // Logger
   .use(
     logger({
       mode: "live",
       withTimestamp: true,
     }),
   )
+  // Error handling
   .use(errorPlugin)
-  .use(authPlugin)
+  // Swagger documentation
   .use(
     swagger({
       path: "/docs",
@@ -62,18 +62,28 @@ export const app = new Elysia()
       },
     }),
   )
+  // Health check and info endpoints
   .get("/", () => ({
     name: config.app.name,
     version: config.app.version,
   }))
-  .use(authRoutes)
+  .get("/health", () => ({ ok: true }))
+  // Mount Better-Auth routes
+  // Handles: /api/auth/sign-in, /api/auth/sign-up, /api/auth/sign-out, etc.
+  .all("/api/auth/*", ({ request }) => auth.handler(request))
+  // Business routes
   .use(userRoutes)
   .use(orgRoutes)
-  .use(reportRouter)
-  .use(invoiceRouter)
+  .use(inquiryRoutes)
+  .use(invoiceRoutes)
+  .use(reportRoutes)
+  .use(notificationRoutes)
   .listen(config.app.port, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(
       `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,
     );
   });
+
+// Export app type for Eden Treaty
+export type App = typeof app;

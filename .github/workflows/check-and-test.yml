@@ -30,7 +30,7 @@ jobs:
     steps:
       ### Install server dependencies
       - name: Setup Bun
-        uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Install spaces-cli
@@ -41,18 +41,15 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
       - name: Download dependency files
-        run: spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-      ### Update the database
-      - name: Push drizzle details
-        run: bunx drizzle-kit migrate
+        run: spaces-cli down $SPACE_URL/cloud/local.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       ### Run checks and tests
       - name: Run Biome Checks
         run: bun run check
-      - name: Run unit tests
-        run: bun test
+      - name: Run unit tests with coverage
+        run: bun run test:local:coverage
       ### Upload coverage reports
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: illustrious-cloud

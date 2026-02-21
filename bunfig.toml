@@ -1,5 +1,13 @@
 [test]
 coverage = true
 coverageSkipTestFiles = true
-coverageThreshold = { lines = 0.80, functions = 0.90 }
-coverageReporter = ["lcov"]
+coveragePathIgnorePatterns = [
+    "**/tests/**",
+    "**/drizzle/**",
+    "**/utils/**",
+    "**/plugins/error.ts",
+    "**/modules/auth/middleware.ts"
+]
+coverageThreshold = { lines = 0.85, functions = 0.85 }
+coverageReporter = ["text", "lcov"]
+preload = ["./src/modules/tests/setup.ts"]

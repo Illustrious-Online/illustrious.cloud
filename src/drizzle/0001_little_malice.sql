@@ -1,1 +1,0 @@
-ALTER TABLE "User" ADD COLUMN "managed" boolean DEFAULT false NOT NULL;

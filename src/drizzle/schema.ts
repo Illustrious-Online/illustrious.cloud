@@ -10,168 +10,282 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+// ============================================
+// BETTER-AUTH TABLES (snake_case columns)
+// ============================================
+
 /**
- * Represents the authentication table schema in the database.
- *
- * @constant
- * @type {object}
- * @property {ColumnType} id - The primary key of the authentication table, must be a non-null text.
- * @property {ColumnType} sub - The subject identifier, must be a non-null text.
+ * User table for Better-Auth
+ * Core user data managed by better-auth
  */
-export const authentication = pgTable("Authentication", {
-  id: text().primaryKey().notNull(),
-  sub: text().notNull(),
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export type Authentication = typeof authentication.$inferSelect;
-export type InsertAuthentication = typeof authentication.$inferInsert;
+export type User = typeof user.$inferSelect;
+export type InsertUser = typeof user.$inferInsert;
 
 /**
- * Represents the schema for the "Invoice" table in the database.
- *
- * @property {string} id - The primary key of the invoice, must be a non-null text.
- * @property {boolean} paid - Indicates whether the invoice has been paid, must be a non-null boolean.
- * @property {number} price - The price of the invoice, must be a non-null numeric value with precision 10 and scale 2.
- * @property {Date} start - The start timestamp of the invoice, must be a non-null timestamp.
- * @property {Date} end - The end timestamp of the invoice, must be a non-null timestamp.
- * @property {Date} due - The due timestamp of the invoice, must be a non-null timestamp.
- * @property {Date} createdAt - The timestamp when the invoice was created, must be a non-null timestamp.
- * @property {Date} updatedAt - The timestamp when the invoice was last updated, can be null.
- * @property {Date} deletedAt - The timestamp when the invoice was deleted, can be null.
+ * Session table for Better-Auth
+ * Manages user sessions with token-based authentication
  */
-export const invoice = pgTable("Invoice", {
-  id: text().primaryKey().notNull(),
-  paid: boolean().notNull(),
-  price: numeric({ precision: 10, scale: 2 }).notNull(),
-  start: timestamp().notNull(),
-  end: timestamp().notNull(),
-  due: timestamp().notNull(),
-  createdAt: timestamp().notNull(),
-  updatedAt: timestamp(),
-  deletedAt: timestamp(),
+export const session = pgTable("session", {
+  id: text("id").primaryKey(),
+  expiresAt: timestamp("expires_at").notNull(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
 });
 
-export type Invoice = typeof invoice.$inferSelect;
-export type InsertInvoice = typeof invoice.$inferInsert;
+export type Session = typeof session.$inferSelect;
+export type InsertSession = typeof session.$inferInsert;
 
 /**
- * Represents the schema for the "Report" table in the database.
- *
- * @property {string} id - The primary key of the report, must be a non-null text.
- * @property {number} rating - The rating of the report, must be a non-null integer.
- * @property {string} [notes] - Optional notes for the report, can be null.
- * @property {Date} createdAt - The timestamp when the report was created, must be a non-null timestamp.
+ * Account table for Better-Auth
+ * Stores OAuth provider accounts linked to users
  */
-export const report = pgTable("Report", {
-  id: text().primaryKey().notNull(),
-  rating: integer().notNull(),
-  notes: text(),
-  createdAt: timestamp().notNull(),
+export const account = pgTable("account", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export type Report = typeof report.$inferSelect;
-export type InsertReport = typeof report.$inferInsert;
+export type Account = typeof account.$inferSelect;
+export type InsertAccount = typeof account.$inferInsert;
 
 /**
- * Represents the schema for the "Org" table in the database.
- *
- * @property {string} id - The primary key of the organization, must be a non-null text.
- * @property {string} name - The name of the organization, must be a non-null text.
- * @property {string} contact - The contact information of the organization, must be a non-null text.
+ * Verification table for Better-Auth
+ * Stores email verification and password reset tokens
  */
-export const org = pgTable("Org", {
-  id: text().primaryKey().notNull(),
-  name: text().notNull(),
-  contact: text().notNull(),
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Verification = typeof verification.$inferSelect;
+export type InsertVerification = typeof verification.$inferInsert;
+
+// ============================================
+// CUSTOM APPLICATION TABLES
+// ============================================
+
+/**
+ * UserProfile table for custom user fields
+ * Extends better-auth user with application-specific data
+ */
+export const userProfile = pgTable("user_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  managed: boolean("managed").default(false).notNull(),
+  siteRole: integer("site_role").default(2).notNull(), // 0=Admin, 1=Moderator, 2=Normal User
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export type UserProfile = typeof userProfile.$inferSelect;
+export type InsertUserProfile = typeof userProfile.$inferInsert;
+
+// ============================================
+// ROLE CONSTANTS
+// ============================================
+
+/**
+ * Site-wide role levels
+ * Stored in userProfile.siteRole
+ */
+export const SiteRole = {
+  ADMIN: 0, // Site administrator - can read/write everything across all orgs
+  MODERATOR: 1, // Site moderator - can read everything, write only if org admin/moderator
+  NORMAL_USER: 2, // Normal user - standard org-based permissions
+} as const;
+
+/**
+ * Organization role levels
+ * Stored in orgUser.role
+ */
+export const OrgRole = {
+  ADMIN: 0, // Org administrator - full access to org resources
+  MODERATOR: 1, // Org moderator - read all, write only items they created/assigned
+  CLIENT: 2, // User/Client - only access items assigned via junction tables
+  READ_ONLY: 3, // Read-only/Invited - only read items assigned via junction tables
+} as const;
+
+// ============================================
+// BUSINESS DOMAIN TABLES
+// ============================================
+
+/**
+ * Represents the Org table in the database.
+ */
+export const org = pgTable("org", {
+  id: text("id").primaryKey().notNull(),
+  name: text("name").notNull(),
+  contact: text("contact").notNull(),
+  ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
+  pendingOwnerId: text("pending_owner_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
 });
 
 export type Org = typeof org.$inferSelect;
 export type InsertOrg = typeof org.$inferInsert;
 
 /**
- * Represents the user table schema in the database.
- *
- * The table is named "User" and contains the following columns:
- *
- * - `id`: The primary key of the user, must be a non-null text.
- * - `identifier`: A unique identifier for the user, must be a non-null text.
- * - `email`: The email address of the user, can be null.
- * - `firstName`: The first name of the user, stored as "first_name".
- * - `lastName`: The last name of the user, stored as "last_name".
- * - `picture`: The URL or path to the user's picture, can be null.
- * - `phone`: The phone number of the user, can be null.
- * - `managed`: A boolean indicating if the user is managed, defaults to false and cannot be null.
- * - `superAdmin`: A boolean indicating if the user is a super admin, stored as "super_admin", defaults to false and cannot be null.
- *
- * The table also includes a unique index on the `email` column, using the B-tree index method with text operations.
+ * Represents the Inquiry table in the database.
  */
-export const user = pgTable(
-  "User",
-  {
-    id: text().primaryKey().notNull(),
-    identifier: text().notNull(),
-    email: text(),
-    firstName: text("first_name"),
-    lastName: text("last_name"),
-    picture: text(),
-    phone: text(),
-    managed: boolean().default(false).notNull(),
-    superAdmin: boolean("super_admin").default(false).notNull(),
-  },
-  (table) => [
-    uniqueIndex("User_email_key").using(
-      "btree",
-      table.email.asc().nullsLast().op("text_ops"),
-    ),
-  ],
-);
+export const inquiry = pgTable("inquiry", {
+  id: text("id").primaryKey().notNull(),
+  orgId: text("org_id").notNull(),
+  userId: text("user_id"),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
 
-export type User = typeof user.$inferSelect;
-export type InsertUser = typeof user.$inferInsert;
+export type Inquiry = typeof inquiry.$inferSelect;
+export type InsertInquiry = typeof inquiry.$inferInsert;
 
 /**
- * Represents the `UserInvoice` table in the database.
- * This table establishes a many-to-many relationship between users and invoices.
- *
- * Columns:
- * - `userId`: The ID of the user. This field is a non-nullable text.
- * - `invoiceId`: The ID of the invoice. This field is a non-nullable text.
- *
- * Foreign Keys:
- * - `UserInvoice_invoiceId_Invoice_id_fk`: References the `id` column in the `Invoice` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `UserInvoice_userId_User_id_fk`: References the `id` column in the `User` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- *
- * Primary Key:
- * - `UserInvoice_pkey`: Composite primary key consisting of `userId` and `invoiceId`.
+ * Represents the Invoice table in the database.
  */
-export const userInvoice = pgTable(
-  "UserInvoice",
+export const invoice = pgTable("invoice", {
+  id: text("id").primaryKey().notNull(),
+  orgId: text("org_id").notNull(),
+  amount: numeric({ precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("draft"),
+  dueDate: timestamp("due_date").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  description: text("description"),
+  createdBy: text("created_by"),
+  modifiedBy: text("modified_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export type Invoice = typeof invoice.$inferSelect;
+export type InsertInvoice = typeof invoice.$inferInsert;
+
+/**
+ * Represents the Report table in the database.
+ */
+export const report = pgTable("report", {
+  id: text("id").primaryKey().notNull(),
+  orgId: text("org_id").notNull(),
+  title: text("title").notNull(),
+  status: text("status").notNull().default("draft"),
+  content: text("content"),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  rating: integer("rating"),
+  createdBy: text("created_by"),
+  modifiedBy: text("modified_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export type Report = typeof report.$inferSelect;
+export type InsertReport = typeof report.$inferInsert;
+
+// ============================================
+// JUNCTION TABLES
+// ============================================
+
+/**
+ * Represents the OrgUser table in the database.
+ * This table establishes a many-to-many relationship between users and organizations,
+ * with additional role information for each user within an organization.
+ */
+export const orgUser = pgTable(
+  "org_user",
   {
-    userId: text().notNull(),
-    invoiceId: text().notNull(),
+    role: integer("role").default(0).notNull(),
+    userId: text("user_id").notNull(),
+    orgId: text("org_id").notNull(),
   },
   (table) => [
     foreignKey({
-      columns: [table.invoiceId],
-      foreignColumns: [invoice.id],
-      name: "UserInvoice_invoiceId_Invoice_id_fk",
+      columns: [table.orgId],
+      foreignColumns: [org.id],
+      name: "org_user_org_id_fk",
     })
       .onUpdate("cascade")
       .onDelete("restrict"),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],
-      name: "UserInvoice_userId_User_id_fk",
+      name: "org_user_user_id_fk",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    primaryKey({ columns: [table.userId, table.orgId], name: "org_user_pkey" }),
+  ],
+);
+
+export type OrgUser = typeof orgUser.$inferSelect;
+export type InsertOrgUser = typeof orgUser.$inferInsert;
+
+/**
+ * Represents the UserInvoice junction table in the database.
+ * This table establishes a many-to-many relationship between users and invoices.
+ */
+export const userInvoice = pgTable(
+  "user_invoice",
+  {
+    userId: text("user_id").notNull(),
+    invoiceId: text("invoice_id").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.invoiceId],
+      foreignColumns: [invoice.id],
+      name: "user_invoice_invoice_id_fk",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "user_invoice_user_id_fk",
     })
       .onUpdate("cascade")
       .onDelete("restrict"),
     primaryKey({
       columns: [table.userId, table.invoiceId],
-      name: "UserInvoice_pkey",
+      name: "user_invoice_pkey",
     }),
   ],
 );
@@ -180,101 +294,33 @@ export type UserInvoice = typeof userInvoice.$inferSelect;
 export type InsertUserInvoice = typeof userInvoice.$inferInsert;
 
 /**
- * Represents the `OrgReport` table in the database schema.
- * This table establishes a many-to-many relationship between organizations and reports.
- *
- * Columns:
- * - `orgId`: The ID of the organization. This is a non-null text field.
- * - `reportId`: The ID of the report. This is a non-null text field.
- *
- * Constraints:
- * - Foreign key `OrgReport_orgId_Org_id_fk`:
- *   - References the `id` column in the `Org` table.
- *   - On update: Cascade.
- *   - On delete: Restrict.
- * - Foreign key `OrgReport_reportId_Report_id_fk`:
- *   - References the `id` column in the `Report` table.
- *   - On update: Cascade.
- *   - On delete: Restrict.
- * - Primary key `OrgReport_pkey`:
- *   - Composite key consisting of `orgId` and `reportId`.
- */
-export const orgReport = pgTable(
-  "OrgReport",
-  {
-    orgId: text().notNull(),
-    reportId: text().notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.orgId],
-      foreignColumns: [org.id],
-      name: "OrgReport_orgId_Org_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    foreignKey({
-      columns: [table.reportId],
-      foreignColumns: [report.id],
-      name: "OrgReport_reportId_Report_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    primaryKey({
-      columns: [table.orgId, table.reportId],
-      name: "OrgReport_pkey",
-    }),
-  ],
-);
-
-export type OrgReport = typeof orgReport.$inferSelect;
-export type InsertOrgReport = typeof orgReport.$inferInsert;
-
-/**
- * Represents the `UserReport` table in the database.
- *
+ * Represents the UserReport junction table in the database.
  * This table establishes a many-to-many relationship between users and reports.
- * Each entry in the table links a user to a report they are associated with.
- *
- * Columns:
- * - `userId`: The ID of the user. This field is a non-nullable text.
- * - `reportId`: The ID of the report. This field is a non-nullable text.
- *
- * Constraints:
- * - `UserReport_reportId_Report_id_fk`: Foreign key constraint linking `reportId` to the `id` column in the `Report` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `UserReport_userId_User_id_fk`: Foreign key constraint linking `userId` to the `id` column in the `User` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `UserReport_pkey`: Primary key constraint combining `userId` and `reportId`.
- *
- * @module UserReport
  */
 export const userReport = pgTable(
-  "UserReport",
+  "user_report",
   {
-    userId: text().notNull(),
-    reportId: text().notNull(),
+    userId: text("user_id").notNull(),
+    reportId: text("report_id").notNull(),
   },
   (table) => [
     foreignKey({
       columns: [table.reportId],
       foreignColumns: [report.id],
-      name: "UserReport_reportId_Report_id_fk",
+      name: "user_report_report_id_fk",
     })
       .onUpdate("cascade")
       .onDelete("restrict"),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [user.id],
-      name: "UserReport_userId_User_id_fk",
+      name: "user_report_user_id_fk",
     })
       .onUpdate("cascade")
       .onDelete("restrict"),
     primaryKey({
       columns: [table.userId, table.reportId],
-      name: "UserReport_pkey",
+      name: "user_report_pkey",
     }),
   ],
 );
@@ -283,101 +329,23 @@ export type UserReport = typeof userReport.$inferSelect;
 export type InsertUserReport = typeof userReport.$inferInsert;
 
 /**
- * Represents the OrgInvoice table in the database.
- *
- * This table establishes a many-to-many relationship between organizations and invoices.
- *
- * Columns:
- * - `orgId`: The ID of the organization. This field is a non-nullable text.
- * - `invoiceId`: The ID of the invoice. This field is a non-nullable text.
- *
- * Constraints:
- * - `OrgInvoice_invoiceId_Invoice_id_fk`: Foreign key constraint on `invoiceId` referencing the `id` column of the `Invoice` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `OrgInvoice_orgId_Org_id_fk`: Foreign key constraint on `orgId` referencing the `id` column of the `Org` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `OrgInvoice_pkey`: Primary key constraint on the combination of `orgId` and `invoiceId`.
+ * Notification table
+ * Stores notifications for users
  */
-export const orgInvoice = pgTable(
-  "OrgInvoice",
-  {
-    orgId: text().notNull(),
-    invoiceId: text().notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.invoiceId],
-      foreignColumns: [invoice.id],
-      name: "OrgInvoice_invoiceId_Invoice_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    foreignKey({
-      columns: [table.orgId],
-      foreignColumns: [org.id],
-      name: "OrgInvoice_orgId_Org_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    primaryKey({
-      columns: [table.orgId, table.invoiceId],
-      name: "OrgInvoice_pkey",
-    }),
-  ],
-);
+export const notification = pgTable("notification", {
+  id: text("id").primaryKey().notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // e.g., "ownership_transfer", "invitation", "assignment"
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  metadata: text("metadata"), // JSON string for additional data (orgId, resourceId, etc.)
+  read: boolean("read").default(false).notNull(), // Read/acknowledged (combined)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+  expiresAt: timestamp("expires_at"), // Optional expiration for time-sensitive notifications
+});
 
-export type OrgInvoice = typeof orgInvoice.$inferSelect;
-export type InsertOrgInvoice = typeof orgInvoice.$inferInsert;
-
-/**
- * Represents the OrgUser table in the database.
- *
- * This table establishes a many-to-many relationship between users and organizations,
- * with additional role information for each user within an organization.
- *
- * Columns:
- * - `role`: An integer representing the role of the user within the organization. Defaults to 0 and cannot be null.
- * - `userId`: A text field representing the unique identifier of the user. Cannot be null.
- * - `orgId`: A text field representing the unique identifier of the organization. Cannot be null.
- *
- * Constraints:
- * - `OrgUser_orgId_Org_id_fk`: Foreign key constraint linking `orgId` to the `id` column of the `Org` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `OrgUser_userId_User_id_fk`: Foreign key constraint linking `userId` to the `id` column of the `User` table.
- *   - On update: Cascade
- *   - On delete: Restrict
- * - `OrgUser_pkey`: Primary key constraint combining `userId` and `orgId`.
- *
- * @module OrgUser
- */
-export const orgUser = pgTable(
-  "OrgUser",
-  {
-    role: integer().default(0).notNull(),
-    userId: text().notNull(),
-    orgId: text().notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.orgId],
-      foreignColumns: [org.id],
-      name: "OrgUser_orgId_Org_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [user.id],
-      name: "OrgUser_userId_User_id_fk",
-    })
-      .onUpdate("cascade")
-      .onDelete("restrict"),
-    primaryKey({ columns: [table.userId, table.orgId], name: "OrgUser_pkey" }),
-  ],
-);
-
-export type OrgUser = typeof orgUser.$inferSelect;
-export type InsertOrgUser = typeof orgUser.$inferInsert;
+export type Notification = typeof notification.$inferSelect;
+export type InsertNotification = typeof notification.$inferInsert;

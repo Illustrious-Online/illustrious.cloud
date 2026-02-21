@@ -12,10 +12,12 @@ import data from "../../package.json";
  * @property {string} app.port - The port on which the application is running (default: "3000").
  * @property {string} [app.sentryUrl] - The Sentry URL for error tracking.
  *
- * @property {Object} auth - Authentication-related configuration.
- * @property {string} [auth.supabaseId] - The Supabase project ID.
- * @property {string} [auth.supabaseServiceRoleKey] - The Supabase service role key.
- * @property {string} [auth.edgeKey] - The Supabase edge key.
+ * @property {Object} betterAuth - Better-Auth configuration.
+ * @property {string} betterAuth.secret - The secret key for Better-Auth (min 32 chars).
+ * @property {string} betterAuth.baseUrl - The base URL for Better-Auth.
+ * @property {string[]} betterAuth.trustedOrigins - Trusted origins for CORS.
+ *
+ * @property {Object} oauth - OAuth provider configuration.
  *
  * @property {Object} db - Database-related configuration.
  * @property {string} db.dbName - The name of the database (default: "default").
@@ -23,6 +25,10 @@ import data from "../../package.json";
  * @property {string} db.dbUsername - The username for the database (default: "dbuser").
  * @property {string} db.dbPort - The port on which the database is running (default: "5432").
  * @property {string} db.dbHost - The host of the database (default: "localhost").
+ *
+ * @property {Object} recaptcha - reCAPTCHA configuration.
+ *
+ * @property {Object} mailer - Email configuration.
  */
 export default {
   app: {
@@ -34,10 +40,35 @@ export default {
     port: Bun.env.APP_PORT || "3000",
     sentryUrl: Bun.env.SENTRY_URL,
   },
-  auth: {
-    supabaseId: Bun.env.SUPABASE_ID,
-    supabaseServiceRoleKey: Bun.env.SUPABASE_SERVICE_ROLE_KEY,
-    edgeKey: Bun.env.SUPABASE_EDGE_KEY,
+  betterAuth: {
+    secret: Bun.env.BETTER_AUTH_SECRET || "",
+    baseUrl: Bun.env.API_BASE_URL || "http://localhost:3000",
+    trustedOrigins: (
+      Bun.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:3000"
+    ).split(","),
+  },
+  oauth: {
+    google: {
+      clientId: Bun.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: Bun.env.GOOGLE_CLIENT_SECRET || "",
+    },
+    discord: {
+      clientId: Bun.env.DISCORD_CLIENT_ID || "",
+      clientSecret: Bun.env.DISCORD_CLIENT_SECRET || "",
+    },
+    github: {
+      clientId: Bun.env.GITHUB_CLIENT_ID || "",
+      clientSecret: Bun.env.GITHUB_CLIENT_SECRET || "",
+    },
+  },
+  recaptcha: {
+    secretKey: Bun.env.RECAPTCHA_SECRET_KEY || "",
+    scoreThreshold: Number(Bun.env.RECAPTCHA_SCORE_THRESHOLD) || 0.5,
+  },
+  mailer: {
+    mailUser: Bun.env.MAIL_USER || "",
+    mailPass: Bun.env.MAIL_PASS || "",
+    mailFrom: Bun.env.MAIL_FROM || "",
   },
   db: {
     dbName: Bun.env.DB_NAME ?? "default",

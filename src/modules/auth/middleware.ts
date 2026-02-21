@@ -1,6 +1,6 @@
-import { type SessionData, auth, getSessionFromHeader } from "@/lib/auth";
-import { UnauthorizedError } from "@/plugins/error";
 import { Elysia } from "elysia";
+import { auth, getSessionFromHeader, type SessionData } from "@/lib/auth";
+import { UnauthorizedError } from "@/plugins/error";
 
 /**
  * Auth context returned from session extraction

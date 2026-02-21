@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import {
   OrgRole,
@@ -10,7 +11,6 @@ import {
   userReport,
 } from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
-import { eq } from "drizzle-orm";
 import {
   addReportUsers,
   createReport,
@@ -270,7 +270,7 @@ describe("Report Service", () => {
         userIds: [otherUser.id],
       };
 
-      const updated = await updateReport(
+      const _updated = await updateReport(
         testReport.id,
         updateData,
         testUser.id,

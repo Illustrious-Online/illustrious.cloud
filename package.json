@@ -21,8 +21,9 @@
     "db:stop": "docker stop illustriouscloud-postgres-1",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:reset": "./src/utils/reset-db.sh",
-    "check": "bunx @biomejs/biome check ./src",
-    "check:fix": "bunx @biomejs/biome check --write ./src",
+    "check": "bunx @biomejs/biome check .",
+    "check:fix": "bunx @biomejs/biome check --write .",
+    "check:fix:unsafe": "bunx @biomejs/biome check --write --unsafe .",
     "test:local": "bun run db:start && bun test",
     "test:local:coverage": "bun run db:start && bun test --coverage"
   },

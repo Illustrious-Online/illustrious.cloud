@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { session, user } from "@/drizzle/schema";
-import { getSessionFromHeader } from "@/lib/auth";
-import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/auth";
-import { eq } from "drizzle-orm";
+import { auth, getSessionFromHeader } from "@/lib/auth";
 import { createTestSession, createTestUser } from "./utils/fixtures";
 
 describe("Auth Library", () => {

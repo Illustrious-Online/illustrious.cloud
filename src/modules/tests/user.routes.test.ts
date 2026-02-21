@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { user, type userProfile } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import { createTestUserProfile } from "./utils/fixtures";
 import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {

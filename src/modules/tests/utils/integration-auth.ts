@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
 import type { Elysia } from "elysia";
+import { auth } from "@/lib/auth";
 import { authenticatedRequest } from "./requests";
 import { createTestApp } from "./test-app";
 

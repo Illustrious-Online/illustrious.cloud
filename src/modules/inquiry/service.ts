@@ -1,9 +1,9 @@
-import { db } from "@/drizzle/db";
-import { inquiry, org } from "@/drizzle/schema";
-import type { Inquiry, InsertInquiry } from "@/drizzle/schema";
-import { NotFoundError } from "@/plugins/error";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { db } from "@/drizzle/db";
+import type { Inquiry, InsertInquiry } from "@/drizzle/schema";
+import { inquiry, org } from "@/drizzle/schema";
+import { NotFoundError } from "@/plugins/error";
 
 /**
  * Creates an inquiry in the database

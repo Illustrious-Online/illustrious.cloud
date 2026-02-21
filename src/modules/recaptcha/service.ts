@@ -1,6 +1,6 @@
+import axios, { type AxiosInstance } from "axios";
 import config from "@/config";
 import { BadRequestError } from "@/plugins/error";
-import axios, { type AxiosInstance } from "axios";
 
 const RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 

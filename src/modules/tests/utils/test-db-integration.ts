@@ -1,7 +1,7 @@
-import * as relations from "@/drizzle/relations";
-import * as schema from "@/drizzle/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
+import * as relations from "@/drizzle/relations";
+import * as schema from "@/drizzle/schema";
 
 /**
  * Creates a test database connection for integration tests

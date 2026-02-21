@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import {
-  OrgRole,
   invoice,
+  OrgRole,
   org,
   orgUser,
   user,
@@ -10,7 +11,6 @@ import {
   userProfile,
 } from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
-import { eq } from "drizzle-orm";
 import {
   addInvoiceUsers,
   createInvoice,
@@ -281,7 +281,7 @@ describe("Invoice Service", () => {
         userIds: [otherUser.id],
       };
 
-      const updated = await updateInvoice(
+      const _updated = await updateInvoice(
         testInvoice.id,
         updateData,
         testUser.id,

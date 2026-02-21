@@ -1,9 +1,9 @@
-import { db } from "@/drizzle/db";
-import { notification, user } from "@/drizzle/schema";
-import type { InsertNotification, Notification } from "@/drizzle/schema";
-import { NotFoundError } from "@/plugins/error";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { db } from "@/drizzle/db";
+import type { InsertNotification, Notification } from "@/drizzle/schema";
+import { notification, user } from "@/drizzle/schema";
+import { NotFoundError } from "@/plugins/error";
 
 /**
  * Notification types

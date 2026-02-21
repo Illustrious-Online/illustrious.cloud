@@ -1,14 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { db } from "@/drizzle/db";
-import {
-  OrgRole,
-  notification,
-  org,
-  orgUser,
-  user,
-  userProfile,
-} from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
+import { db } from "@/drizzle/db";
+import { notification, OrgRole, org, orgUser, user } from "@/drizzle/schema";
 import {
   createTestInvoice,
   createTestOrg,
@@ -66,7 +59,7 @@ describe("Org Routes", () => {
       .where(eq(user.id, testUserId))
       .limit(1);
     if (!testUserRecord) throw new Error("Test user not found");
-    const testUser = testUserRecord;
+    const _testUser = testUserRecord;
 
     // Create test orgs
     testOrg = await createTestOrg({ ownerId: testUserId });

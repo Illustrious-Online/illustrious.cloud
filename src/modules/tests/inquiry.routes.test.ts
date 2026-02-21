@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import config from "@/config";
 import { db } from "@/drizzle/db";
 import { inquiry, type org } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import { setAxiosInstance } from "../recaptcha/service";
 import { createTestInquiry, createTestOrg } from "./utils/fixtures";
 import { createIntegrationTestUserWithSession } from "./utils/integration-auth";

@@ -11,3 +11,6 @@ coveragePathIgnorePatterns = [
 coverageThreshold = { lines = 0.85, functions = 0.85 }
 coverageReporter = ["text", "lcov"]
 preload = ["./src/modules/tests/setup.ts"]
+
+[test.reporter]
+junit = "./reports/junit.xml"

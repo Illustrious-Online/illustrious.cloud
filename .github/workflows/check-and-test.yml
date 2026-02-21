@@ -55,3 +55,10 @@ jobs:
           flags: illustrious-cloud
           files: ./coverage/lcov.info
           slug: Illustrious-Online/illustrious.cloud
+      - name: Upload JUnit reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: illustrious-cloud
+          files: ./reports/junit.xml
+          slug: Illustrious-Online/illustrious.cloud

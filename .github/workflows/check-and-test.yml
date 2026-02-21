@@ -42,14 +42,11 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Download dependency files
         run: spaces-cli down $SPACE_URL/cloud/test.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-      ### Update the database
-      - name: Push drizzle details
-        run: bunx drizzle-kit migrate
       ### Run checks and tests
       - name: Run Biome Checks
         run: bun run check
-      - name: Run unit tests
-        run: bun test
+      - name: Run unit tests with coverage
+        run: bun run test:local:coverage
       ### Upload coverage reports
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3

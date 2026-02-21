@@ -64,7 +64,7 @@ jobs:
         run: |
           rm -rf .env cert.crt
           spaces-cli down $SPACE_URL/cloud/production.env -o .env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
-          spaces-cli down $SPACE_URL/cloud/certificate-vpc.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/ca-certificate.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       ### Compare versions using semantic-release
       - name: Compare versions
         id: compare

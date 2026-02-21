@@ -1,10 +1,12 @@
 # This file is used by the `docker-compose` command to start a basic postgres database.
 # It is used to test the app locally and is used in the CI/CD pipeline for testing.
+name: illustriouscloud
 version: '3.9'
 
 services:
   postgres:
     image: "postgres:latest"
+    network_mode: host
     environment:
       POSTGRES_HOST: localhost
       POSTGRES_USER: admin

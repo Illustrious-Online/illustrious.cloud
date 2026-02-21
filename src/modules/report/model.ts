@@ -1,0 +1,53 @@
+import { Elysia, t } from "elysia";
+
+export const reportModel = new Elysia().model({
+  createReportBody: t.Object({
+    orgId: t.String(),
+    title: t.String({ minLength: 1 }),
+    status: t.Optional(t.Union([t.Literal("draft"), t.Literal("published")])),
+    content: t.Optional(t.String()),
+    periodStart: t.String({ format: "date-time" }),
+    periodEnd: t.String({ format: "date-time" }),
+    rating: t.Optional(t.Number({ minimum: 0, maximum: 10 })),
+    userIds: t.Optional(t.Array(t.String())),
+  }),
+  updateReportBody: t.Object({
+    title: t.Optional(t.String({ minLength: 1 })),
+    status: t.Optional(t.Union([t.Literal("draft"), t.Literal("published")])),
+    content: t.Optional(t.String()),
+    periodStart: t.Optional(t.String({ format: "date-time" })),
+    periodEnd: t.Optional(t.String({ format: "date-time" })),
+    rating: t.Optional(t.Nullable(t.Number({ minimum: 0, maximum: 10 }))),
+    userIds: t.Optional(t.Array(t.String())),
+  }),
+  reportResponse: t.Object({
+    id: t.String(),
+    orgId: t.String(),
+    title: t.String(),
+    status: t.String(),
+    content: t.Nullable(t.String()),
+    periodStart: t.Date(),
+    periodEnd: t.Date(),
+    rating: t.Nullable(t.Number()),
+    createdBy: t.Nullable(t.String()),
+    modifiedBy: t.Nullable(t.String()),
+    createdAt: t.Date(),
+    updatedAt: t.Nullable(t.Date()),
+  }),
+  reportListResponse: t.Array(
+    t.Object({
+      id: t.String(),
+      orgId: t.String(),
+      title: t.String(),
+      status: t.String(),
+      content: t.Nullable(t.String()),
+      periodStart: t.Date(),
+      periodEnd: t.Date(),
+      rating: t.Nullable(t.Number()),
+      createdBy: t.Nullable(t.String()),
+      modifiedBy: t.Nullable(t.String()),
+      createdAt: t.Date(),
+      updatedAt: t.Nullable(t.Date()),
+    }),
+  ),
+});

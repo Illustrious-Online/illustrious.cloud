@@ -1,14 +1,8 @@
-import { db } from "@/drizzle/db";
-import {
-  OrgRole,
-  SiteRole,
-  orgUser,
-  user,
-  userProfile,
-} from "@/drizzle/schema";
-import type { InsertUserProfile, User, UserProfile } from "@/drizzle/schema";
 import { and, eq } from "drizzle-orm";
-import { getUserOrgRole, getUserSiteRole } from "../auth/permissions";
+import { db } from "@/drizzle/db";
+import type { InsertUserProfile, User, UserProfile } from "@/drizzle/schema";
+import { OrgRole, orgUser, user, userProfile } from "@/drizzle/schema";
+import { getUserSiteRole } from "../auth/permissions";
 
 /**
  * Combined user with profile data

@@ -12,7 +12,7 @@
     "types": ["bun", "node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
     "lib": ["esnext", "dom"]

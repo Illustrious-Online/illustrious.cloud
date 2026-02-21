@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import {
   OrgRole,
@@ -10,7 +11,6 @@ import {
   userReport,
 } from "@/drizzle/schema";
 import { ForbiddenError, NotFoundError } from "@/plugins/error";
-import { eq } from "drizzle-orm";
 import {
   addReportUsers,
   createReport,
@@ -135,6 +135,37 @@ describe("Report Service", () => {
 
       await db.delete(userProfile).where(eq(userProfile.userId, otherUser.id));
       await db.delete(user).where(eq(user.id, otherUser.id));
+    });
+
+    it("should throw ForbiddenError for read-only user", async () => {
+      const readOnlyUser = await createTestUser();
+      await createTestUserProfile(readOnlyUser.id);
+      await createTestOrgUser(readOnlyUser.id, testOrg.id, OrgRole.READ_ONLY);
+      const reportData = {
+        orgId: testOrg.id,
+        title: "Test",
+        status: "draft" as const,
+        periodStart: new Date(),
+        periodEnd: new Date(),
+        userIds: [],
+      };
+
+      await expect(
+        createReport(testOrg.id, reportData, readOnlyUser.id),
+      ).rejects.toThrow(ForbiddenError);
+
+      await db
+        .delete(orgUser)
+        .where(
+          and(
+            eq(orgUser.orgId, testOrg.id),
+            eq(orgUser.userId, readOnlyUser.id),
+          ),
+        );
+      await db
+        .delete(userProfile)
+        .where(eq(userProfile.userId, readOnlyUser.id));
+      await db.delete(user).where(eq(user.id, readOnlyUser.id));
     });
   });
 
@@ -270,7 +301,7 @@ describe("Report Service", () => {
         userIds: [otherUser.id],
       };
 
-      const updated = await updateReport(
+      const _updated = await updateReport(
         testReport.id,
         updateData,
         testUser.id,

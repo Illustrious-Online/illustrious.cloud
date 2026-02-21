@@ -14,9 +14,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { db } from "@/drizzle/db";
-import { OrgRole, org, orgUser, userProfile } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
+import { db } from "@/drizzle/db";
+import { OrgRole, org, orgUser } from "@/drizzle/schema";
 import {
   createTestOrg,
   createTestOrgUser,

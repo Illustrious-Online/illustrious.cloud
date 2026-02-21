@@ -1,8 +1,8 @@
-import config from "@/config";
-import { db } from "@/drizzle/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins";
+import config from "@/config";
+import { db } from "@/drizzle/db";
 
 /**
  * Better-Auth configuration with Drizzle adapter

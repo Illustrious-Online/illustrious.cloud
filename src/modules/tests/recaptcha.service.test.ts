@@ -1,8 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { AxiosError } from "axios";
 import config from "@/config";
 import { BadRequestError } from "@/plugins/error";
-import axios from "axios";
-import type { AxiosError } from "axios";
 import {
   getAxiosInstance,
   setAxiosInstance,

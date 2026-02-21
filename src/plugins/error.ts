@@ -1,6 +1,6 @@
-import { captureException } from "@/utils/sentry";
 import { Elysia } from "elysia";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { captureException } from "@/utils/sentry";
 
 /**
  * Base class for application errors

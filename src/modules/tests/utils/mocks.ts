@@ -1,18 +1,18 @@
-import { setTransporter } from "@/modules/mailer/service";
-import { setAxiosInstance } from "@/modules/recaptcha/service";
 import type {
   AxiosInstance,
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from "axios";
 import type { Transporter } from "nodemailer";
+import { setTransporter } from "@/modules/mailer/service";
+import { setAxiosInstance } from "@/modules/recaptcha/service";
 
 /**
  * Mock axios instance for reCAPTCHA testing
  */
 export function createMockAxiosInstance(): AxiosInstance {
   return {
-    post: async (url: string, data?: unknown) => {
+    post: async (url: string, _data?: unknown) => {
       // Mock successful reCAPTCHA verification
       if (url.includes("recaptcha")) {
         return {

@@ -1,3 +1,4 @@
+import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
 import { inquiryRoutes } from "@/modules/inquiry/routes";
 import { invoiceRoutes } from "@/modules/invoice/routes";
@@ -6,7 +7,6 @@ import { orgRoutes } from "@/modules/org/routes";
 import { reportRoutes } from "@/modules/report/routes";
 import { userRoutes } from "@/modules/user/routes";
 import errorPlugin from "@/plugins/error";
-import { Elysia } from "elysia";
 
 /**
  * Creates a test Elysia app with all routes but without

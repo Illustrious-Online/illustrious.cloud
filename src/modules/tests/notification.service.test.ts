@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { notification, user, userProfile } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import {
-  NotificationType,
   createNotification,
   deleteNotification,
   getUnreadCount,
   getUserNotifications,
   markNotificationRead,
+  NotificationType,
 } from "../notification/service";
 import {
   createTestNotification,

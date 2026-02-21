@@ -1,5 +1,5 @@
-import config from "@/config";
 import nodemailer from "nodemailer";
+import config from "@/config";
 
 /**
  * Nodemailer transporter configured for GoDaddy Office365 SMTP

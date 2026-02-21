@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { inquiry, org, user } from "@/drizzle/schema";
 import { NotFoundError } from "@/plugins/error";
-import { faker } from "@faker-js/faker";
-import { eq } from "drizzle-orm";
 import {
   createInquiry,
   getInquiryById,

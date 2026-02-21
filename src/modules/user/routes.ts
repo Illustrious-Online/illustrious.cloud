@@ -1,5 +1,5 @@
-import { getSessionFromHeader } from "@/lib/auth";
 import { Elysia } from "elysia";
+import { getSessionFromHeader } from "@/lib/auth";
 import { createAuthHelpers } from "../auth/middleware";
 import { userModel } from "./model";
 import {

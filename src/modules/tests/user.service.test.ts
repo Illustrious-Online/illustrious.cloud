@@ -1,19 +1,18 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import {
-  OrgRole,
-  SiteRole,
   invoice,
+  OrgRole,
   org,
   orgUser,
   report,
-  session,
+  SiteRole,
   user,
   userInvoice,
   userProfile,
   userReport,
 } from "@/drizzle/schema";
-import { and, eq } from "drizzle-orm";
 import {
   acceptOrgInvitation,
   getProfileByUserId,
@@ -28,7 +27,6 @@ import {
   createTestOrg,
   createTestOrgUser,
   createTestReport,
-  createTestSession,
   createTestUser,
   createTestUserInvoice,
   createTestUserProfile,

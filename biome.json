@@ -1,38 +1,106 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
-	"formatter": {
-		"enabled": true,
-		"formatWithErrors": false,
-		"indentStyle": "space",
-		"indentWidth": 2,
-		"lineEnding": "lf",
-		"lineWidth": 80,
-		"attributePosition": "auto"
-	},
-	"organizeImports": { "enabled": true },
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"a11y": { "useButtonType": "error" },
-			"complexity": { "noUselessFragments": "warn" },
-			"correctness": {
-				"noChildrenProp": "error",
-				"useJsxKeyInIterable": "error"
-			},
-			"security": {
-				"noDangerouslySetInnerHtml": "error",
-				"noDangerouslySetInnerHtmlWithChildren": "error"
-			},
-			"style": { "useFragmentSyntax": "error" }
-		}
-	},
-	"overrides": [
-		{
-			"include": ["*.json,*.yml","*.tsx"],
-			"formatter": {
-				"indentWidth": 2
-			}
-		}
-	]
+  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
+
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+
+  "files": {
+    "includes": [
+      "src/**",
+      "drizzle.config.ts",
+      "**/*.json",
+      "**/*.yml",
+      "**/*.yaml"
+    ],
+    "ignoreUnknown": true
+  },
+
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto"
+  },
+
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all",
+      "arrowParentheses": "always"
+    }
+  },
+
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+
+      "correctness": {
+        "noChildrenProp": "error",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "warn",
+        "useJsxKeyInIterable": "error"
+      },
+
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn"
+      },
+
+      "style": {
+        "useFragmentSyntax": "error",
+        "noNonNullAssertion": "warn"
+      },
+
+      "complexity": {
+        "noUselessFragments": "warn",
+        "useOptionalChain": "warn"
+      },
+
+      "performance": {
+        "noAccumulatingSpread": "warn"
+      },
+
+      "security": {
+        "noDangerouslySetInnerHtml": "error",
+        "noDangerouslySetInnerHtmlWithChildren": "error"
+      },
+
+      "a11y": {
+        "useButtonType": "error"
+      }
+    }
+  },
+
+  "overrides": [
+    {
+      "includes": ["*.json", "*.yml", "*.yaml"],
+      "formatter": { "indentWidth": 2 }
+    },
+    {
+      "includes": ["**/*.test.ts", "**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ]
 }

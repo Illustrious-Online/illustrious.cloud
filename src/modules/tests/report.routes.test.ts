@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { OrgRole, type org, report, userReport } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
 import {
   createTestOrg,
   createTestOrgUser,
@@ -16,7 +16,6 @@ import {
 } from "./utils/integration-setup";
 import {
   authenticatedRequest,
-  expectForbiddenResponse,
   expectNotFoundResponse,
   expectUnauthenticatedResponse,
   parseJsonResponse,

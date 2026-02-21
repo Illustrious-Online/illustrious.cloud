@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { SessionData } from "@/lib/auth";
-import { UnauthorizedError } from "@/plugins/error";
-import errorPlugin from "@/plugins/error";
 import { Elysia } from "elysia";
+import type { SessionData } from "@/lib/auth";
+import errorPlugin, { UnauthorizedError } from "@/plugins/error";
 import { AuthMiddleware, createAuthHelpers } from "../auth/middleware";
 import { createIntegrationTestUserWithSession } from "./utils/integration-auth";
 import {

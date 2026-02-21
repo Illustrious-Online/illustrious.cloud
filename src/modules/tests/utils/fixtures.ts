@@ -1,22 +1,21 @@
+import { faker } from "@faker-js/faker";
+import { eq } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import {
-  OrgRole,
-  SiteRole,
-  account,
   inquiry,
   invoice,
   notification,
+  OrgRole,
   org,
   orgUser,
   report,
+  SiteRole,
   session,
   user,
   userInvoice,
   userProfile,
   userReport,
 } from "@/drizzle/schema";
-import { faker } from "@faker-js/faker";
-import { eq } from "drizzle-orm";
 
 /**
  * Creates a test user in the database

@@ -25,7 +25,7 @@
     "check:fix": "bunx @biomejs/biome check --write .",
     "check:fix:unsafe": "bunx @biomejs/biome check --write --unsafe .",
     "test:local": "bun run db:start && bun test",
-    "test:local:coverage": "bun run db:start && bun test --coverage"
+    "test:local:coverage": "mkdir -p reports && bun run db:start && bun test --coverage"
   },
   "dependencies": {
     "@biomejs/biome": "^2.4.4",

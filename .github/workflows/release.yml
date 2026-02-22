@@ -39,7 +39,7 @@ jobs:
           git pull origin main --tags
       - name: Download test dependency files
         run: |
-          spaces-cli down $SPACE_URL/cloud/production.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+          spaces-cli down $SPACE_URL/cloud/ci.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
           spaces-cli down $SPACE_URL/cloud/ca-certificate-pub.crt -o ./cert.crt -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile

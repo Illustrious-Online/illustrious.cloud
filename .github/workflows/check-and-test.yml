@@ -12,7 +12,18 @@ jobs:
   cloud-check-and-test:
     runs-on: ubuntu-latest
     env:
-      SPACE_URL: https://${{ secrets.SPACE_NAME }}.${{ secrets.SPACE_REGION }}.digitaloceanspaces.com
+      NODE_ENV: development
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: illustrious
+      DB_USERNAME: admin
+      DB_PASSWORD: illustrious
+      DB_SSL: "false"
+      TEST_DB_NAME: illustrious
+      # Empty = skip verification in development (per recaptcha/service.ts)
+      RECAPTCHA_SECRET_KEY: ""
+      # Dummy secret for better-auth (min 32 chars)
+      BETTER_AUTH_SECRET: "test-secret-for-ci-min-32-characters-long"
     services:
       postgres:
         image: postgres:latest
@@ -33,20 +44,18 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install spaces-cli
-        run: bun install -g spaces-cli
       ### Clone repository & install application dependencies
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Install Dependencies
         run: bun install --frozen-lockfile
-      - name: Download dependency files
-        run: spaces-cli down $SPACE_URL/cloud/local.env -o ./.env -k ${{ secrets.SPACE_SECRET }} -i ${{ secrets.SPACE_KEY }}
+      - name: Run migrations
+        run: bunx drizzle-kit migrate
       ### Run checks and tests
       - name: Run Biome Checks
         run: bun run check
       - name: Run unit tests with coverage
-        run: bun run test:local:coverage
+        run: mkdir -p reports && bun test --coverage
       ### Upload coverage reports
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5

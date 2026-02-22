@@ -1,5 +1,10 @@
 replicaCount: 2
 
+# Secret containing DB_*, BETTER_AUTH_SECRET, OAuth credentials, etc.
+# Create with: kubectl create secret generic ill-cloud-secrets -n ill-cloud --from-env-file=production.env
+secrets:
+  name: ill-cloud-secrets
+
 deployment:
   namespace: ill-cloud
 

@@ -10,7 +10,7 @@ deployment:
 
 image:
   repository: illustriousonline/ill-cloud
-  tag: 1.2.0
+  tag: 1.3.0
   pullPolicy: Always
 
 service:

@@ -21,7 +21,7 @@ jobs:
       DB_SSL: "false"
       TEST_DB_NAME: illustrious
       # Empty = skip verification in development (per recaptcha/service.ts)
-      RECAPTCHA_SECRET_KEY: ""
+      RECAPTCHA_SECRET_KEY: "fake-recaptcha-key"
       # Dummy secret for better-auth (min 32 chars)
       BETTER_AUTH_SECRET: "test-secret-for-ci-min-32-characters-long"
     services:

@@ -37,30 +37,32 @@ export const app = new Elysia()
   )
   // Error handling
   .use(errorPlugin)
-  // Swagger documentation
+  // Swagger documentation (disabled in production - ReadableStream bug with Elysia+Bun)
   .use(
-    swagger({
-      path: "/docs",
-      documentation: {
-        info: {
-          title: "Illustrious Cloud API Docs",
-          version: config.app.version,
-        },
-        security: [{ bearerAuth: [] }],
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type: "http",
-              scheme: "bearer",
-              bearerFormat: "JWT",
+    config.app.env === "production"
+      ? (app) => app
+      : swagger({
+          path: "/docs",
+          documentation: {
+            info: {
+              title: "Illustrious Cloud API Docs",
+              version: config.app.version,
+            },
+            security: [{ bearerAuth: [] }],
+            components: {
+              securitySchemes: {
+                bearerAuth: {
+                  type: "http",
+                  scheme: "bearer",
+                  bearerFormat: "JWT",
+                },
+              },
             },
           },
-        },
-      },
-      swaggerOptions: {
-        persistAuthorization: true,
-      },
-    }),
+          swaggerOptions: {
+            persistAuthorization: true,
+          },
+        }),
   )
   // Health check and info endpoints
   .get("/", () => ({

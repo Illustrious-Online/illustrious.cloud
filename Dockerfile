@@ -1,10 +1,11 @@
-FROM oven/bun:latest AS builder
+FROM oven/bun:latest AS production
 
 WORKDIR /app
 
 COPY package.json bun.lockb ./
 COPY ./ /app
 
+<<<<<<< Updated upstream
 RUN bun install
 RUN bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/app.ts
 
@@ -13,7 +14,10 @@ FROM oven/bun:latest AS production
 WORKDIR /app
 
 COPY --from=builder /app /app
+=======
+RUN bun install --frozen-lockfile --production
+>>>>>>> Stashed changes
 
 EXPOSE 3000
-ENV NODE_ENV production
-CMD ["./server"]
+ENV NODE_ENV=production
+CMD ["bun", "run", "./src/app.ts"]

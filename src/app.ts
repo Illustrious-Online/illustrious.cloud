@@ -1,5 +1,5 @@
 import cors from "@elysiajs/cors";
-import { openapi } from "@elysiajs/openapi";
+import { fromTypes, openapi } from "@elysiajs/openapi";
 import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
@@ -37,11 +37,28 @@ export const app = new Elysia()
   )
   // Error handling
   .use(errorPlugin)
-  // OpenAPI documentation
+  // Health check and info endpoints
+  .get("/", () => ({
+    name: config.app.name,
+    version: config.app.version,
+  }))
+  .get("/health", () => ({ ok: true }))
+  // Mount Better-Auth routes
+  // Handles: /api/auth/sign-in, /api/auth/sign-up, /api/auth/sign-out, etc.
+  .all("/api/auth/*", ({ request }) => auth.handler(request))
+  // Business routes
+  .use(userRoutes)
+  .use(orgRoutes)
+  .use(inquiryRoutes)
+  .use(invoiceRoutes)
+  .use(reportRoutes)
+  .use(notificationRoutes)
+  // OpenAPI docs (must be after routes so spec includes all endpoints)
   .use(
     openapi({
       path: "/docs",
       provider: "scalar",
+      references: fromTypes("src/app.ts"),
       documentation: {
         info: {
           title: "Illustrious Cloud API Docs",
@@ -60,22 +77,6 @@ export const app = new Elysia()
       },
     }),
   )
-  // Health check and info endpoints
-  .get("/", () => ({
-    name: config.app.name,
-    version: config.app.version,
-  }))
-  .get("/health", () => ({ ok: true }))
-  // Mount Better-Auth routes
-  // Handles: /api/auth/sign-in, /api/auth/sign-up, /api/auth/sign-out, etc.
-  .all("/api/auth/*", ({ request }) => auth.handler(request))
-  // Business routes
-  .use(userRoutes)
-  .use(orgRoutes)
-  .use(inquiryRoutes)
-  .use(invoiceRoutes)
-  .use(reportRoutes)
-  .use(notificationRoutes)
   .listen({ hostname: "0.0.0.0", port: Number(config.app.port) }, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(

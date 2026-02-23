@@ -38,12 +38,10 @@ export const app = new Elysia()
   // Error handling
   .use(errorPlugin)
   // OpenAPI documentation
-  // Production: provider: null = JSON spec only at /docs/json (no UI)
-  // Development: Scalar UI + JSON at /docs
   .use(
     openapi({
       path: "/docs",
-      provider: config.app.env === "production" ? null : "scalar",
+      provider: "scalar",
       documentation: {
         info: {
           title: "Illustrious Cloud API Docs",

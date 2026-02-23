@@ -6,7 +6,8 @@ COPY package.json bun.lockb ./
 COPY ./ /app
 
 RUN bun install
-RUN bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/app.ts
+# Avoid --minify-syntax: can cause __promiseAll ReferenceError in compiled output
+RUN bun build --compile --target bun --outfile server ./src/app.ts
 
 FROM oven/bun:latest AS production
 

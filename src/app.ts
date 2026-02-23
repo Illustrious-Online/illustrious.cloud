@@ -58,7 +58,11 @@ export const app = new Elysia()
     openapi({
       path: "/docs",
       provider: "scalar",
-      references: fromTypes("src/app.ts"),
+      // Embed spec in HTML so Scalar displays routes in production (avoids fetch/URL issues)
+      embedSpec: config.app.env === "production",
+      // fromTypes needs .d.ts in production; runtime schema is sufficient
+      references:
+        config.app.env === "production" ? undefined : fromTypes("src/app.ts"),
       documentation: {
         info: {
           title: "Illustrious Cloud API Docs",

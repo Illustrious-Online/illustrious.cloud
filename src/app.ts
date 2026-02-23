@@ -1,5 +1,5 @@
 import cors from "@elysiajs/cors";
-import swagger from "@elysiajs/swagger";
+import { openapi } from "@elysiajs/openapi";
 import { logger } from "@tqman/nice-logger";
 import { Elysia } from "elysia";
 
@@ -37,11 +37,12 @@ export const app = new Elysia()
   )
   // Error handling
   .use(errorPlugin)
-  // Swagger documentation (disabled in production - ReadableStream bug with Elysia+Bun)
+  // OpenAPI documentation (Scalar UI at /docs)
+  // Disabled in production - ReadableStream bug in Elysia static handler (Bun)
   .use(
     config.app.env === "production"
       ? (app) => app
-      : swagger({
+      : openapi({
           path: "/docs",
           documentation: {
             info: {
@@ -58,9 +59,6 @@ export const app = new Elysia()
                 },
               },
             },
-          },
-          swaggerOptions: {
-            persistAuthorization: true,
           },
         }),
   )
@@ -80,7 +78,7 @@ export const app = new Elysia()
   .use(invoiceRoutes)
   .use(reportRoutes)
   .use(notificationRoutes)
-  .listen(config.app.port, () => {
+  .listen({ hostname: "0.0.0.0", port: Number(config.app.port) }, () => {
     console.log(`Environment: ${config.app.env}`);
     console.log(
       `Illustrious Cloud API is running at ${config.app.host}:${config.app.port}`,

@@ -1,4 +1,4 @@
-FROM oven/bun:latest AS production
+FROM oven/bun:1.2 AS production
 
 WORKDIR /app
 

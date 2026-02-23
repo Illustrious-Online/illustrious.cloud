@@ -37,30 +37,30 @@ export const app = new Elysia()
   )
   // Error handling
   .use(errorPlugin)
-  // OpenAPI documentation
-  // Production: provider: null = JSON spec only at /docs/json (avoids ReadableStream bug)
-  // Development: Scalar UI at /docs
+  // OpenAPI documentation (Scalar UI + JSON at /docs)
+  // Disabled in production - ReadableStream/schema bugs with Elysia+Bun
   .use(
-    openapi({
-      path: "/docs",
-      provider: config.app.env === "production" ? null : "scalar",
-      documentation: {
-        info: {
-          title: "Illustrious Cloud API Docs",
-          version: config.app.version,
-        },
-        security: [{ bearerAuth: [] }],
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type: "http",
-              scheme: "bearer",
-              bearerFormat: "JWT",
+    config.app.env === "production"
+      ? (app) => app
+      : openapi({
+          path: "/docs",
+          documentation: {
+            info: {
+              title: "Illustrious Cloud API Docs",
+              version: config.app.version,
+            },
+            security: [{ bearerAuth: [] }],
+            components: {
+              securitySchemes: {
+                bearerAuth: {
+                  type: "http",
+                  scheme: "bearer",
+                  bearerFormat: "JWT",
+                },
+              },
             },
           },
-        },
-      },
-    }),
+        }),
   )
   // Health check and info endpoints
   .get("/", () => ({

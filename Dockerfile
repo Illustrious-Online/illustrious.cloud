@@ -4,7 +4,6 @@ WORKDIR /app
 
 COPY package.json bun.lockb ./
 RUN bun install --frozen-lockfile --production
-
 COPY . .
 
 EXPOSE 3000
